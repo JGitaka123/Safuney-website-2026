@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { site } from "@/config/site";
 import { config } from "@/lib/env";
+import { isIndexable } from "@/lib/seo/indexing";
 import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
 
@@ -15,8 +16,19 @@ export const metadata: Metadata = {
     template: `%s — ${site.shortName}`,
   },
   description: site.tagline,
-  // Interim site must not be indexed until domain cut-over (Phase 9, ADR 0002).
-  robots: { index: false, follow: false },
+  // Interim site must not be indexed until domain cut-over (ADR 0002); the switch is SITE_INDEXABLE=1
+  // on the production deployment, and a preview is never indexable whatever it says.
+  robots: isIndexable() ? { index: true, follow: true } : { index: false, follow: false },
+  alternates: { canonical: "/", languages: { en: "/", sw: "/sw" } },
+  openGraph: {
+    type: "website",
+    siteName: site.legalName,
+    locale: "en_KE",
+    alternateLocale: ["sw_KE"],
+    url: config.siteUrl,
+    title: `${site.legalName} — professional cleaning and hygiene solutions, Kenya`,
+    description: site.tagline,
+  },
 };
 
 export const viewport: Viewport = {
