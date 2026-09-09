@@ -25,6 +25,30 @@ test("404 page is branded and returns 404", async ({ page }) => {
   expect(res?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/does not exist/i);
   await expect(page.getByRole("link", { name: /home page/i })).toBeVisible();
+  // "Branded" has to mean styled, not just worded. This page spent several phases using colour classes
+  // that had been renamed out of the palette, so its heading rendered in the browser default and its
+  // button was unstyled — and a test that only read the text passed the whole time.
+  const heading = page.getByRole("heading", { level: 1 });
+  await expect(heading).toHaveCSS("color", "rgb(16, 32, 43)");
+  const cta = page.getByRole("link", { name: /home page/i });
+  await expect(cta).toHaveCSS("background-color", "rgb(16, 32, 43)");
+  // Scoped to main: the footer carries the same number on every page.
+  await expect(page.locator("#main").getByRole("link", { name: /^\+254/ })).toBeVisible();
+});
+
+test("the error page is branded, says nothing about the failure, and offers a way out", async ({ page }) => {
+  const res = await page.goto("/api/test/boom");
+  // Next serves the error boundary with a 500.
+  expect(res?.status()).toBe(500);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/could not load/i);
+  await expect(page.getByRole("button", { name: /try again/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /home page/i })).toBeVisible();
+  // The customer is reassured about the one thing they would worry about.
+  await expect(page.getByText(/only placed when you press/i)).toBeVisible();
+  // And nothing about the internals leaks: no stack, no message, no file path.
+  const body = (await page.textContent("body")) ?? "";
+  expect(body).not.toContain("Deliberate failure");
+  expect(body).not.toMatch(/at \/|\.tsx|node_modules/);
 });
 
 test("mobile menu opens, traps focus and closes with Escape", async ({ page, isMobile }) => {
