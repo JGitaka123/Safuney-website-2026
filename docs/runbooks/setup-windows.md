@@ -148,6 +148,7 @@ never paste values into chat or commit them.
 | `DATABASE_URL` | Neon integration | Catalogue, leads, orders. Without it the site still renders from static config and database features switch off. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (or `KV_REST_API_URL`, `KV_REST_API_TOKEN`) | Upstash integration | Rate limiting, sessions, cache. Without them an in-memory fallback is used (fine for previews, not for production). |
 | `AUTH_SECRET` | All | Signs sign-in sessions. Generate once with `openssl rand -base64 32` (or `npx auth secret`); different value per environment. |
+| `AUTH_SECRET` | All | Signs session tokens. Generate a different one per environment: `openssl rand -base64 32`. Sign-in is refused without it; the site still builds and browses. |
 | `COMPANY_KRA_PIN` | All | Safuney's KRA PIN, printed on tax invoices (question 4). Invoices say "to be confirmed" until it is set. |
 | `COMPANY_VAT_NUMBER` | All | VAT registration number for tax invoices, if separate from the PIN. |
 | `DEMO_STAFF_PASSWORD` | Preview only | Password of the demo staff accounts the demo seed creates (`sales@`, `finance@`, `admin@safuney.test`). Never set in production; the seed refuses to run there. |
@@ -218,6 +219,14 @@ password and an authenticator code; the demo seed creates `sales@safuney.test`, 
 and `admin@safuney.test` with `DEMO_STAFF_PASSWORD` (default `safuney-demo-2026`) and no second factor.
 
 ### Cron jobs (Vercel)
+
+**A Hobby account allows one run per day per job.** Anything more frequent is rejected at deploy time
+with *"Hobby accounts are limited to daily cron jobs"* — and it fails the whole deployment, not just
+the cron, so the site silently stops updating. That is what happened between Phase 3 and Phase 4.
+Keep every schedule daily unless the account moves to Pro, and never rely on a cron for anything a
+customer waits on: expired stock reservations are released on the read path as well (see
+`apps/web/lib/orders/reservations.ts`), so the 30-minute hold is real whatever the plan allows.
+
 
 `apps/web/vercel.json` registers two jobs, both protected by `CRON_SECRET`:
 `/api/cron/release-reservations` every 10 minutes (stock held by unpaid orders; orders nobody approved
