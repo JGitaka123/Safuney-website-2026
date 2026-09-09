@@ -1,6 +1,7 @@
 # Safuney website — handover
 
-**Date:** 2026-09-09 · Nine phases, eleven pull requests, all merged to `main`.
+**Date:** 2026-09-09 · Nine phases, eleven pull requests. Ten merged to `main`; the eleventh is this
+one, which carries the QA pass and these documents.
 
 This is the one page to read. Everything else is linked from it.
 
