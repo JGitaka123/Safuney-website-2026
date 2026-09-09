@@ -32,7 +32,10 @@ export async function SiteHeader() {
         </div>
         <div className="hidden items-center gap-3 md:flex">
           {shop ? <CartLink /> : null}
-          <Link href="/contact?topic=quote" className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
+          <Link href="/account" className="inline-flex min-h-11 items-center rounded-button border border-line bg-surface px-3 text-button text-ink hover:bg-ground-deep">
+            Account
+          </Link>
+          <Link href="/quote" className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
             Request a quote
           </Link>
           <a href={`tel:${site.contact.phone.e164}`} className="inline-flex min-h-11 items-center rounded-button bg-ink px-4 text-button text-white hover:bg-accent-deep">

@@ -590,24 +590,67 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                   </div>
                 </label>
 
-                {/* Invoice: only approved credit accounts (Phase 4 sign-in) */}
-                <label className={methodClass("INVOICE")}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="INVOICE"
-                    checked={paymentMethod === "INVOICE"}
-                    onChange={() => setPaymentMethod("INVOICE")}
-                    disabled={!isAvailable("INVOICE")}
-                    className="mt-1 size-4 accent-accent"
-                  />
-                  <div>
-                    <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
-                    <span className="block text-small text-ink-muted">
-                      {isAvailable("INVOICE") ? "We invoice your account on dispatch." : availability("INVOICE")?.reason ?? "For approved credit accounts. Call +254 796 808 822 to apply."}
-                    </span>
+                {/* Invoice (Available for approved credit accounts) */}
+                {isAvailable("INVOICE") ? (
+                  <label className={methodClass("INVOICE")}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="INVOICE"
+                      checked={paymentMethod === "INVOICE"}
+                      onChange={() => setPaymentMethod("INVOICE")}
+                      className="mt-1 size-4 accent-accent"
+                    />
+                    <div className="w-full">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="block font-medium text-ink">Invoice — organisation credit account</span>
+                        <span className="inline-flex rounded-chip border border-accent bg-accent-wash px-2 py-0.5 text-caption font-semibold text-accent">
+                          30-day terms approved
+                        </span>
+                      </div>
+                      <span className="mt-1 block text-small text-ink-muted">
+                        Billed to <strong>{context.session?.customerName}</strong> (KRA PIN: {context.session?.kraPin ?? "N/A"}). Available credit: KES {(Number(context.session?.availableCreditMinorUnits ?? 0) / 100).toLocaleString("en-KE", { minimumFractionDigits: 2 })}.
+                      </span>
+
+                      {paymentMethod === "INVOICE" && (
+                        <div className="mt-4 max-w-sm space-y-3">
+                          <Input
+                            label="Purchase order number (PO #)"
+                            value={poNumber}
+                            onChange={(e) => setPoNumber(e.target.value)}
+                            optional
+                            helper="Recorded on your eTIMS tax invoice and packing slip."
+                          />
+
+                          {context.session?.approvalThresholdMinorUnits &&
+                          BigInt(cart.totalMinorUnits) > BigInt(context.session.approvalThresholdMinorUnits) &&
+                          context.session.memberRole === "BUYER" ? (
+                            <div className="rounded-chip border border-line bg-ground p-3 text-caption text-ink">
+                              ℹ️ <strong>Internal sign-off needed</strong>: This order total exceeds your organisation&apos;s purchasing threshold (KES {(Number(context.session.approvalThresholdMinorUnits) / 100).toLocaleString("en-KE")}) and will be queued for your finance approver.
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                ) : (
+                  <div className="border border-line bg-ground-deep p-4 opacity-75">
+                    <div className="flex items-start gap-3">
+                      <input type="radio" disabled className="mt-1 size-4" />
+                      <div>
+                        <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
+                        <span className="block text-small text-ink-muted">
+                          {availability("INVOICE")?.reason ??
+                            "For approved credit accounts."}{" "}
+                          <a href="/account/credit-application" className="text-accent underline">
+                            Apply for a credit account
+                          </a>
+                          .
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </label>
+                )}
               </div>
 
               <div className="mt-8 flex flex-wrap justify-between gap-3">

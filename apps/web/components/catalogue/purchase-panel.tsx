@@ -106,7 +106,7 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
               Add to cart
             </Button>
           )}
-          <Link href="/contact?topic=quote" className="text-small text-accent underline underline-offset-[3px]">
+          <Link href={`/quote?product=${encodeURIComponent(productName)}${selected ? `&pack=${encodeURIComponent(selected.label)}` : ""}`} className="text-small text-accent underline underline-offset-[3px]">
             Buying in bulk? Request a quote
           </Link>
         </>

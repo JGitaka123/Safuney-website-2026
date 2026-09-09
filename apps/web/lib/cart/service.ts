@@ -78,10 +78,10 @@ export function newToken(): string {
   return randomBytes(24).toString("base64url");
 }
 
-export function summarise(cart: CartRecord): CartSummary {
+export function summarise(cart: CartRecord, customPriceMap?: Map<string, bigint>): CartSummary {
   const lines: CartLine[] = cart.items.map((it) => {
     const v = it.variant;
-    const unit = v.priceMinorUnits;
+    const unit = customPriceMap?.get(v.id) ?? v.priceMinorUnits;
     const lineExVat = money.times(unit, it.qty);
     const p = v.product;
     return {
@@ -119,9 +119,29 @@ export function summarise(cart: CartRecord): CartSummary {
 export class CartService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async find(token: string): Promise<CartSummary | null> {
+  private async getCustomerPriceMap(customerId?: string | null): Promise<Map<string, bigint>> {
+    const map = new Map<string, bigint>();
+    if (!customerId) return map;
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { priceListId: true },
+    });
+    if (!customer?.priceListId) return map;
+    const items = await this.prisma.priceListItem.findMany({
+      where: { priceListId: customer.priceListId },
+      select: { variantId: true, priceMinorUnits: true },
+    });
+    for (const item of items) {
+      map.set(item.variantId, item.priceMinorUnits);
+    }
+    return map;
+  }
+
+  async find(token: string, customerId?: string): Promise<CartSummary | null> {
     const cart = await this.prisma.cart.findFirst({ where: { token, expiresAt: { gt: new Date() } }, include: cartInclude });
-    return cart ? summarise(cart) : null;
+    if (!cart) return null;
+    const priceMap = await this.getCustomerPriceMap(customerId ?? cart.customerId);
+    return summarise(cart, priceMap);
   }
 
   async getOrCreate(token: string | undefined, userId?: string): Promise<CartSummary> {

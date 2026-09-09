@@ -51,11 +51,22 @@ export type PlaceOrderResponse =
   | { ok: true; orderNumber: string; accessToken: string; next: { kind: "prompt"; message: string } | { kind: "redirect"; url: string } | { kind: "offline"; instructions: string } }
   | { ok: false; formError?: string; fieldErrors?: Record<string, string> };
 
+import { getCurrentSession } from "@/lib/auth/session";
+import { creditService } from "@/lib/credit";
+
 export interface CheckoutContext {
   methods: Array<{ method: "MPESA" | "CARD" | "INVOICE" | "COD"; available: boolean; reason?: string }>;
   deliveryConfigured: boolean;
   zones: Array<{ slug: string; name: string; counties: string[]; slots: string[]; leadTimeDays: number }>;
   minimumMinorUnits: string;
+  session?: {
+    customerName: string;
+    kraPin: string | null;
+    availableCreditMinorUnits: string;
+    isStopSupply: boolean;
+    memberRole: string | null;
+    approvalThresholdMinorUnits: string | null;
+  } | null;
 }
 
 /** What the checkout page needs to render its options. */
@@ -64,16 +75,54 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
   const deliveryConfigured = services.database() ? Boolean(await getSetting("delivery.configured")) : false;
   const zones = services.database() ? await db().deliveryZone.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, select: { slug: true, name: true, counties: true, slots: true, leadTimeDays: true } }) : [];
   const minimum = services.database() ? String(await getSetting("orders.minimumMinorUnits")) : "0";
+
+  const session = await getCurrentSession();
+  let b2bCredit = null;
+  let invoiceAvailable = false;
+  let invoiceReason: string | undefined = "For approved credit accounts. Apply for an account or sign in to order on invoice.";
+
+  if (session?.customer) {
+    if (session.customer.status === "CREDIT_APPROVED") {
+      let profile = null;
+      if (services.database()) {
+        try {
+          profile = await creditService().getCreditProfile(session.customer.id);
+        } catch {
+          profile = null;
+        }
+      }
+      const available = profile?.availableCreditMinorUnits ?? session.customer.creditLimitMinorUnits;
+      const isStopSupply = profile?.isStopSupply ?? false;
+      invoiceAvailable = !isStopSupply && available > 0n;
+      if (isStopSupply) {
+        invoiceReason = profile?.stopSupplyReason ?? "Credit suspended (invoice overdue past 15 days).";
+      } else if (available <= 0n) {
+        invoiceReason = "Available credit limit reached. Settle open invoices to restore credit.";
+      } else {
+        invoiceReason = undefined;
+      }
+      b2bCredit = {
+        customerName: session.customer.displayName,
+        kraPin: session.customer.kraPin,
+        availableCreditMinorUnits: available.toString(),
+        isStopSupply,
+        memberRole: session.memberRole,
+        approvalThresholdMinorUnits: session.customer.approvalThresholdMinorUnits ? session.customer.approvalThresholdMinorUnits.toString() : null,
+      };
+    }
+  }
+
   return {
     methods: [
       { method: "MPESA", available: registry.MPESA.isConfigured(), reason: registry.MPESA.isConfigured() ? undefined : "M-Pesa payments open once our Paybill is connected." },
       { method: "CARD", available: registry.CARD.isConfigured(), reason: registry.CARD.isConfigured() ? undefined : "Card payments open once our card provider is connected." },
       { method: "COD", available: true },
-      { method: "INVOICE", available: false, reason: "For approved credit accounts. Apply for an account and we will switch it on." },
+      { method: "INVOICE", available: invoiceAvailable, reason: invoiceReason },
     ],
     deliveryConfigured,
     zones,
     minimumMinorUnits: minimum,
+    session: b2bCredit,
   };
 }
 
@@ -105,14 +154,18 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
   const token = (await cookies()).get(CART_COOKIE)?.value;
   if (!token) return { ok: false, formError: "Your cart is empty." };
   const d = parsed.data;
+  const session = await getCurrentSession();
   try {
     const result = await orderService().placeOrder({
       cartToken: token,
-      contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || undefined },
+      contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || session?.customer?.displayName || undefined },
       delivery: d.delivery.method === "PICKUP" ? { method: "PICKUP", slot: d.delivery.slot } : { method: "DELIVERY", county: d.delivery.county, town: d.delivery.town, line1: d.delivery.line1 || undefined, landmark: d.delivery.landmark || undefined, deliveryNotes: d.delivery.deliveryNotes || undefined, slot: d.delivery.slot },
       paymentMethod: d.paymentMethod,
       poNumber: d.poNumber || undefined,
       notes: d.notes || undefined,
+      userId: session?.user?.id,
+      customerId: session?.customer?.id,
+      memberRole: session?.memberRole ?? undefined,
       baseUrl: publicBaseUrl(),
     });
     // Notify in the background of the request; failures never block the order.
