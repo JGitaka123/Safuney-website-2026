@@ -70,6 +70,16 @@ jobs:
         run: pnpm test
       - name: Build (prebuild runs prisma generate and migrate deploy)
         run: pnpm build
+      # Non-negotiable: a feature whose service is not configured switches itself off, it does not
+      # break the build. Vercel builds previews without secrets, so this is the check that catches it.
+      - name: Build with no services configured
+        run: pnpm --filter @safuney/web build
+        env:
+          DATABASE_URL: ""
+          SHADOW_DATABASE_URL: ""
+          AUTH_SECRET: ""
+          PAYMENTS_MODE: ""
+          NEXT_PUBLIC_SITE_URL: ""
       - name: Placeholder guard
         run: pnpm guard:placeholders
       - name: Money type guard

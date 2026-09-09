@@ -28,7 +28,11 @@ export const AFTER_SIGN_IN_PATH = "/api/account/landed";
  * user id and role; anything sensitive is read from the database per request, never from the token.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(db()),
+  // Built only when a database is configured: this module is imported while the pages are collected at
+  // build time, where there is no connection string, and db() throws without one.
+  adapter: services.database() ? PrismaAdapter(db()) : undefined,
+  // Auth.js reads AUTH_SECRET itself; naming it here keeps the failure legible when it is missing.
+  secret: process.env["AUTH_SECRET"],
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   trustHost: true,
   pages: { signIn: "/sign-in", verifyRequest: "/sign-in/check-email", error: "/sign-in" },
