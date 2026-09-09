@@ -56,6 +56,10 @@ jobs:
         run: pnpm migrate:check
       - name: Migrate CI database
         run: pnpm --filter @safuney/db migrate:deploy
+      - name: Seed demo catalogue (integration tests search it)
+        run: pnpm --filter @safuney/db seed
+        env:
+          SEED_DEMO: "1"
       - name: Unit and integration tests
         run: pnpm test
       - name: Build (prebuild runs prisma generate and migrate deploy)
@@ -91,6 +95,8 @@ jobs:
       - run: pnpm --filter @safuney/db generate
       - run: pnpm --filter @safuney/db migrate:deploy
       - run: pnpm --filter @safuney/db seed
+        env:
+          SEED_DEMO: "1"
       # Built here rather than shipped from the checks job: Turbopack links externals such as
       # @prisma/client into .next/node_modules as symlinks into the pnpm store, which do not survive an
       # artifact round-trip.
@@ -113,7 +119,19 @@ jobs:
     name: Lighthouse (mobile, >= 95)
     needs: checks
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: safuney_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -123,14 +141,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @safuney/db generate
-      - name: Build without a database (pages render from static config, as a cold visitor sees them)
-        run: pnpm --filter @safuney/web build
+      - run: pnpm --filter @safuney/db migrate:deploy
+      - run: pnpm --filter @safuney/db seed
         env:
-          DATABASE_URL: ""
+          SEED_DEMO: "1"
+      - name: Build
+        run: pnpm --filter @safuney/web build
       - name: Lighthouse CI
         run: pnpm --filter @safuney/web lhci
         env:
-          DATABASE_URL: ""
+          SITE_PAGES: /,/products,/products/disinfection,/products/disinfection/qac-surface-food-contact-sanitiser,/cart,/contact
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -173,3 +173,16 @@ from reaching them. Either:
 gh secret set VERCEL_AUTOMATION_BYPASS_SECRET --repo JGitaka123/Safuney-website-2026
 # paste the value when prompted
 ```
+
+## 8. Demo catalogue data on previews (never production)
+
+Until the PO's price list is imported, every harvested product stays `needsPoReview=true` and is hidden.
+For previews and CI, the seed can mark them reviewed with **illustrative** prices, stock and dilution
+guidance so the shop can be exercised end to end:
+
+```powershell
+$env:SEED_DEMO = "1"; pnpm --filter @safuney/db seed
+```
+
+The seed refuses to do this when `VERCEL_ENV=production`. Every figure it writes is invented for
+demonstration and is overwritten by the catalogue import (Phase 6).
