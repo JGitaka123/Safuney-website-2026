@@ -10,8 +10,9 @@
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(new URL("..", import.meta.url).pathname);
+const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const web = resolve(root, "apps/web");
 const src = (pkg, file) => resolve(web, "node_modules/@fontsource", pkg, "files", file);
 const out = resolve(web, "public/fonts");

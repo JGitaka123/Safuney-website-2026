@@ -11,8 +11,9 @@
  */
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join, relative, extname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const BUILT_DIR = join(ROOT, "apps/web/.next/server/app");
 const SOURCE_DIRS = ["apps/web/app", "apps/web/config", "apps/web/content", "apps/web/messages"].map((d) =>
   join(ROOT, d),

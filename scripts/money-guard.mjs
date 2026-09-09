@@ -7,8 +7,9 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, extname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const failures = [];
 
 const schema = readFileSync(join(ROOT, "packages/db/prisma/schema.prisma"), "utf8");
