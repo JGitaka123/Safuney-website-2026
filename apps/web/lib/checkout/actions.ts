@@ -78,14 +78,15 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
 }
 
 /** Delivery fee for the current cart and county (server-computed; the client only displays it). */
-export async function quoteDeliveryAction(county: string | null): Promise<{ ok: true; feeLabel: string | null; zone: string | null; free: boolean; slots: string[] } | { ok: false; message: string }> {
+export async function quoteDeliveryAction(county: string | null): Promise<{ ok: true; feeLabel: string | null; zone: string | null; free: boolean; slots: string[]; grandTotalLabel: string } | { ok: false; message: string }> {
   if (!services.database()) return { ok: false, message: "Delivery quotes are unavailable right now." };
   const cart = await readCart();
   if (!cart) return { ok: false, message: "Your cart is empty." };
   const q = await orderService().quoteDelivery(cart.weightGrams, cart.subtotalMinorUnits, county);
   if (county && !q.zone) return { ok: false, message: `We do not deliver to ${county} yet. Collect from Mombasa Road, Nairobi, or ask us for a courier quote.` };
   if (county && q.feeMinorUnits === null) return { ok: false, message: "We need to quote delivery for an order this size. Choose collection, or ask us and we will confirm the fee before you pay." };
-  return { ok: true, feeLabel: q.feeMinorUnits === null ? null : money.formatKes(q.feeMinorUnits), zone: q.zone?.name ?? null, free: q.free, slots: q.zone?.slots ?? [] };
+  const fee = q.feeMinorUnits ?? 0n;
+  return { ok: true, feeLabel: q.feeMinorUnits === null ? null : money.formatKes(q.feeMinorUnits), zone: q.zone?.name ?? null, free: q.free, slots: q.zone?.slots ?? [], grandTotalLabel: money.formatKes(cart.totalMinorUnits + fee) };
 }
 
 function flatten(err: z.ZodError): Record<string, string> {
@@ -143,6 +144,19 @@ export async function retryPaymentAction(orderNumber: string, accessToken: strin
   if (!order) return { ok: false, message: "Order not found." };
   try {
     const next = await orderService().initiatePayment(order.id, publicBaseUrl());
+    return { ok: true, next: next.kind === "prompt" ? { kind: "prompt", message: next.message } : next.kind === "redirect" ? { kind: "redirect", url: next.url } : { kind: "offline", instructions: next.instructions } };
+  } catch (e) {
+    return { ok: false, message: e instanceof OrderError ? e.message : "The payment provider did not respond. Try again in a minute." };
+  }
+}
+
+/** "Pay another way" for an unpaid order: switch method and start collection with it. */
+export async function switchPaymentAction(orderNumber: string, accessToken: string, method: "MPESA" | "CARD" | "COD"): Promise<{ ok: true; next: { kind: "prompt"; message: string } | { kind: "redirect"; url: string } | { kind: "offline"; instructions: string } } | { ok: false; message: string }> {
+  if (!services.database()) return { ok: false, message: "Unavailable right now." };
+  const order = await db().order.findFirst({ where: { number: orderNumber, accessToken } });
+  if (!order) return { ok: false, message: "Order not found." };
+  try {
+    const next = await orderService().switchPaymentMethod(order.id, method, publicBaseUrl());
     return { ok: true, next: next.kind === "prompt" ? { kind: "prompt", message: next.message } : next.kind === "redirect" ? { kind: "redirect", url: next.url } : { kind: "offline", instructions: next.instructions } };
   } catch (e) {
     return { ok: false, message: e instanceof OrderError ? e.message : "The payment provider did not respond. Try again in a minute." };

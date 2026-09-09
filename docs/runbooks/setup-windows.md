@@ -205,6 +205,17 @@ Register these URLs with each provider once the site has its final address (they
 | Safaricom Daraja | C2B validation / confirmation (Paybill without prompt) | same path, registered in Phase 5 |
 | Paystack | Dashboard → Settings → Webhooks | `/api/payments/paystack/webhook` |
 
+### Mock payments on previews and in CI
+
+With `PAYMENTS_MODE=mock` (never accepted in production) no provider is called. The M-Pesa pending
+page, the card return page and the order tracking page show a dashed **Test controls** box with
+"Simulate payment success" and "Simulate cancellation". Each button feeds a signed callback through
+`/api/payments/mock/callback`, so the same verification, idempotency and status code runs as with a
+real provider. The box is rendered by the server from `PAYMENTS_MODE` and does not exist in live mode.
+
+An unpaid order can always be paid another way from its tracking link (M-Pesa ↔ card ↔ cash on
+delivery); the order and its stock reservation are kept, only the payment method changes.
+
 Sandbox test flow for M-Pesa: create an app at developer.safaricom.co.ke, copy the consumer key and
 secret, use shortcode `174379` with the published sandbox passkey, set `MPESA_ENV=sandbox`, and place an
 order on a preview with a Safaricom test number. Daraja needs a public HTTPS callback, which every

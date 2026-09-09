@@ -179,6 +179,29 @@ export class OrderService {
     return { orderId: placed.id, orderNumber: placed.number, accessToken: placed.accessToken, totalMinorUnits: placed.totalMinorUnits, next };
   }
 
+  /**
+   * "Pay another way": switch an unpaid order to a different method and start collection with it.
+   * Cash on delivery confirms the order immediately (the reservation is kept until dispatch).
+   */
+  async switchPaymentMethod(orderId: string, method: PaymentMethod, baseUrl: string): Promise<InitiateResult> {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { customer: true } });
+    if (!order) throw new OrderError("NOT_FOUND", "Order not found.");
+    if (order.status !== "PENDING_PAYMENT" && order.status !== "PAYMENT_FAILED") throw new OrderError("STATE", `This order is ${order.status.toLowerCase().replace(/_/g, " ")}; its payment method can no longer be changed.`);
+    const adapter = this.adapters[method];
+    if (!adapter.isConfigured()) throw new OrderError("METHOD_UNAVAILABLE", "That payment method is not available right now. Choose another.");
+    if (method === "INVOICE" && (!order.customer || order.customer.status !== "CREDIT_APPROVED" || order.customer.creditLimitMinorUnits <= 0n)) {
+      throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Apply for an account or choose another method.");
+    }
+    if (method !== order.paymentMethod) {
+      const nextStatus: OrderStatus = method === "COD" || method === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
+      await this.prisma.$transaction([
+        this.prisma.order.update({ where: { id: order.id }, data: { paymentMethod: method, status: nextStatus, reservationExpiresAt: nextStatus === "CONFIRMED" ? null : new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) } }),
+        this.prisma.orderEvent.create({ data: { orderId: order.id, status: nextStatus, type: "payment_method_changed", payload: { from: order.paymentMethod, to: method } } }),
+      ]);
+    }
+    return this.initiatePayment(order.id, baseUrl);
+  }
+
   /** Start (or restart) collection for an order. Bounded attempts; each attempt is its own Payment row. */
   async initiatePayment(orderId: string, baseUrl: string): Promise<InitiateResult> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
@@ -220,8 +243,15 @@ export class OrderService {
           idempotencyKey: `init:${order.id}:${attemptId}`,
         },
       }),
-      this.prisma.order.update({ where: { id: order.id }, data: { paymentAttempts: { increment: 1 } } }),
-      this.prisma.orderEvent.create({ data: { orderId: order.id, status: order.status, type: "payment_initiated", payload: { method: order.paymentMethod, kind: result.kind, providerRequestId: result.providerRequestId } } }),
+      // A retry after a failed attempt is a fresh attempt: back to pending, with the reservation extended.
+      this.prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentAttempts: { increment: 1 },
+          ...(order.status === "PAYMENT_FAILED" && result.kind !== "offline" ? { status: "PENDING_PAYMENT", reservationExpiresAt: new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) } : {}),
+        },
+      }),
+      this.prisma.orderEvent.create({ data: { orderId: order.id, status: order.status === "PAYMENT_FAILED" && result.kind !== "offline" ? "PENDING_PAYMENT" : order.status, type: "payment_initiated", payload: { method: order.paymentMethod, kind: result.kind, providerRequestId: result.providerRequestId } } }),
     ]);
     return result;
   }

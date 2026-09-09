@@ -27,13 +27,20 @@ export interface CheckoutWizardProps {
     lines: SerializedCartLine[];
   };
   context: CheckoutContext;
+  /** Rendered by the server from PAYMENTS_MODE; never true in live mode. */
+  mockMode?: boolean;
 }
+
+type PaymentMethodChoice = "MPESA" | "CARD" | "COD" | "INVOICE";
 
 const STEPS = ["Contact", "Delivery", "Payment", "Review"] as const;
 
-export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
+export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWizardProps) {
   const router = useRouter();
   const formSummaryId = useId();
+  const availability = (method: PaymentMethodChoice) => context.methods.find((m) => m.method === method);
+  const isAvailable = (method: PaymentMethodChoice) => availability(method)?.available === true;
+  const firstAvailableMethod = (["MPESA", "CARD", "COD", "INVOICE"] as const).find(isAvailable) ?? "MPESA";
 
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [isSubmitting, startTransition] = useTransition();
@@ -55,12 +62,19 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
 
   // Delivery quote dynamic state
   const [quotedFeeLabel, setQuotedFeeLabel] = useState<string | null>(null);
+  // Grand total including the quoted delivery fee; collection and un-quoted delivery fall back to the cart total.
+  const [grandTotalLabel, setGrandTotalLabel] = useState<string>(cart.totalLabel);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const displayTotalLabel = deliveryMethod === "PICKUP" ? cart.totalLabel : grandTotalLabel;
 
   // Payment state
-  const [paymentMethod, setPaymentMethod] = useState<"MPESA" | "CARD" | "COD" | "INVOICE">("MPESA");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodChoice>(firstAvailableMethod);
   const [mpesaPhone, setMpesaPhone] = useState("");
+  const methodClass = (method: PaymentMethodChoice) =>
+    `flex items-start gap-3 border p-4 transition-colors ${
+      !isAvailable(method) ? "cursor-not-allowed border-line bg-ground-deep opacity-75" : paymentMethod === method ? "cursor-pointer border-accent bg-accent-wash" : "cursor-pointer border-line bg-surface hover:border-stainless"
+    }`;
 
   // Review & Meta
   const [poNumber, setPoNumber] = useState("");
@@ -84,11 +98,13 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
     setDeliveryError(null);
     if (!selectedCounty) {
       setQuotedFeeLabel(null);
+      setGrandTotalLabel(cart.totalLabel);
       return;
     }
     const res = await quoteDeliveryAction(selectedCounty);
     if (res.ok) {
       setQuotedFeeLabel(res.free ? "Free" : res.feeLabel);
+      setGrandTotalLabel(res.grandTotalLabel);
       setAvailableSlots(res.slots);
       if (res.slots.length > 0 && !deliverySlot) {
         setDeliverySlot(res.slots[0]!);
@@ -96,6 +112,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
     } else {
       setDeliveryError(res.message);
       setQuotedFeeLabel(null);
+      setGrandTotalLabel(cart.totalLabel);
     }
   };
 
@@ -221,7 +238,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
           orderNumber: res.orderNumber,
           accessToken: res.accessToken,
           phone: phoneForPayment,
-          totalLabel: cart.totalLabel,
+          totalLabel: displayTotalLabel,
         });
       } else if (res.next.kind === "redirect") {
         window.location.href = res.next.url;
@@ -239,10 +256,8 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
           accessToken={mpesaPrompt.accessToken}
           phone={mpesaPrompt.phone}
           totalLabel={mpesaPrompt.totalLabel}
-          onPayAnotherWay={() => {
-            setMpesaPrompt(null);
-            setCurrentStep(2);
-          }}
+          mockMode={mockMode}
+          cardAvailable={isAvailable("CARD")}
         />
       </div>
     );
@@ -250,9 +265,9 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
 
   const primaryButtonLabel =
     paymentMethod === "MPESA"
-      ? `Pay ${cart.totalLabel} with M-Pesa`
+      ? `Pay ${displayTotalLabel} with M-Pesa`
       : paymentMethod === "CARD"
-        ? `Pay ${cart.totalLabel} with Card`
+        ? `Pay ${displayTotalLabel} by card`
         : paymentMethod === "COD"
           ? "Place order (Cash on delivery)"
           : "Place order (Invoice)";
@@ -262,12 +277,13 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
       <div className="mb-6 flex items-center justify-between border-b border-line pb-4">
         <div>
           <h1 className="text-h1 font-semibold text-ink">Checkout</h1>
-          <p className="mt-1 text-small text-ink-muted">Complete your order with Safuney Limited</p>
+          <p className="mt-1 text-small text-ink-muted">Four short steps. Nothing is charged until you confirm.</p>
         </div>
         <div className="text-right text-caption text-ink-muted">
-          <span className="font-mono">Secure checkout</span>
-          <br />
-          Need help? <a href="tel:+254796808822" className="text-accent underline">+254 796 808 822</a>
+          Need help?{" "}
+          <a href="tel:+254796808822" className="whitespace-nowrap text-accent underline">
+            +254 796 808 822
+          </a>
         </div>
       </div>
 
@@ -281,7 +297,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
 
       <div className="grid gap-8 lg:grid-cols-12">
         {/* Main form column */}
-        <div className="lg:col-span-8">
+        <div className="min-w-0 lg:col-span-8">
           {/* STEP 0: CONTACT */}
           {currentStep === 0 && (
             <section aria-labelledby="step-contact-heading" className="border border-line bg-surface p-6 md:p-8">
@@ -289,7 +305,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                 1. Contact details
               </h2>
               <p className="mt-1 text-small text-ink-muted">
-                Order notifications and invoices will be sent to these details.
+                We send the order confirmation and dispatch updates here.
               </p>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -364,7 +380,10 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                     name="deliveryMethod"
                     value="DELIVERY"
                     checked={deliveryMethod === "DELIVERY"}
-                    onChange={() => setDeliveryMethod("DELIVERY")}
+                    onChange={() => {
+                      setDeliveryMethod("DELIVERY");
+                      if (county) void handleCountyChange(county);
+                    }}
                     className="mt-1 size-4 accent-accent"
                   />
                   <div>
@@ -383,7 +402,9 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                     checked={deliveryMethod === "PICKUP"}
                     onChange={() => {
                       setDeliveryMethod("PICKUP");
+                      setDeliveryError(null);
                       setQuotedFeeLabel("Free");
+                      setGrandTotalLabel(cart.totalLabel);
                     }}
                     className="mt-1 size-4 accent-accent"
                   />
@@ -475,7 +496,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                 </div>
               )}
 
-              <div className="mt-8 flex justify-between">
+              <div className="mt-8 flex flex-wrap justify-between gap-3">
                 <Button variant="secondary" onClick={() => setCurrentStep(0)}>
                   Back to contact
                 </Button>
@@ -493,92 +514,103 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                 3. Payment method
               </h2>
               <p className="mt-1 text-small text-ink-muted">
-                All transactions are encrypted and audited. The server is the authoritative price source.
+                Prices are confirmed on our side when the order is placed, so what you see here is what you pay.
               </p>
 
               <div className="mt-6 flex flex-col gap-4">
                 {/* M-Pesa */}
-                <label className={`flex cursor-pointer items-start gap-3 border p-4 transition-colors ${paymentMethod === "MPESA" ? "border-accent bg-accent-wash" : "border-line bg-surface hover:border-stainless"}`}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="MPESA"
-                    checked={paymentMethod === "MPESA"}
-                    onChange={() => setPaymentMethod("MPESA")}
-                    className="mt-1 size-4 accent-accent"
-                  />
-                  <div className="w-full">
-                    <span className="block font-medium text-ink">M-Pesa (STK Push)</span>
-                    <span className="block text-small text-ink-muted">
-                      A payment request will appear automatically on your phone. Enter your M-Pesa PIN to complete.
-                    </span>
-
-                    {paymentMethod === "MPESA" && (
-                      <div className="mt-4 max-w-sm">
-                        <PhoneInput
-                          label="Phone number for M-Pesa request"
-                          value={mpesaPhone}
-                          onChange={(e) => setMpesaPhone(e.target.value)}
-                          error={fieldErrors["payment.mpesaPhone"]}
-                          helper="We send the prompt to this Safaricom number."
-                          required
-                        />
-                      </div>
-                    )}
-                  </div>
-                </label>
+                <div>
+                  <label className={methodClass("MPESA")}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="MPESA"
+                      checked={paymentMethod === "MPESA"}
+                      onChange={() => setPaymentMethod("MPESA")}
+                      disabled={!isAvailable("MPESA")}
+                      className="mt-1 size-4 accent-accent"
+                    />
+                    <div className="w-full">
+                      <span className="block font-medium text-ink">M-Pesa</span>
+                      <span className="block text-small text-ink-muted">
+                        {isAvailable("MPESA") ? "A payment request appears on your phone. Enter your M-Pesa PIN to pay." : availability("MPESA")?.reason ?? "Not available right now."}
+                      </span>
+                    </div>
+                  </label>
+                  {/* Outside the radio's label so the field keeps its own accessible name. */}
+                  {paymentMethod === "MPESA" && (
+                    <div className="mt-3 min-w-0 max-w-sm border-l-2 border-accent pl-4">
+                      <PhoneInput
+                        label="Phone number for M-Pesa request"
+                        value={mpesaPhone}
+                        onChange={(e) => setMpesaPhone(e.target.value)}
+                        error={fieldErrors["payment.mpesaPhone"]}
+                        helper="We send the prompt to this Safaricom number."
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {/* Card */}
-                <label className={`flex cursor-pointer items-start gap-3 border p-4 transition-colors ${paymentMethod === "CARD" ? "border-accent bg-accent-wash" : "border-line bg-surface hover:border-stainless"}`}>
+                <label className={methodClass("CARD")}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="CARD"
                     checked={paymentMethod === "CARD"}
                     onChange={() => setPaymentMethod("CARD")}
+                    disabled={!isAvailable("CARD")}
                     className="mt-1 size-4 accent-accent"
                   />
                   <div>
                     <span className="block font-medium text-ink">Card (Visa, Mastercard)</span>
                     <span className="block text-small text-ink-muted">
-                      Pay securely with credit or debit card processed via Paystack.
+                      {isAvailable("CARD") ? "You are taken to a secure card page and brought straight back." : availability("CARD")?.reason ?? "Not available right now."}
                     </span>
                   </div>
                 </label>
 
                 {/* Cash on delivery */}
-                <label className={`flex cursor-pointer items-start gap-3 border p-4 transition-colors ${paymentMethod === "COD" ? "border-accent bg-accent-wash" : "border-line bg-surface hover:border-stainless"}`}>
+                <label className={methodClass("COD")}>
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="COD"
                     checked={paymentMethod === "COD"}
                     onChange={() => setPaymentMethod("COD")}
+                    disabled={!isAvailable("COD")}
                     className="mt-1 size-4 accent-accent"
                   />
                   <div>
                     <span className="block font-medium text-ink">Cash on delivery</span>
                     <span className="block text-small text-ink-muted">
-                      Pay the courier upon delivery or inspect goods upon collection. Cash or M-Pesa accepted by rider.
+                      {isAvailable("COD") ? "Pay the driver in cash or by M-Pesa when the goods arrive, or at collection." : availability("COD")?.reason ?? "Not available right now."}
                     </span>
                   </div>
                 </label>
 
-                {/* Invoice (Disabled for guest accounts) */}
-                <div className="border border-line bg-ground-deep p-4 opacity-75">
-                  <div className="flex items-start gap-3">
-                    <input type="radio" disabled className="mt-1 size-4" />
-                    <div>
-                      <span className="block font-medium text-ink">Invoice (30-day credit terms)</span>
-                      <span className="block text-small text-ink-muted">
-                        Available exclusively for pre-approved corporate & institutional accounts. Call +254 796 808 822 to apply for credit terms.
-                      </span>
-                    </div>
+                {/* Invoice: only approved credit accounts (Phase 4 sign-in) */}
+                <label className={methodClass("INVOICE")}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="INVOICE"
+                    checked={paymentMethod === "INVOICE"}
+                    onChange={() => setPaymentMethod("INVOICE")}
+                    disabled={!isAvailable("INVOICE")}
+                    className="mt-1 size-4 accent-accent"
+                  />
+                  <div>
+                    <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
+                    <span className="block text-small text-ink-muted">
+                      {isAvailable("INVOICE") ? "We invoice your account on dispatch." : availability("INVOICE")?.reason ?? "For approved credit accounts. Call +254 796 808 822 to apply."}
+                    </span>
                   </div>
-                </div>
+                </label>
               </div>
 
-              <div className="mt-8 flex justify-between">
+              <div className="mt-8 flex flex-wrap justify-between gap-3">
                 <Button variant="secondary" onClick={() => setCurrentStep(1)}>
                   Back to delivery
                 </Button>
@@ -596,7 +628,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                 4. Review and place order
               </h2>
               <p className="mt-1 text-small text-ink-muted">
-                Please verify all details before submitting. Stock is formally reserved when this order is submitted.
+                Check the details below. Stock is reserved for you the moment the order is placed.
               </p>
 
               <div className="mt-6 flex flex-col gap-6">
@@ -659,10 +691,11 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
                   </div>
                   <p className="mt-2 text-small text-ink">
                     {paymentMethod === "MPESA" && (
-                      <span>M-Pesa STK push to <strong className="tabular-nums">{mpesaPhone || phone}</strong></span>
+                      <span>M-Pesa request to <strong className="tabular-nums">{mpesaPhone || phone}</strong></span>
                     )}
                     {paymentMethod === "CARD" && <span>Card payment (Visa/Mastercard via Paystack)</span>}
-                    {paymentMethod === "COD" && <span>Cash / M-Pesa on delivery</span>}
+                    {paymentMethod === "COD" && <span>Cash or M-Pesa on delivery</span>}
+                    {paymentMethod === "INVOICE" && <span>Invoice to your credit account</span>}
                   </p>
                 </div>
 
@@ -708,7 +741,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
         </div>
 
         {/* Sidebar column: Order summary */}
-        <aside className="lg:col-span-4">
+        <aside className="min-w-0 lg:col-span-4">
           <OrderSummaryPanel
             lines={cart.lines}
             subtotalLabel={cart.subtotalLabel}
@@ -716,7 +749,7 @@ export function CheckoutWizard({ cart, context }: CheckoutWizardProps) {
             deliveryLabel={quotedFeeLabel}
             deliveryMethod={deliveryMethod}
             deliveryCounty={county}
-            totalLabel={cart.totalLabel}
+            totalLabel={displayTotalLabel}
             weightGrams={cart.weightGrams}
           />
         </aside>
