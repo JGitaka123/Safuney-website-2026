@@ -135,10 +135,22 @@ export class QuoteService {
   }
 
   /** Acceptance converts the quote into an order at the quoted prices through the same order service. */
-  async accept(number: string, accessToken: string, input: { delivery: DeliveryInput; paymentMethod: "MPESA" | "CARD" | "COD" | "INVOICE"; poNumber?: string; userId?: string; customerId?: string; placedByRole?: "OWNER" | "BUYER" | "APPROVER"; baseUrl: string }): Promise<PlaceOrderResult> {
+  async accept(number: string, accessToken: string, input: { delivery: DeliveryInput; paymentMethod: "MPESA" | "CARD" | "COD" | "INVOICE"; poNumber?: string; userId?: string; baseUrl: string }): Promise<PlaceOrderResult> {
     const q = await this.open(number, accessToken);
     if (q.status !== "PRICED") throw new QuoteError("STATE", q.status === "EXPIRED" ? "This quote has expired. Ask us to refresh it." : q.status === "CONVERTED" || q.status === "ACCEPTED" ? "This quote has already been accepted." : "This quote is not ready to accept yet.");
     if (q.items.some((i) => !i.variantId || i.unitPriceMinorUnits === null)) throw new QuoteError("STATE", "This quote has a line we still need to attach to a pack. Call us and we will fix it.");
+
+    // A quote link is shareable, so whoever opens it is not necessarily a member of the organisation it
+    // was quoted to. The order is only attached to that organisation when the person accepting is
+    // signed in as one of its members, with their own role: otherwise a forwarded link would draw on
+    // the credit line and skip the approval threshold that the same person faces at checkout.
+    const membership = input.userId && q.customerId ? await this.prisma.customerMember.findUnique({ where: { customerId_userId: { customerId: q.customerId, userId: input.userId } } }) : null;
+    const customerId = membership ? q.customerId! : undefined;
+    const placedByRole = membership?.role;
+    if (input.paymentMethod === "INVOICE" && !customerId) {
+      throw new QuoteError("FORBIDDEN", "Sign in with your organisation account to accept this quote on invoice, or choose another way to pay.");
+    }
+
     await this.prisma.$transaction([
       this.prisma.quote.update({ where: { id: q.id }, data: { status: "ACCEPTED", acceptedAt: this.now() } }),
       this.prisma.auditLog.create({ data: { actorId: input.userId ?? null, action: "quote.accept", entity: "Quote", entityId: q.id, after: { paymentMethod: input.paymentMethod } } }),
@@ -147,7 +159,7 @@ export class QuoteService {
     const cart = await carts.getOrCreate(undefined);
     try {
       for (const i of q.items) await carts.add(cart.token, i.variantId!, i.qty);
-      const result = await this.orders.placeOrder({ cartToken: cart.token, contact: { name: q.contactName, email: q.contactEmail, phone: q.contactPhone }, delivery: input.delivery, paymentMethod: input.paymentMethod, poNumber: input.poNumber, notes: `Quote ${q.number}`, userId: input.userId, customerId: input.customerId ?? q.customerId ?? undefined, placedByRole: input.placedByRole, quoteId: q.id, baseUrl: input.baseUrl });
+      const result = await this.orders.placeOrder({ cartToken: cart.token, contact: { name: q.contactName, email: q.contactEmail, phone: q.contactPhone }, delivery: input.delivery, paymentMethod: input.paymentMethod, poNumber: input.poNumber, notes: `Quote ${q.number}`, userId: input.userId, customerId, placedByRole, quoteId: q.id, baseUrl: input.baseUrl });
       await this.prisma.quote.update({ where: { id: q.id }, data: { status: "CONVERTED", orderId: result.orderId } });
       return result;
     } catch (e) {

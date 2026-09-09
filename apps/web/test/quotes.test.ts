@@ -89,4 +89,35 @@ run("quotes", () => {
     await quotes.decline(q2.number, q2.accessToken, "Found it cheaper");
     expect((await prisma.quote.findUniqueOrThrow({ where: { id: q2.id } })).status).toBe("DECLINED");
   });
+
+  it("a forwarded quote link cannot spend an organisation's credit or skip its approval threshold", async () => {
+    const org = await prisma.customer.create({
+      data: { type: "ORGANISATION", displayName: `Quote Org ${stamp}`, status: "CREDIT_APPROVED", creditLimitMinorUnits: 10_000_00n, creditTermsDays: 30, approvalThresholdMinorUnits: 1000n, members: { create: { userId: customerUser, role: "BUYER" } } },
+    });
+    const q = await quotes.request({ contactName: "Org Buyer", contactEmail: email, contactPhone: "+254712345678", lines: [{ variantId: variant, description: "Quote test formulation 20 L", qty: 2 }], customerId: org.id });
+    const priced = await quotes.price(sales, q.id, { lines: q.items.map((i) => ({ itemId: i.id, variantId: variant, unitPriceMinorUnits: 500000n, qty: 2 })) });
+
+    // Signed out, holding only the link: invoice is refused outright.
+    await expect(quotes.accept(priced.number, priced.accessToken, { delivery: { method: "PICKUP" }, paymentMethod: "INVOICE", baseUrl: base })).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    // Signed out on another method: the order is placed, but never attached to the organisation.
+    const guest = await quotes.accept(priced.number, priced.accessToken, { delivery: { method: "PICKUP" }, paymentMethod: "COD", baseUrl: base });
+    const guestOrder = await prisma.order.findUniqueOrThrow({ where: { id: guest.orderId } });
+    expect(guestOrder.customerId).toBeNull();
+    expect(guestOrder.status).toBe("CONFIRMED");
+
+    // The member's own acceptance is attached, and their buyer role puts it through approval.
+    const q2 = await quotes.request({ contactName: "Org Buyer", contactEmail: email, contactPhone: "+254712345678", lines: [{ variantId: variant, description: "Quote test formulation 20 L", qty: 2 }], customerId: org.id });
+    const priced2 = await quotes.price(sales, q2.id, { lines: q2.items.map((i) => ({ itemId: i.id, variantId: variant, unitPriceMinorUnits: 500000n, qty: 2 })) });
+    const member = await quotes.accept(priced2.number, priced2.accessToken, { delivery: { method: "PICKUP" }, paymentMethod: "COD", userId: customerUser, baseUrl: base });
+    const memberOrder = await prisma.order.findUniqueOrThrow({ where: { id: member.orderId } });
+    expect(memberOrder.customerId).toBe(org.id);
+    expect(memberOrder.status).toBe("AWAITING_APPROVAL");
+
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe("SET LOCAL safuney.allow_order_event_delete = 'on'");
+      await tx.order.deleteMany({ where: { id: { in: [guest.orderId, member.orderId] } } });
+    });
+    await prisma.customer.delete({ where: { id: org.id } });
+  });
 });

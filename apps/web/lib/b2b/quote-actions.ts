@@ -86,10 +86,9 @@ export async function acceptQuoteAction(number: string, token: string, formData:
   const method = String(formData.get("paymentMethod") ?? "COD") as "MPESA" | "CARD" | "COD" | "INVOICE";
   if (!["MPESA", "CARD", "COD", "INVOICE"].includes(method)) return { ok: false, message: "Choose how to pay." };
   const who = await viewer();
-  const org = who ? await organisationFor(who) : null;
   let next: string;
   try {
-    const r = await quotes().accept(number, token, { delivery: { method: "PICKUP" }, paymentMethod: method, poNumber: String(formData.get("poNumber") ?? "") || undefined, userId: who?.id, customerId: org?.id, placedByRole: org?.role, baseUrl: publicBaseUrl() });
+    const r = await quotes().accept(number, token, { delivery: { method: "PICKUP" }, paymentMethod: method, poNumber: String(formData.get("poNumber") ?? "") || undefined, userId: who?.id, baseUrl: publicBaseUrl() });
     next = r.next.kind === "redirect" ? r.next.url : `/orders/${r.orderNumber}?token=${r.accessToken}`;
   } catch (e) {
     return fail(e);

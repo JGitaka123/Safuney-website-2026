@@ -33,21 +33,34 @@ export async function creditPosition(db: Db, customerId: string, now = new Date(
   const outstanding = open.reduce((sum, i) => (i.type === "CREDIT_NOTE" ? sum - i.totalMinorUnits : sum + i.totalMinorUnits), 0n);
   const approved = customer.status === "CREDIT_APPROVED" && customer.creditLimitMinorUnits > 0n;
 
-  const overdue = open.filter((i) => i.type === "TAX" && i.dueDate !== null && i.dueDate.getTime() < now.getTime());
+  // Credit notes settle invoices, so they reduce what is overdue as well as what is outstanding.
+  // Applied oldest first, which is also the order an account would be settled in.
+  const credit = open.filter((i) => i.type === "CREDIT_NOTE").reduce((sum, i) => sum + i.totalMinorUnits, 0n);
+  let unapplied = credit;
+  const overdue: Array<{ number: string; totalMinorUnits: bigint; dueDate: Date }> = [];
+  for (const i of open
+    .filter((i): i is typeof i & { dueDate: Date } => i.type === "TAX" && i.dueDate !== null && i.dueDate.getTime() < now.getTime())
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())) {
+    if (unapplied >= i.totalMinorUnits) {
+      unapplied -= i.totalMinorUnits;
+      continue;
+    }
+    overdue.push({ number: i.number, totalMinorUnits: i.totalMinorUnits - unapplied, dueDate: i.dueDate });
+    unapplied = 0n;
+  }
   const overdueMinorUnits = overdue.reduce((sum, i) => sum + i.totalMinorUnits, 0n);
   // The oldest invoice past the grace period is the one that stops supply, and the one to name.
   const graceMs = STOP_SUPPLY_GRACE_DAYS * 86_400_000;
-  const beyondGrace = overdue
-    .filter((i) => now.getTime() - i.dueDate!.getTime() > graceMs)
-    .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime())[0];
+  const beyondGrace = overdue.find((i) => now.getTime() - i.dueDate.getTime() > graceMs);
   const stopSupply = Boolean(beyondGrace);
-  const daysLate = beyondGrace ? Math.floor((now.getTime() - beyondGrace.dueDate!.getTime()) / 86_400_000) : 0;
+  const daysLate = beyondGrace ? Math.floor((now.getTime() - beyondGrace.dueDate.getTime()) / 86_400_000) : 0;
 
   return {
     limitMinorUnits: customer.creditLimitMinorUnits,
     outstandingMinorUnits: outstanding,
     // On stop supply there is no headroom at all, whatever the limit says.
-    availableMinorUnits: approved && !stopSupply ? customer.creditLimitMinorUnits - outstanding : 0n,
+    // Never above the approved limit: credit notes beyond the open invoices are not extra headroom.
+    availableMinorUnits: approved && !stopSupply ? (outstanding > 0n ? customer.creditLimitMinorUnits - outstanding : customer.creditLimitMinorUnits) : 0n,
     termsDays: customer.creditTermsDays,
     approved,
     overdueMinorUnits,

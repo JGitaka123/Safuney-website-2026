@@ -248,6 +248,10 @@ export class OrderService {
     const order = await this.assertApprover(orderId, approverUserId);
     const nextStatus: OrderStatus = order.paymentMethod === "COD" || order.paymentMethod === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
     await this.prisma.$transaction(async (tx) => {
+      // Claim the decision inside the transaction: two approvers pressing at once must not both pass
+      // the state check they made outside it.
+      const claim = await tx.order.updateMany({ where: { id: order.id, status: "AWAITING_APPROVAL" }, data: { status: nextStatus } });
+      if (claim.count !== 1) throw new OrderError("STATE", "Someone else decided this order a moment ago.");
       if (order.paymentMethod === "INVOICE") {
         try {
           await assertCreditFor(tx, order.customerId!, order.totalMinorUnits, this.now());
@@ -256,7 +260,7 @@ export class OrderService {
           throw e;
         }
       }
-      await tx.order.update({ where: { id: order.id }, data: { status: nextStatus, approvedById: approverUserId, approvedAt: this.now(), reservationExpiresAt: nextStatus === "PENDING_PAYMENT" ? new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) : null } });
+      await tx.order.update({ where: { id: order.id }, data: { approvedById: approverUserId, approvedAt: this.now(), reservationExpiresAt: nextStatus === "PENDING_PAYMENT" ? new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) : null } });
       await tx.orderEvent.create({ data: { orderId: order.id, status: nextStatus, type: "order_approved", actorId: approverUserId, payload: { paymentMethod: order.paymentMethod } } });
       if (nextStatus === "CONFIRMED" && order.paymentMethod === "INVOICE") await issueTaxInvoice(tx, order.id, this.now());
     });
@@ -268,9 +272,10 @@ export class OrderService {
   async rejectOrder(orderId: string, approverUserId: string, reason: string): Promise<void> {
     const order = await this.assertApprover(orderId, approverUserId);
     await this.prisma.$transaction(async (tx) => {
+      const claim = await tx.order.updateMany({ where: { id: order.id, status: "AWAITING_APPROVAL" }, data: { status: "CANCELLED", reservationExpiresAt: null } });
+      if (claim.count !== 1) throw new OrderError("STATE", "Someone else decided this order a moment ago.");
       await releaseItems(tx, order.items, order.number, "approval_rejected");
       await tx.orderItem.updateMany({ where: { orderId: order.id }, data: { reservedQty: 0 } });
-      await tx.order.update({ where: { id: order.id }, data: { status: "CANCELLED", reservationExpiresAt: null } });
       await tx.orderEvent.create({ data: { orderId: order.id, status: "CANCELLED", type: "order_rejected", actorId: approverUserId, payload: { reason } } });
     });
   }
