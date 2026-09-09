@@ -108,7 +108,8 @@ export class OrderService {
       if (!cart || cart.items.length === 0) throw new OrderError("EMPTY_CART", "Your cart is empty.");
 
       // Lock the variants so two checkouts cannot both take the last pack.
-      const ids = cart.items.map((i) => i.variantId);
+      // Sorted so this and releaseItems take variant locks in the same order and cannot deadlock.
+      const ids = cart.items.map((i) => i.variantId).sort();
       await tx.$queryRaw`SELECT id FROM "ProductVariant" WHERE id IN (${Prisma.join(ids)}) FOR UPDATE`;
       const variants = await tx.productVariant.findMany({ where: { id: { in: ids } }, include: { product: { select: { name: true, isActive: true, needsPoReview: true } } } });
       const byId = new Map(variants.map((v) => [v.id, v]));
@@ -129,6 +130,8 @@ export class OrderService {
       let vat = 0n;
       let weight = 0;
       const items: Prisma.OrderItemCreateManyOrderInput[] = [];
+      // What each line actually took off the shelf; a made-to-order line can reserve less than it ordered.
+      const reservedByVariant = new Map<string, number>();
       for (const line of cart.items) {
         const v = byId.get(line.variantId);
         if (!v || !v.isActive || !v.product.isActive || v.product.needsPoReview) throw new OrderError("UNAVAILABLE", `${v?.product.name ?? "A product"} in your cart is no longer available. Remove it and try again.`);
@@ -147,6 +150,7 @@ export class OrderService {
         // Reserve. The CHECK constraint (reserved <= on hand) protects made-to-order overflow too: for
         // made-to-order we only reserve what exists.
         const reserve = v.isMadeToOrder ? Math.min(line.qty, Math.max(0, available)) : line.qty;
+        reservedByVariant.set(v.id, reserve);
         if (reserve > 0) {
           await tx.productVariant.update({ where: { id: v.id }, data: { stockReserved: { increment: reserve } } });
           await tx.inventoryMovement.create({ data: { variantId: v.id, type: "RESERVATION", qty: reserve, reason: "checkout", reference: cart.id } });
@@ -167,6 +171,8 @@ export class OrderService {
         deliveryZoneId = zone.id;
         shippingAddress = { county: input.delivery.county, town: input.delivery.town, line1: input.delivery.line1 ?? null, landmark: input.delivery.landmark ?? null, deliveryNotes: input.delivery.deliveryNotes ?? null, recipientName: input.delivery.recipientName ?? input.contact.name, recipientPhone: input.delivery.recipientPhone ?? input.contact.phone, zone: zone.name };
       }
+
+      for (const item of items) if (item.variantId) item.reservedQty = reservedByVariant.get(item.variantId) ?? 0;
 
       const total = subtotal + vat + deliveryFee;
       const number = await nextOrderNumber(tx, this.now());
@@ -263,6 +269,7 @@ export class OrderService {
     const order = await this.assertApprover(orderId, approverUserId);
     await this.prisma.$transaction(async (tx) => {
       await releaseItems(tx, order.items, order.number, "approval_rejected");
+      await tx.orderItem.updateMany({ where: { orderId: order.id }, data: { reservedQty: 0 } });
       await tx.order.update({ where: { id: order.id }, data: { status: "CANCELLED", reservationExpiresAt: null } });
       await tx.orderEvent.create({ data: { orderId: order.id, status: "CANCELLED", type: "order_rejected", actorId: approverUserId, payload: { reason } } });
     });
@@ -404,16 +411,19 @@ export class OrderService {
         await tx.payment.update({ where: { id: payment.id }, data: { status: "SUCCEEDED", providerRef: parsed.providerRef ?? null, confirmedAt: this.now(), rawCallback: parsed.raw as Prisma.InputJsonValue } });
         await tx.order.update({ where: { id: order.id }, data: { status: "PAID", reservationExpiresAt: null } });
         await tx.orderEvent.create({ data: { orderId: order.id, status: "PAID", type: "payment_received", payload: { provider: adapter.provider, providerRef: parsed.providerRef ?? null, payerRef: parsed.payerRef ?? null } } });
-        // Decrement stock: reservation becomes an outbound movement.
-        for (const item of order.items) {
-          if (!item.variantId) continue;
+        // The reservation becomes an outbound movement. Sorted by variant so this takes locks in the
+        // same order as placeOrder and the expiry sweep; releases only what this order actually held.
+        const paidLines = order.items.filter((i): i is typeof i & { variantId: string } => Boolean(i.variantId)).sort((a, b) => a.variantId.localeCompare(b.variantId));
+        for (const item of paidLines) {
           const v = await tx.productVariant.findUnique({ where: { id: item.variantId }, select: { stockReserved: true, stockOnHand: true } });
           if (!v) continue;
-          const release = Math.min(item.qty, v.stockReserved);
+          const release = Math.min(item.reservedQty, v.stockReserved);
           const out = Math.min(item.qty, v.stockOnHand);
           await tx.productVariant.update({ where: { id: item.variantId }, data: { stockReserved: { decrement: release }, stockOnHand: { decrement: out } } });
           await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "OUT", qty: -out, reason: "order_paid", reference: order.number } });
         }
+        // The hold is spent; nothing may release it again.
+        await tx.orderItem.updateMany({ where: { orderId: order.id }, data: { reservedQty: 0 } });
         await tx.webhookEvent.update({ where: { eventKey: parsed.eventKey }, data: { processedAt: this.now() } });
       });
       return { outcome: "APPLIED", orderNumber: order.number };

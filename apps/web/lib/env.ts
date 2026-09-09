@@ -5,8 +5,18 @@
  */
 const env = process.env;
 
+/**
+ * A variable that exists but is empty counts as unset. Hosting dashboards make this easy to do by
+ * accident, and `??` alone would hand an empty string to whatever reads it — which is how an empty
+ * NEXT_PUBLIC_SITE_URL once broke the whole build inside `new URL()`.
+ */
+function read(key: string): string | undefined {
+  const value = env[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 function has(...keys: string[]): boolean {
-  return keys.every((k) => typeof env[k] === "string" && env[k]!.length > 0);
+  return keys.every((k) => read(k) !== undefined);
 }
 
 export const services = {
@@ -17,13 +27,13 @@ export const services = {
 
 export const config = {
   /** Sender used by Resend. Must be on a verified domain in Resend. */
-  emailFrom: env["EMAIL_FROM"] ?? "Safuney website <no-reply@safuney.com>",
+  emailFrom: read("EMAIL_FROM") ?? "Safuney website <no-reply@safuney.com>",
   /** Where contact-form leads are emailed. */
-  leadsInbox: env["LEADS_INBOX"] ?? "info@safuney.com",
-  siteUrl: env["NEXT_PUBLIC_SITE_URL"] ?? (env["VERCEL_URL"] ? `https://${env["VERCEL_URL"]}` : "http://localhost:3000"),
-  isProduction: env["VERCEL_ENV"] === "production",
+  leadsInbox: read("LEADS_INBOX") ?? "info@safuney.com",
+  siteUrl: read("NEXT_PUBLIC_SITE_URL") ?? (read("VERCEL_URL") ? `https://${read("VERCEL_URL")}` : "http://localhost:3000"),
+  isProduction: read("VERCEL_ENV") === "production",
   redis: {
-    url: env["UPSTASH_REDIS_REST_URL"] ?? env["KV_REST_API_URL"],
-    token: env["UPSTASH_REDIS_REST_TOKEN"] ?? env["KV_REST_API_TOKEN"],
+    url: read("UPSTASH_REDIS_REST_URL") ?? read("KV_REST_API_URL"),
+    token: read("UPSTASH_REDIS_REST_TOKEN") ?? read("KV_REST_API_TOKEN"),
   },
 } as const;

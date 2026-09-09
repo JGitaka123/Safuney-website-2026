@@ -1,4 +1,5 @@
 /** Phase 4 gate: approval workflow and credit-limit enforcement, plus price lists and organisation authorisation. */
+import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestClient, type PrismaClient } from "@safuney/db";
 import { createRegistry } from "@safuney/payments";
@@ -16,7 +17,9 @@ run("B2B: organisations, approvals, price lists and credit", () => {
   let carts: CartService;
   let orders: OrderService;
   let orgs: OrganisationService;
-  const stamp = Date.now().toString(36);
+  // Unique per test file, not just per millisecond: parallel workers load these files at the same
+  // instant, and two files sharing a stamp make their seeded products collide in search results.
+  const stamp = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
   let variant: string; // KES 1,000 ex VAT, stock 50
   let owner: string;
   let buyer: string;

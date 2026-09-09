@@ -12,7 +12,7 @@ export const OTP_LENGTH = 6;
 export const OTP_MAX_ATTEMPTS = 5;
 
 function hashCode(identifier: string, code: string): string {
-  return createHash("sha256").update(`${identifier}:${code}:${process.env["AUTH_SECRET"] ?? "dev"}`).digest("hex");
+  return createHash("sha256").update(`${identifier}:${code}:${process.env["AUTH_SECRET"] || "dev"}`).digest("hex");
 }
 
 export type OtpRequestResult =

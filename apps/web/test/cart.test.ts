@@ -1,4 +1,5 @@
 /** Integration tests for the server-side cart. Skipped without DATABASE_URL (CI provides Postgres). */
+import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestClient, type PrismaClient } from "@safuney/db";
 import { CartError, CartService } from "@/lib/cart/service";
@@ -9,7 +10,9 @@ const run = url ? describe : describe.skip;
 run("cart service", () => {
   let prisma: PrismaClient;
   let svc: CartService;
-  const stamp = Date.now().toString(36);
+  // Unique per test file, not just per millisecond: parallel workers load these files at the same
+  // instant, and two files sharing a stamp make their seeded products collide in search results.
+  const stamp = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
   let vA: string;
   let vB: string;
   let vHidden: string;

@@ -1,9 +1,11 @@
 /** Integration tests for order placement and payment callbacks (non-negotiables #1, #3, #4, #5). */
+import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestClient, type PrismaClient } from "@safuney/db";
 import { MockAdapter, createRegistry } from "@safuney/payments";
 import { CartService } from "@/lib/cart/service";
 import { OrderService, amountMatches } from "@/lib/orders/service";
+import { releaseExpiredReservations } from "@/lib/orders/reservations";
 
 const url = process.env["DATABASE_URL"];
 const run = url ? describe : describe.skip;
@@ -12,7 +14,9 @@ run("order service", () => {
   let prisma: PrismaClient;
   let carts: CartService;
   let orders: OrderService;
-  const stamp = Date.now().toString(36);
+  // Unique per test file, not just per millisecond: parallel workers load these files at the same
+  // instant, and two files sharing a stamp make their seeded products collide in search results.
+  const stamp = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
   let vA: string; // 5 L, stock 3, KES 1,250 ex VAT
   let vB: string; // 20 L, made to order
 
@@ -180,6 +184,47 @@ run("order service", () => {
     const released = await prisma.orderEvent.findMany({ where: { orderId: r.orderId, type: "reservation_released" } });
     expect(released).toHaveLength(1);
     await carts.setQty(second.token, vLazy, 0);
+  });
+
+  it("sweeping the same expired order twice at once releases its stock once", async () => {
+    const product = await prisma.product.findFirstOrThrow({ where: { slug: `ord-p-${stamp}` } });
+    const v = (await prisma.productVariant.create({ data: { productId: product.id, sku: `OC-${stamp}`, packSizeValue: "1", unit: "L", packLabel: "1 L", priceMinorUnits: 20000n, vatRateBps: 1600, stockOnHand: 10, weightGrams: 1200 } })).id;
+    // A second order keeps its own hold, so an over-release would show up as eating into it.
+    const otherToken = await cartWith([[v, 3]]);
+    await orders.placeOrder({ cartToken: otherToken, contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+    const token = await cartWith([[v, 4]]);
+    const r = await orders.placeOrder({ cartToken: token, contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: v } })).stockReserved).toBe(7);
+
+    await prisma.order.update({ where: { id: r.orderId }, data: { reservationExpiresAt: new Date(Date.now() - 60_000) } });
+    await Promise.all([releaseExpiredReservations(prisma, { variantIds: [v] }), releaseExpiredReservations(prisma, { variantIds: [v] }), releaseExpiredReservations(prisma, { variantIds: [v] })]);
+
+    // Only the expired order's 4 came back; the other order still holds its 3.
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: v } })).stockReserved).toBe(3);
+    expect(await prisma.orderEvent.count({ where: { orderId: r.orderId, type: "reservation_released" } })).toBe(1);
+    expect(await prisma.inventoryMovement.count({ where: { variantId: v, type: "RELEASE" } })).toBe(1);
+  });
+
+  it("a payment that lands while the sweep runs keeps the order paid and its stock spent once", async () => {
+    const product = await prisma.product.findFirstOrThrow({ where: { slug: `ord-p-${stamp}` } });
+    const v = (await prisma.productVariant.create({ data: { productId: product.id, sku: `OP-${stamp}`, packSizeValue: "1", unit: "L", packLabel: "1 L", priceMinorUnits: 20000n, vatRateBps: 1600, stockOnHand: 6, weightGrams: 1200 } })).id;
+    const token = await cartWith([[v, 2]]);
+    const r = await orders.placeOrder({ cartToken: token, contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+    await prisma.order.update({ where: { id: r.orderId }, data: { reservationExpiresAt: new Date(Date.now() - 60_000) } });
+
+    // The customer pays just as the window lapses.
+    const payment = await prisma.payment.findFirstOrThrow({ where: { orderId: r.orderId } });
+    const body = JSON.stringify({ providerRequestId: payment.providerRequestId, status: "SUCCEEDED", amountMinorUnits: r.totalMinorUnits.toString() });
+    await orders.handleCallback("MPESA", { body, headers: { "x-mock-signature": MockAdapter.sign(body) } });
+    await releaseExpiredReservations(prisma, { variantIds: [v] });
+
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: r.orderId } });
+    // The sweep must never talk a paid order back down.
+    expect(order.status).toBe("PAID");
+    const variant = await prisma.productVariant.findUniqueOrThrow({ where: { id: v } });
+    expect(variant.stockOnHand).toBe(4);
+    expect(variant.stockReserved).toBe(0);
+    expect(await prisma.orderEvent.count({ where: { orderId: r.orderId, type: "reservation_released" } })).toBe(0);
   });
 
   it("releases expired reservations", async () => {

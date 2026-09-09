@@ -563,6 +563,9 @@ model OrderItem {
   packLabel           String
   unitPriceMinorUnits BigInt
   qty                 Int
+  /// Units this order actually reserved. A made-to-order line reserves only what existed, so this is
+  /// not always `qty`, and releasing `qty` would take back stock the order never held.
+  reservedQty         Int             @default(0)
   vatRateBps          Int
   lineTotalMinorUnits BigInt // unitPrice * qty, ex VAT
   lineVatMinorUnits   BigInt
@@ -570,6 +573,7 @@ model OrderItem {
   variant             ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
+  @@index([variantId])
 }
 
 /// Append-only. UPDATE and DELETE are rejected by a trigger (migration 0002).

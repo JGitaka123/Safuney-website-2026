@@ -1,4 +1,5 @@
 /** Phase 4: request-for-quote → sales pricing → acceptance converts to an order at the quoted prices. */
+import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestClient, type PrismaClient } from "@safuney/db";
 import { createRegistry } from "@safuney/payments";
@@ -11,7 +12,9 @@ const run = url ? describe : describe.skip;
 run("quotes", () => {
   let prisma: PrismaClient;
   let quotes: QuoteService;
-  const stamp = Date.now().toString(36);
+  // Unique per test file, not just per millisecond: parallel workers load these files at the same
+  // instant, and two files sharing a stamp make their seeded products collide in search results.
+  const stamp = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
   let variant: string;
   let sales: string;
   let customerUser: string;

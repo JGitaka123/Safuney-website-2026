@@ -32,7 +32,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // build time, where there is no connection string, and db() throws without one.
   adapter: services.database() ? PrismaAdapter(db()) : undefined,
   // Auth.js reads AUTH_SECRET itself; naming it here keeps the failure legible when it is missing.
-  secret: process.env["AUTH_SECRET"],
+  // `||` not `??`: a variable set to an empty string must fail like a missing one, not be used as a key.
+  secret: process.env["AUTH_SECRET"] || undefined,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   trustHost: true,
   pages: { signIn: "/sign-in", verifyRequest: "/sign-in/check-email", error: "/sign-in" },
