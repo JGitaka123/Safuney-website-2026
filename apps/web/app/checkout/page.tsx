@@ -6,6 +6,7 @@ import { readCart } from "@/lib/cart/cookies";
 import { getCheckoutContext } from "@/lib/checkout/actions";
 import { services } from "@/lib/env";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { paymentsMode } from "@safuney/payments";
 import { CheckoutWizard } from "@/components/checkout/checkout-wizard";
 
 export const metadata: Metadata = {
@@ -24,8 +25,8 @@ export default async function CheckoutPage() {
         <div className="mt-8 max-w-2xl">
           <EmptyState
             headingLevel={2}
-            heading="Online checkout requires database connectivity"
-            body="Our online checkout connects directly to inventory and payment providers. To place an order now, please call our sales team or request a direct quotation."
+            heading="Online ordering is not available right now"
+            body="Call us and we will take the order by phone, or send the list and we will quote it the same day."
           >
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <a
@@ -97,5 +98,5 @@ export default async function CheckoutPage() {
     })),
   };
 
-  return <CheckoutWizard cart={serializedCart} context={context} />;
+  return <CheckoutWizard cart={serializedCart} context={context} mockMode={paymentsMode() === "mock"} />;
 }

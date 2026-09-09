@@ -29,6 +29,11 @@ test.describe("catalogue", () => {
     }
     await page.getByRole("link", { name: /In stock now/ }).first().click();
     await expect(page).toHaveURL(/stock=in/);
+    if (isMobile) {
+      // The sheet closes when a facet link is followed; the count moves to the trigger and the link is inside again.
+      await expect(page.getByRole("button", { name: /^Filters\s*1$/ })).toBeVisible();
+      await page.getByRole("button", { name: /^Filters/ }).click();
+    }
     await expect(page.getByRole("link", { name: /Clear 1 filter/ })).toBeVisible();
   });
 

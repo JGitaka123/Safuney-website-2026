@@ -127,6 +127,10 @@ run("order service", () => {
     expect(again.kind).toBe("prompt");
     order = await prisma.order.findUniqueOrThrow({ where: { number: r.orderNumber } });
     expect(order.paymentAttempts).toBe(2);
+    // The retry is a fresh attempt: the order is pending again (the pending page must not show the old failure).
+    expect(order.status).toBe("PENDING_PAYMENT");
+    expect(order.reservationExpiresAt && order.reservationExpiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect((await orders.refreshStatus(r.orderNumber, order.accessToken)).status).toBe("PENDING_PAYMENT");
     for (let i = 0; i < 3; i++) await orders.initiatePayment(order.id, base);
     await expect(orders.initiatePayment(order.id, base)).rejects.toMatchObject({ code: "ATTEMPTS" });
   });

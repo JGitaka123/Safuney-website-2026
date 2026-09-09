@@ -5,11 +5,17 @@
 ## Decision
 IBM Plex Sans 400 and 600 and IBM Plex Mono 400 come from the `@fontsource` packages and are built by
 `scripts/sync-fonts.mjs`: Sans is subset into a *core* range (ASCII, Latin-1, common punctuation) and an
-*ext* range for rarer characters; Sans 600 core is inlined as a data URI in `font-critical.css` so every
-heading, including the LCP element, renders in Plex from the first paint; Sans 400 core is preloaded and
-uses `font-display: optional` (fallback for that page view if it is late, never a layout shift). There is
-no 500 weight: `font-medium` resolves to 600 (`--font-weight-medium` in `globals.css`), which keeps one
-fewer file off the critical path.
+*ext* range for rarer characters; Mono is subset to the core range (SKUs, prices, order numbers). Sans
+600 core (every heading, including the LCP element) and Sans 400 core are both preloaded from the root
+layout with `font-display: optional`: the first paint is either Plex or the metric-matched fallback for
+that page view, never a swap after the fact, so there is no layout shift and no late LCP re-report.
+There is no 500 weight: `font-medium` resolves to 600 (`--font-weight-medium` in `globals.css`), which
+keeps one fewer file off the critical path.
+
+Sans 600 core was inlined as a data URI in `font-critical.css` until the Phase 3 review. Inlining put
+17 KB of base64 inside the render-blocking stylesheet (27 KB instead of 9 KB compressed) and delayed
+first paint on every page by roughly 150 ms in the Lighthouse mobile profile; a preloaded file loads in
+parallel with the stylesheet instead.
 
 `next/font/local` was tried first; it preloads every declared weight, which pushed mobile LCP past
 the 2.0 s floor on a simulated 4G profile. The metric-matched fallback it generated (Arial with

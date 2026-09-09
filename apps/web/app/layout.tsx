@@ -26,7 +26,9 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  // Body weight; with font-display: optional the preload decides whether the first paint is Plex or the fallback.
+  // Heading and body weights; with font-display: optional the preloads decide whether the first paint is
+  // Plex or the metric-matched fallback (ADR 0005). Neither face is inlined, so the stylesheet stays small.
+  preload("/fonts/plex-sans-600-core.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous", fetchPriority: "high" });
   preload("/fonts/plex-sans-400-core.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous", fetchPriority: "high" });
   return (
     <html lang="en-KE">

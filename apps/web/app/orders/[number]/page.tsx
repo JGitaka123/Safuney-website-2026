@@ -5,6 +5,8 @@ import { Alert, Table, TBody, Td, Th, THead, Tr } from "@safuney/ui";
 import { money } from "@safuney/db";
 import { getOrder } from "@/lib/orders/queries";
 import { statusMessage } from "@/lib/orders/service";
+import { paymentsMode } from "@safuney/payments";
+import { paymentRegistry } from "@/lib/orders/context";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { OrderActions } from "@/components/orders/order-actions";
 
@@ -31,18 +33,20 @@ function formatKenyaDate(date: Date): string {
   }).format(date);
 }
 
-function eventTypeLabel(type: string): string {
+function eventTypeLabel(type: string, status: string | null): string {
   switch (type) {
     case "order_placed":
       return "Order submitted";
     case "payment_initiated":
-      return "Payment request sent";
+      return status === "CONFIRMED" ? "Order confirmed" : "Payment request sent";
     case "payment_received":
       return "Payment confirmed";
     case "payment_failed":
       return "Payment failed";
     case "payment_cancelled":
-      return "Payment cancelled by user";
+      return "Payment cancelled";
+    case "payment_method_changed":
+      return "Payment method changed";
     case "reservation_released":
       return "Reservation expired";
     case "order_confirmed":
@@ -98,12 +102,12 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
 
   return (
     <div className="mx-auto max-w-page px-4 py-8 md:px-6 md:py-12">
-      <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Orders" }, { label: order.number }]} />
+      <Breadcrumbs items={[{ label: "Orders" }, { label: order.number }]} />
 
-      <div className="mt-6 flex flex-col justify-between gap-4 border-b border-line pb-6 md:flex-row md:items-end">
+      <div className="mt-6 flex flex-col justify-between gap-4 border-b border-line pb-6 md:flex-row md:flex-wrap md:items-end">
         <div>
-          <span className="text-small font-semibold uppercase tracking-wider text-accent">Order Confirmation</span>
-          <h1 className="mt-1 font-mono text-h1 font-semibold text-ink">{order.number}</h1>
+          <p className="text-small font-medium text-accent">{order.status === "PAID" || order.status === "CONFIRMED" ? "Order confirmed" : order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_FAILED" ? "Order saved, payment outstanding" : "Your order"}</p>
+          <h1 className="mt-1 whitespace-nowrap font-mono text-h1 font-semibold text-ink">{order.number}</h1>
           <p className="mt-1 text-small text-ink-muted">
             Placed on <span className="tabular-nums">{formatKenyaDate(order.placedAt ?? order.createdAt)}</span>
           </p>
@@ -116,13 +120,16 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
           paymentMethod={order.paymentMethod}
           totalLabel={fmt(order.totalMinorUnits)}
           customerPhone={order.guestPhone}
+          mockMode={paymentsMode() === "mock"}
+          cardAvailable={paymentRegistry().CARD.isConfigured()}
+          mpesaAvailable={paymentRegistry().MPESA.isConfigured()}
         />
       </div>
 
       {/* Status Alert Banner */}
       <div className="mt-6">
         {isSuccessful ? (
-          <Alert variant="success" title="Status: Active and in progress">
+          <Alert variant="success" title="In progress">
             {statusMsg}
           </Alert>
         ) : isFailed ? (
@@ -139,14 +146,29 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
 
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
         {/* Left Column: Items and event timeline */}
-        <div className="flex flex-col gap-8 lg:col-span-8">
+        <div className="flex min-w-0 flex-col gap-8 lg:col-span-8">
           {/* Items Section */}
           <section aria-labelledby="order-items-heading" className="border border-line bg-surface p-6">
             <h2 id="order-items-heading" className="text-h3 font-semibold text-ink">
               Items ordered
             </h2>
 
-            <div className="mt-4 overflow-x-auto">
+            {/* Small screens: one card per line; a five-column table would only scroll. */}
+            <ul className="mt-4 divide-y divide-line border-y border-line md:hidden">
+              {order.items.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-4 py-3 text-small">
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink">{item.name}</p>
+                    <p className="break-all font-mono text-caption text-ink-muted">{item.sku}</p>
+                    <p className="mt-1 tabular-nums text-ink-muted">
+                      {item.packLabel} × {item.qty} at {fmt(item.unitPriceMinorUnits)}
+                    </p>
+                  </div>
+                  <p className="shrink-0 font-medium tabular-nums text-ink">{fmt(item.lineTotalMinorUnits + item.lineVatMinorUnits)}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 hidden md:block">
               <Table caption="Items in this order">
                 <THead>
                   <Tr>
@@ -162,7 +184,7 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
                     <Tr key={item.id}>
                       <Td>
                         <div className="font-medium text-ink">{item.name}</div>
-                        <div className="font-mono text-small text-ink-muted">{item.sku}</div>
+                        <div className="break-all font-mono text-small text-ink-muted">{item.sku}</div>
                       </Td>
                       <Td className="tabular-nums text-ink">{item.packLabel}</Td>
                       <Td className="text-right tabular-nums text-ink">{fmt(item.unitPriceMinorUnits)}</Td>
@@ -207,12 +229,9 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
 
             <ol className="mt-4 divide-y divide-line">
               {order.events.map((evt) => (
-                <li key={evt.id} className="flex items-start justify-between py-3 text-small">
-                  <div>
-                    <span className="font-medium text-ink">{eventTypeLabel(evt.type)}</span>
-                    {evt.status ? <span className="ml-2 font-mono text-caption text-ink-muted">[{evt.status}]</span> : null}
-                  </div>
-                  <time className="shrink-0 tabular-nums text-ink-muted" dateTime={evt.createdAt.toISOString()}>
+                <li key={evt.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 py-3 text-small">
+                  <span className="font-medium text-ink">{eventTypeLabel(evt.type, evt.status)}</span>
+                  <time className="tabular-nums text-ink-muted" dateTime={evt.createdAt.toISOString()}>
                     {formatKenyaDate(evt.createdAt)}
                   </time>
                 </li>
@@ -222,7 +241,7 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
         </div>
 
         {/* Right Column: Fulfilment and payment details */}
-        <aside className="flex flex-col gap-6 lg:col-span-4">
+        <aside className="flex min-w-0 flex-col gap-6 lg:col-span-4">
           {/* Delivery Card */}
           <div className="border border-line bg-surface p-5">
             <h3 className="text-h4 font-semibold text-ink">Delivery details</h3>
