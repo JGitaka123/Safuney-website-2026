@@ -197,6 +197,48 @@ run("adversarial", () => {
       expect(amount).toBeGreaterThan(100n);
     });
 
+    it("says so when a payment lands after the stock has gone, instead of failing quietly", async () => {
+      // The gap this closes: an order whose 30-minute hold expired, whose packs were then sold to
+      // somebody else, and whose payment arrives anyway. Stock must not go negative — but the customer
+      // has paid for more than we can ship, and the warehouse must be told rather than discovering it
+      // at the pick face.
+      const { number, providerRequestId, amount } = await payableOrder();
+      const before = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant } });
+
+      // Simulate the race: the hold expired and the shelf emptied while the payment was in flight.
+      await prisma.orderItem.updateMany({ where: { order: { number } }, data: { reservedQty: 0 } });
+      await prisma.productVariant.update({ where: { id: variant }, data: { stockOnHand: 0, stockReserved: 0 } });
+
+      try {
+        const callback = signed({ providerRequestId, status: "SUCCEEDED", amountMinorUnits: amount.toString(), ref: `LATE${stamp}` });
+        const result = await orders.handleCallback("MPESA", { ...callback, ip: "203.0.113.7" });
+        expect(result.outcome).toBe("APPLIED");
+
+        // Stock never goes negative — the guarantee holds.
+        const after = await prisma.productVariant.findUniqueOrThrow({ where: { id: variant } });
+        expect(after.stockOnHand).toBe(0);
+        expect(after.stockReserved).toBeGreaterThanOrEqual(0);
+
+        // And the shortfall is recorded, with the numbers somebody needs to act on it.
+        const order = await prisma.order.findUniqueOrThrow({ where: { number }, include: { events: true } });
+        expect(order.status).toBe("PAID");
+        const shortfall = order.events.find((e) => e.type === "stock_shortfall");
+        expect(shortfall, "a silent shortfall is the failure this test exists to prevent").toBeTruthy();
+        const lines = (shortfall!.payload as { lines: Array<{ sku: string; ordered: number; taken: number; short: number }> }).lines;
+        expect(lines[0]).toMatchObject({ ordered: 1, taken: 0, short: 1 });
+      } finally {
+        await prisma.productVariant.update({ where: { id: variant }, data: { stockOnHand: before.stockOnHand, stockReserved: before.stockReserved } });
+      }
+    });
+
+    it("records no shortfall when the stock was there all along", async () => {
+      const { number, providerRequestId, amount } = await payableOrder();
+      const callback = signed({ providerRequestId, status: "SUCCEEDED", amountMinorUnits: amount.toString(), ref: `FINE${stamp}` });
+      expect((await orders.handleCallback("MPESA", { ...callback, ip: "203.0.113.8" })).outcome).toBe("APPLIED");
+      const order = await prisma.order.findUniqueOrThrow({ where: { number }, include: { events: true } });
+      expect(order.events.some((e) => e.type === "stock_shortfall")).toBe(false);
+    });
+
     it("ignores a callback for a payment that does not exist", async () => {
       const callback = signed({ providerRequestId: `no-such-request-${stamp}`, status: "SUCCEEDED" });
       const result = await orders.handleCallback("MPESA", { ...callback, ip: "203.0.113.3" });
