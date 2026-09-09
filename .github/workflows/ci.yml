@@ -69,6 +69,7 @@ jobs:
           path: |
             apps/web/.next
             !apps/web/.next/cache
+          include-hidden-files: true
           retention-days: 1
 
   e2e:
