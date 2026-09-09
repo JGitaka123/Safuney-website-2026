@@ -34,10 +34,10 @@ export function ProductCard({ name, href, zones = [], packs = [], priceLabel, ha
   return (
     <article className={cn("group relative flex flex-col", className)}>
       <div className="border border-line bg-surface transition-colors duration-120 group-hover:border-stainless motion-reduce:transition-none">
-        <div className="aspect-square">
+        <div className="aspect-square overflow-hidden">
           {image ?? (
             <div aria-hidden className="grid h-full w-full place-items-center bg-ground-deep p-4">
-              <span className="text-center text-h4 text-ink">{name}</span>
+              <span className="line-clamp-5 text-center text-h4 text-ink [overflow-wrap:anywhere]">{name}</span>
             </div>
           )}
         </div>

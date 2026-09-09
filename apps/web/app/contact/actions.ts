@@ -1,7 +1,8 @@
 "use server";
 
 import { headers } from "next/headers";
-import { leadInputFromFormData, submitLead, type FieldErrors, type LeadTopic } from "@/lib/leads";
+import { leadInputFromFormData, submitLead } from "@/lib/leads";
+import type { FieldErrors, LeadTopic } from "./topics";
 
 export interface ContactFormValues {
   name: string;

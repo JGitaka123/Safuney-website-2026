@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { site } from "@/config/site";
-import { isLeadTopic, type LeadTopic } from "@/lib/leads";
+import { isLeadTopic, type LeadTopic } from "./topics";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {

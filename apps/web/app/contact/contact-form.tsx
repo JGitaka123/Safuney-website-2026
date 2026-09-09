@@ -4,7 +4,7 @@ import { useActionState, useEffect, useId, useRef, useState, type ReactNode } fr
 import Link from "next/link";
 import { Button } from "@safuney/ui";
 import { site } from "@/config/site";
-import { LEAD_TOPICS, isLeadTopic, submitLabels, topicLabels, type LeadField, type LeadTopic } from "@/lib/leads";
+import { LEAD_TOPICS, isLeadTopic, submitLabels, topicLabels, type LeadField, type LeadTopic } from "./topics";
 import { submitContactForm, type ContactFormState } from "./actions";
 
 export interface ContactFormProps {

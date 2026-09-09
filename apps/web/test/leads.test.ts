@@ -154,8 +154,8 @@ describe("submitLead", () => {
   const ctx = { ip: "203.0.113.5", source: "/contact?topic=quote" };
 
   it("persists and notifies with injected dependencies", async () => {
-    const persist = vi.fn(async (_lead: LeadRecord) => {});
-    const notify = vi.fn(async (_lead: LeadRecord) => {});
+    const persist = vi.fn<(lead: LeadRecord) => Promise<void>>(async () => {});
+    const notify = vi.fn<(lead: LeadRecord) => Promise<void>>(async () => {});
     const log = vi.fn();
     const result = await submitLead(valid, ctx, deps({ persist, notify, log }));
     expect(result).toEqual({ ok: true });

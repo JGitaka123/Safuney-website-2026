@@ -39,7 +39,7 @@ export function ToastDemo() {
   return (
     <>
       <Button variant="secondary" onClick={() => setOpen(true)}>
-        Add QAC-based sanitiser 5 L to cart
+        Add 5 L to cart
       </Button>
       <Toast
         open={open}
