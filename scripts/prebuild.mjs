@@ -8,8 +8,9 @@
  */
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const dbDir = resolve(new URL("..", import.meta.url).pathname, "packages/db");
+const dbDir = resolve(fileURLToPath(new URL("..", import.meta.url)), "packages/db");
 const run = (cmd) => execSync(cmd, { cwd: dbDir, stdio: "inherit", env: process.env });
 
 console.log("prebuild: prisma generate");

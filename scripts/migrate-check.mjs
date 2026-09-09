@@ -10,8 +10,9 @@
  */
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const dbDir = resolve(new URL("..", import.meta.url).pathname, "packages/db");
+const dbDir = resolve(fileURLToPath(new URL("..", import.meta.url)), "packages/db");
 const HAND_MANAGED = [/"Product_name_trgm_idx"/, /"Product_searchVector_idx"/, /"ProductVariant_sku_trgm_idx"/, /DROP COLUMN "searchVector"/];
 
 const res = spawnSync(

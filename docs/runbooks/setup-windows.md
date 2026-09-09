@@ -150,7 +150,14 @@ never paste values into chat or commit them.
 | `RESEND_API_KEY` | Resend integration | Contact-form and order emails. |
 | `EMAIL_FROM` | you | Sender shown on emails, e.g. `Safuney <no-reply@safuney.com>`. The domain must be verified in Resend. |
 | `LEADS_INBOX` | you | Where contact-form leads are delivered. Defaults to `info@safuney.com`. |
-| `NEXT_PUBLIC_SITE_URL` | you (production only) | `https://safuney-website-2026.vercel.app` now; `https://safuney.com` after cut-over. |
+| `NEXT_PUBLIC_SITE_URL` | you (production only) | `https://safuney-website-2026.vercel.app` now; `https://safuney.com` after cut-over. Also the base for payment callbacks. |
+| `PAYMENTS_MODE` | you (Preview only) | `mock` lets previews and CI run checkout without provider accounts. Never set on Production (the site refuses). |
+| `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY` | Safaricom Daraja app (sandbox first) | M-Pesa STK push and status query. |
+| `MPESA_CALLBACK_SECRET` | you (any long random string) | Secret path segment on the callback URL; the site rejects callbacks without it. |
+| `MPESA_ENV` | you | `sandbox` (default) or `production`. Production also enforces Safaricom's callback IP list. |
+| `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY` | Paystack dashboard (test keys first) | Card payments; webhook signatures. |
+| `AT_API_KEY`, `AT_USERNAME`, `AT_SENDER_ID` | Africa's Talking | Order SMS. `AT_USERNAME=sandbox` uses their sandbox. |
+| `CRON_SECRET` | you (random string) | Protects the cron route that releases expired stock reservations (Vercel sets the header). |
 
 After adding or changing variables, redeploy (Vercel → Deployments → ⋯ → Redeploy) and pull them
 locally:
@@ -186,3 +193,19 @@ $env:SEED_DEMO = "1"; pnpm --filter @safuney/db seed
 
 The seed refuses to do this when `VERCEL_ENV=production`. Every figure it writes is invented for
 demonstration and is overwritten by the catalogue import (Phase 6).
+
+## 9. Payment provider callbacks
+
+Register these URLs with each provider once the site has its final address (they are relative to
+`NEXT_PUBLIC_SITE_URL`):
+
+| Provider | Setting | URL |
+| --- | --- | --- |
+| Safaricom Daraja | STK callback (set per request by the site) | `/api/payments/mpesa/callback/<MPESA_CALLBACK_SECRET>` |
+| Safaricom Daraja | C2B validation / confirmation (Paybill without prompt) | same path, registered in Phase 5 |
+| Paystack | Dashboard → Settings → Webhooks | `/api/payments/paystack/webhook` |
+
+Sandbox test flow for M-Pesa: create an app at developer.safaricom.co.ke, copy the consumer key and
+secret, use shortcode `174379` with the published sandbox passkey, set `MPESA_ENV=sandbox`, and place an
+order on a preview with a Safaricom test number. Daraja needs a public HTTPS callback, which every
+Vercel preview has.

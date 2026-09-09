@@ -499,36 +499,42 @@ enum DeliveryMethod {
 }
 
 model Order {
-  id                 String         @id @default(cuid())
-  number             String         @unique // SFN-YYYYMMDD-NNNN
-  customerId         String?
-  userId             String?
-  guestEmail         String?
-  guestPhone         String?
-  status             OrderStatus    @default(DRAFT)
-  currency           String         @default("KES")
-  subtotalMinorUnits BigInt
-  vatMinorUnits      BigInt
-  deliveryMinorUnits BigInt
-  discountMinorUnits BigInt         @default(0)
-  totalMinorUnits    BigInt
-  paymentMethod      PaymentMethod
-  deliveryMethod     DeliveryMethod
-  deliveryZoneId     String?
-  deliverySlot       String?
+  id                   String         @id @default(cuid())
+  number               String         @unique // SFN-YYYYMMDD-NNNN
+  customerId           String?
+  userId               String?
+  guestEmail           String?
+  guestPhone           String?
+  status               OrderStatus    @default(DRAFT)
+  currency             String         @default("KES")
+  subtotalMinorUnits   BigInt
+  vatMinorUnits        BigInt
+  deliveryMinorUnits   BigInt
+  discountMinorUnits   BigInt         @default(0)
+  totalMinorUnits      BigInt
+  paymentMethod        PaymentMethod
+  deliveryMethod       DeliveryMethod
+  deliveryZoneId       String?
+  deliverySlot         String?
   /// Snapshot of the address at order time (Address rows can change later)
-  shippingAddress    Json?
-  billingAddress     Json?
-  poNumber           String?
-  couponCode         String?
-  notes              String?
-  placedAt           DateTime?
-  approvedById       String?
-  approvedAt         DateTime?
-  cancelledAt        DateTime?
-  cancelReason       String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  shippingAddress      Json?
+  billingAddress       Json?
+  poNumber             String?
+  couponCode           String?
+  notes                String?
+  /// Unguessable token that lets a guest open their own order page and poll its status
+  accessToken          String         @unique @default(cuid())
+  /// Number of payment initiations (STK re-sends, card retries); bounded to stop abuse
+  paymentAttempts      Int            @default(0)
+  /// Stock reserved for this order is released after this time if it is still unpaid
+  reservationExpiresAt DateTime?
+  placedAt             DateTime?
+  approvedById         String?
+  approvedAt           DateTime?
+  cancelledAt          DateTime?
+  cancelReason         String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   customer         Customer?         @relation(fields: [customerId], references: [id])
   user             User?             @relation(fields: [userId], references: [id])

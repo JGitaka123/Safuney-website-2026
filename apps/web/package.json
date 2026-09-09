@@ -26,7 +26,8 @@
     "resend": "6.26.0",
     "@upstash/redis": "1.38.4",
     "@upstash/ratelimit": "2.0.8",
-    "clsx": "2.1.1"
+    "clsx": "2.1.1",
+    "@safuney/payments": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
