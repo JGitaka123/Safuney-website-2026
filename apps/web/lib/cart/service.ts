@@ -4,6 +4,8 @@
  * checkout (Phase 3), so the cart only ever holds "intent".
  */
 import { money, Prisma, type PrismaClient } from "@safuney/db";
+import { releaseExpiredReservations } from "@/lib/orders/reservations";
+import { priceListFor, resolvePrices } from "@/lib/b2b/pricing";
 import { randomBytes } from "node:crypto";
 
 export const CART_COOKIE = "sfn_cart";
@@ -119,29 +121,26 @@ export function summarise(cart: CartRecord, customPriceMap?: Map<string, bigint>
 export class CartService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  private async getCustomerPriceMap(customerId?: string | null): Promise<Map<string, bigint>> {
-    const map = new Map<string, bigint>();
-    if (!customerId) return map;
-    const customer = await this.prisma.customer.findUnique({
-      where: { id: customerId },
-      select: { priceListId: true },
-    });
-    if (!customer?.priceListId) return map;
-    const items = await this.prisma.priceListItem.findMany({
-      where: { priceListId: customer.priceListId },
-      select: { variantId: true, priceMinorUnits: true },
-    });
-    for (const item of items) {
-      map.set(item.variantId, item.priceMinorUnits);
-    }
-    return map;
+  /**
+   * The customer's negotiated prices for the packs in this cart, so the cart shows what checkout will
+   * charge. Uses the same resolver the order transaction uses (tiers by quantity, active lists only),
+   * because the two must never disagree.
+   */
+  private async customerPrices(customerId: string | null | undefined, cart: CartRecord): Promise<Map<string, bigint>> {
+    if (!customerId || cart.items.length === 0) return new Map();
+    const priceListId = await priceListFor(this.prisma, customerId);
+    if (!priceListId) return new Map();
+    return resolvePrices(
+      this.prisma,
+      priceListId,
+      cart.items.map((i) => ({ variantId: i.variantId, qty: i.qty, listPriceMinorUnits: i.variant.priceMinorUnits })),
+    );
   }
 
   async find(token: string, customerId?: string): Promise<CartSummary | null> {
     const cart = await this.prisma.cart.findFirst({ where: { token, expiresAt: { gt: new Date() } }, include: cartInclude });
     if (!cart) return null;
-    const priceMap = await this.getCustomerPriceMap(customerId ?? cart.customerId);
-    return summarise(cart, priceMap);
+    return summarise(cart, await this.customerPrices(customerId ?? cart.customerId, cart));
   }
 
   async getOrCreate(token: string | undefined, userId?: string): Promise<CartSummary> {
@@ -156,6 +155,8 @@ export class CartService {
 
   private async assertAvailable(variantId: string, qty: number) {
     if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) throw new CartError("QTY", `Quantity must be between 1 and ${MAX_QTY}.`);
+    // Someone else's abandoned checkout must not hold this pack past its window (see reservations.ts).
+    await releaseExpiredReservations(this.prisma, { variantIds: [variantId] });
     const v = await this.prisma.productVariant.findUnique({
       where: { id: variantId },
       select: { isActive: true, stockOnHand: true, stockReserved: true, isMadeToOrder: true, packLabel: true, product: { select: { name: true, isActive: true, needsPoReview: true } } },

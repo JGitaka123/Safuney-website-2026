@@ -1,4 +1,5 @@
 /** Integration tests for site search. Skipped without DATABASE_URL (CI provides Postgres with the demo seed). */
+import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestClient, type PrismaClient } from "@safuney/db";
 import { normaliseQuery, searchCategories, searchDocuments, searchProducts, suggestions } from "@/lib/catalogue/search";
@@ -8,7 +9,9 @@ const run = url ? describe : describe.skip;
 
 run("site search", () => {
   let prisma: PrismaClient;
-  const stamp = Date.now().toString(36);
+  // Unique per test file, not just per millisecond: parallel workers load these files at the same
+  // instant, and two files sharing a stamp make their seeded products collide in search results.
+  const stamp = `${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
   const exactName = `Citrus solvent degreaser ${stamp}`;
   const hiddenName = `Unreviewed lemon degreaser ${stamp}`;
 

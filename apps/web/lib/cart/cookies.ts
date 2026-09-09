@@ -15,13 +15,16 @@ export function cartService(): CartService {
   return new CartService(db());
 }
 
-/** Read-only: the current visitor's cart, or null when there is none (never creates one on a GET). */
-export async function readCart(): Promise<CartSummary | null> {
+/**
+ * Read-only: the current visitor's cart, or null when there is none (never creates one on a GET).
+ * A signed-in B2B member sees their organisation's negotiated prices here, not just at checkout.
+ */
+export async function readCart(customerId?: string): Promise<CartSummary | null> {
   if (!services.database()) return null;
   const token = (await cookies()).get(CART_COOKIE)?.value;
   if (!token) return null;
   try {
-    return await cartService().find(token);
+    return await cartService().find(token, customerId);
   } catch (error) {
     console.error("readCart failed", error);
     return null;

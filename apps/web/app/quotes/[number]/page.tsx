@@ -1,171 +1,113 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { isDatabaseConfigured } from "@safuney/db";
-import { quoteService } from "@/lib/quotes";
-import { site } from "@/config/site";
+import { db, money } from "@safuney/db";
+import { Input, Select, Table, TBody, Td, Th, THead, Tr, Textarea } from "@safuney/ui";
+import { viewer } from "@/lib/auth/session";
+import { orderService, paymentRegistry } from "@/lib/orders/context";
+import { organisationFor } from "@/lib/checkout/actions";
+import { QuoteError, QuoteService } from "@/lib/b2b/quotes";
+import { acceptQuoteAction, declineQuoteAction } from "@/lib/b2b/quote-actions";
+import { ActionForm } from "@/components/account/action-form";
 
-export const metadata: Metadata = {
-  title: "Quote details",
-};
+export const metadata: Metadata = { title: "Your quote", robots: { index: false } };
+export const dynamic = "force-dynamic";
 
-interface QuotePageProps {
-  params: Promise<{ number: string }>;
+function formatDate(d: Date | null): string {
+  return d ? new Intl.DateTimeFormat("en-KE", { dateStyle: "long", timeZone: "Africa/Nairobi" }).format(d) : "";
 }
 
-export default async function QuoteDetailsPage({ params }: QuotePageProps) {
+export default async function QuotePage({ params, searchParams }: { params: Promise<{ number: string }>; searchParams: Promise<{ token?: string }> }) {
   const { number } = await params;
-
-  let quote = null;
-  if (isDatabaseConfigured()) {
-    try {
-      quote = await quoteService().getQuoteByNumber(number);
-    } catch {
-      quote = null;
-    }
+  const { token } = await searchParams;
+  let quote;
+  try {
+    quote = await new QuoteService(db(), orderService()).open(number, token ?? "");
+  } catch (e) {
+    if (!(e instanceof QuoteError)) throw e;
+    return (
+      <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-16">
+        <h1 className="text-h1">Quote not found</h1>
+        <p className="mt-3 text-body text-ink-muted">Use the link from your email. If it has expired, call +254 796 808 822 and quote the number.</p>
+      </div>
+    );
   }
-
-  // Demo fallback if quote doesn't exist in DB yet
-  const displayQuote = quote ?? {
-    number,
-    status: "REQUESTED",
-    contactName: "Procurement Officer",
-    contactEmail: "purchasing@client.co.ke",
-    contactPhone: "+254700000000",
-    createdAt: new Date(),
-    notes: "Delivery to site. 14-day trial requested.",
-    items: [
-      { id: "1", description: "Commercial Kitchen Hygiene Concentrates", qty: 5, unitPriceMinorUnits: null, vatRateBps: 1600 },
-      { id: "2", description: "Food-contact QAC Sanitiser 20L", qty: 10, unitPriceMinorUnits: null, vatRateBps: 1600 },
-    ],
-  };
-
-  const statusBadge = (st: string) => {
-    switch (st) {
-      case "REQUESTED":
-        return <span className="inline-flex rounded-chip border border-line bg-ground px-3 py-1 text-label font-medium text-ink">Awaiting pricing</span>;
-      case "PRICED":
-        return <span className="inline-flex rounded-chip border border-accent bg-accent-wash px-3 py-1 text-label font-medium text-accent">Priced & ready</span>;
-      case "ACCEPTED":
-        return <span className="inline-flex rounded-chip border border-green-600 bg-green-50 px-3 py-1 text-label font-medium text-green-700">Accepted</span>;
-      case "DECLINED":
-        return <span className="inline-flex rounded-chip border border-line bg-ground px-3 py-1 text-label font-medium text-ink-muted">Declined</span>;
-      default:
-        return <span className="inline-flex rounded-chip border border-line bg-ground px-3 py-1 text-label font-medium text-ink">{st}</span>;
-    }
-  };
+  const who = await viewer();
+  const org = who ? await organisationFor(who) : null;
+  const registry = paymentRegistry();
+  const priced = quote.items.every((i) => i.unitPriceMinorUnits !== null);
+  const subtotal = priced ? quote.items.reduce((s, i) => s + money.times(i.unitPriceMinorUnits!, i.qty), 0n) : 0n;
+  const vat = priced ? quote.items.reduce((s, i) => s + money.vatOn(money.times(i.unitPriceMinorUnits!, i.qty), i.vatRateBps), 0n) : 0n;
+  const headline =
+    quote.status === "REQUESTED" ? "We are pricing this" : quote.status === "PRICED" ? "Your quote is ready" : quote.status === "ACCEPTED" || quote.status === "CONVERTED" ? "Quote accepted" : quote.status === "DECLINED" ? "Quote declined" : "Quote expired";
 
   return (
     <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-16">
-      <nav aria-label="Breadcrumb" className="text-small text-ink-muted">
-        <Link href="/" className="hover:underline underline-offset-[3px]">
-          Home
-        </Link>
-        <span aria-hidden> / </span>
-        <Link href="/quote" className="hover:underline underline-offset-[3px]">
-          Quotes
-        </Link>
-        <span aria-hidden> / </span>
-        <span aria-current="page" className="font-mono">{number}</span>
-      </nav>
-
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-6">
-        <div>
-          <span className="text-small text-ink-muted">Commercial quotation</span>
-          <h1 className="mt-1 font-mono text-h2 font-semibold text-ink">{number}</h1>
-        </div>
-        <div>{statusBadge(displayQuote.status)}</div>
-      </div>
+      <p className="text-small font-medium text-accent">{headline}</p>
+      <h1 className="mt-1 font-mono text-h1">{quote.number}</h1>
+      <p className="mt-1 text-small text-ink-muted">
+        For {quote.contactName}
+        {quote.validUntil && quote.status === "PRICED" ? ` · valid until ${formatDate(quote.validUntil)}` : ""}
+      </p>
+      {quote.salesNote && quote.status === "PRICED" ? <p className="mt-6 max-w-[44rem] border border-line bg-surface p-4 text-body text-ink">{quote.salesNote}</p> : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-8">
-          <div className="rounded-chip border border-line bg-surface p-6">
-            <h2 className="text-h4 font-semibold text-ink">Requested line items</h2>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-small">
-                <thead>
-                  <tr className="border-b border-line text-ink-muted">
-                    <th className="pb-3 font-medium">Item & specification</th>
-                    <th className="pb-3 text-right font-medium">Quantity</th>
-                    <th className="pb-3 text-right font-medium">Unit price (KES)</th>
-                    <th className="pb-3 text-right font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {displayQuote.items.map((item) => {
-                    const price = item.unitPriceMinorUnits ? Number(item.unitPriceMinorUnits) / 100 : null;
-                    const lineTotal = price ? price * item.qty : null;
-                    return (
-                      <tr key={item.id}>
-                        <td className="py-3 font-medium text-ink">{item.description}</td>
-                        <td className="py-3 text-right font-mono">{item.qty}</td>
-                        <td className="py-3 text-right font-mono">
-                          {price !== null ? price.toLocaleString("en-KE", { minimumFractionDigits: 2 }) : "Pending quote"}
-                        </td>
-                        <td className="py-3 text-right font-mono font-medium">
-                          {lineTotal !== null ? `KES ${lineTotal.toLocaleString("en-KE", { minimumFractionDigits: 2 })}` : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {displayQuote.notes ? (
-              <div className="mt-6 border-t border-line pt-4">
-                <p className="text-label text-ink-muted">Requirements & site notes</p>
-                <p className="mt-1 whitespace-pre-line text-small text-ink">{displayQuote.notes}</p>
-              </div>
-            ) : null}
-          </div>
-
-          {displayQuote.status === "PRICED" ? (
-            <div className="rounded-chip border border-accent bg-accent-wash p-6">
-              <h3 className="text-h4 font-semibold text-ink">Quote is ready for review</h3>
-              <p className="mt-2 text-small text-ink">
-                Our sales team has priced this request with corporate volume discounts. You can accept this quote to schedule dispatch and invoice creation.
-              </p>
-              <div className="mt-4">
-                <button
-                  type="button"
-                  className="inline-flex min-h-11 items-center rounded-button bg-ink px-6 text-button text-white hover:bg-accent-deep"
-                >
-                  Accept quote & confirm order
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="space-y-6 lg:col-span-4">
-          <div className="rounded-chip border border-line bg-surface p-6">
-            <h3 className="text-label font-semibold text-ink">Contact on quote</h3>
-            <dl className="mt-3 space-y-2 text-small">
-              <div>
-                <dt className="text-ink-muted">Contact person</dt>
-                <dd className="font-medium text-ink">{displayQuote.contactName}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-muted">Email</dt>
-                <dd className="font-medium text-ink">{displayQuote.contactEmail}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-muted">Phone</dt>
-                <dd className="font-medium text-ink">{displayQuote.contactPhone}</dd>
-              </div>
+        <section className="min-w-0 lg:col-span-8">
+          <Table caption="Quoted lines">
+            <THead>
+              <Tr>
+                <Th>Item</Th>
+                <Th numeric>Qty</Th>
+                <Th numeric>Unit (ex VAT)</Th>
+                <Th numeric>Line (ex VAT)</Th>
+              </Tr>
+            </THead>
+            <TBody>
+              {quote.items.map((i) => (
+                <Tr key={i.id}>
+                  <Td>{i.variant ? `${i.variant.product.name} ${i.variant.packLabel}` : i.description}</Td>
+                  <Td className="text-right tabular-nums">{i.qty}</Td>
+                  <Td className="text-right tabular-nums">{i.unitPriceMinorUnits !== null ? money.formatKes(i.unitPriceMinorUnits) : "—"}</Td>
+                  <Td className="text-right tabular-nums">{i.unitPriceMinorUnits !== null ? money.formatKes(money.times(i.unitPriceMinorUnits, i.qty)) : "—"}</Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          {priced ? (
+            <dl className="mt-4 ml-auto grid max-w-xs grid-cols-2 gap-y-1 text-body">
+              <dt className="text-ink-muted">Subtotal (ex VAT)</dt>
+              <dd className="text-right tabular-nums">{money.formatKes(subtotal)}</dd>
+              <dt className="text-ink-muted">VAT</dt>
+              <dd className="text-right tabular-nums">{money.formatKes(vat)}</dd>
+              <dt className="font-semibold">Total</dt>
+              <dd className="text-right font-semibold tabular-nums">{money.formatKes(subtotal + vat)}</dd>
             </dl>
-          </div>
+          ) : null}
+          <p className="mt-3 text-small text-ink-muted">Collection from Mombasa Road, Nairobi. Ask us for delivery when you accept and we add the zone fee to the order.</p>
+        </section>
 
-          <div className="rounded-chip border border-line bg-ground p-6">
-            <h3 className="text-label font-semibold text-ink">Need changes?</h3>
-            <p className="mt-2 text-small text-ink-muted">
-              Call our commercial desk to adjust quantities, request product alternatives, or schedule a technician site survey.
-            </p>
-            <p className="mt-3 text-small font-medium text-ink">
-              Tel: <a href={`tel:${site.contact.phone.e164}`} className="text-accent underline">{site.contact.phone.display}</a>
-            </p>
-          </div>
-        </div>
+        <aside className="min-w-0 lg:col-span-4">
+          {quote.status === "PRICED" ? (
+            <>
+              <ActionForm action={acceptQuoteAction.bind(null, quote.number, token ?? "")} submitLabel="Accept and place the order" busyLabel="Placing order…" className="border border-line bg-surface p-5">
+                <Select name="paymentMethod" label="Pay by" defaultValue="COD">
+                  {registry.MPESA.isConfigured() ? <option value="MPESA">M-Pesa</option> : null}
+                  {registry.CARD.isConfigured() ? <option value="CARD">Card</option> : null}
+                  <option value="COD">Cash or M-Pesa on collection</option>
+                  {org?.credit.approved ? <option value="INVOICE">Invoice ({org.name})</option> : null}
+                </Select>
+                <Input name="poNumber" label="Purchase order number" optional />
+              </ActionForm>
+              <ActionForm action={declineQuoteAction.bind(null, quote.number, token ?? "")} submitLabel="Decline" busyLabel="Sending…" className="mt-4 p-5">
+                <Textarea name="reason" label="Tell us why (optional)" optional rows={2} />
+              </ActionForm>
+            </>
+          ) : quote.order ? (
+            <a href={`/orders/${quote.order.number}?token=${quote.order.accessToken}`} className="inline-flex min-h-12 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
+              Open order {quote.order.number}
+            </a>
+          ) : quote.status === "REQUESTED" ? (
+            <p className="text-body text-ink-muted">We price quotes within one working day and email you when it is ready.</p>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

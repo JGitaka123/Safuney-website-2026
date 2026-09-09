@@ -31,7 +31,7 @@ export const site = {
     help: [
       { href: "/delivery-and-returns", label: "Delivery and returns" },
       { href: "/quote", label: "Request a quote" },
-      { href: "/account/credit-application", label: "Open a credit account" },
+      { href: "/account/credit", label: "Open a credit account" },
       { href: "/account", label: "Corporate account" },
     ],
     legal: [

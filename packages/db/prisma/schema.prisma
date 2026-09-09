@@ -550,6 +550,8 @@ model Order {
   @@index([customerId, createdAt])
   @@index([status])
   @@index([userId])
+  /// Sweeping expired stock reservations: read on every availability check, so it must be cheap.
+  @@index([status, reservationExpiresAt])
 }
 
 model OrderItem {
@@ -561,6 +563,9 @@ model OrderItem {
   packLabel           String
   unitPriceMinorUnits BigInt
   qty                 Int
+  /// Units this order actually reserved. A made-to-order line reserves only what existed, so this is
+  /// not always `qty`, and releasing `qty` would take back stock the order never held.
+  reservedQty         Int             @default(0)
   vatRateBps          Int
   lineTotalMinorUnits BigInt // unitPrice * qty, ex VAT
   lineVatMinorUnits   BigInt
@@ -568,6 +573,7 @@ model OrderItem {
   variant             ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
+  @@index([variantId])
 }
 
 /// Append-only. UPDATE and DELETE are rejected by a trigger (migration 0002).
@@ -752,6 +758,10 @@ model Quote {
   contactPhone String
   status       QuoteStatus @default(REQUESTED)
   notes        String?
+  /// Unguessable token in the emailed link that lets the requester view and accept the quote
+  accessToken  String      @unique @default(cuid())
+  /// Sales' message to the customer when the quote is sent
+  salesNote    String?
   pricedById   String?
   pricedAt     DateTime?
   validUntil   DateTime?

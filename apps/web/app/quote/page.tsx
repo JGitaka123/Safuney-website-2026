@@ -1,88 +1,69 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { site } from "@/config/site";
-import { QuoteForm } from "./quote-form";
+import { Input, PhoneInput, Textarea } from "@safuney/ui";
+import { viewer } from "@/lib/auth/session";
+import { readCart } from "@/lib/cart/cookies";
+import { services } from "@/lib/env";
+import { requestQuoteAction } from "@/lib/b2b/quote-actions";
+import { ActionForm } from "@/components/account/action-form";
 
 export const metadata: Metadata = {
   title: "Request a quote",
-  description: `Request a custom B2B quote for cleaning chemicals, bulk drums, institutional tenders, and dosing equipment from ${site.legalName}.`,
+  description: "Large orders, uncatalogued products or a full site list: tell us what you need and we price it within one working day.",
 };
+export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-function first(val: string | string[] | undefined): string | undefined {
-  return Array.isArray(val) ? val[0] : val;
+/** Whatever the visitor was looking at when they asked, turned into the first line of the request. */
+function prefillFrom(params: Record<string, string | string[] | undefined>): string {
+  const one = (k: string) => (Array.isArray(params[k]) ? params[k]?.[0] : params[k])?.trim() || "";
+  const sku = one("sku");
+  const product = one("product");
+  const pack = one("pack");
+  const category = one("category");
+  const q = one("q");
+  if (sku) return sku;
+  if (product) return pack ? `${product} ${pack}` : product;
+  if (category) return category.replace(/-/g, " ");
+  return q;
 }
 
-export default async function QuotePage({ searchParams }: { searchParams: SearchParams }) {
-  const params = await searchParams;
-  const product = first(params["product"]);
-  const pack = first(params["pack"]);
-
+export default async function QuotePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const prefill = prefillFrom(await searchParams);
+  const who = services.database() ? await viewer() : null;
+  const cart = services.database() ? await readCart() : null;
+  const hasCart = Boolean(cart && cart.lines.length > 0);
   return (
     <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-16">
-      <nav aria-label="Breadcrumb" className="text-small text-ink-muted">
-        <Link href="/" className="hover:underline underline-offset-[3px]">
-          Home
-        </Link>
-        <span aria-hidden> / </span>
-        <span aria-current="page">Request a quote</span>
-      </nav>
-
-      <div className="mt-4 max-w-[62ch]">
-        <h1 className="text-h1">Request a commercial quote</h1>
-        <p className="mt-3 text-body text-ink-muted">
-          For hotels, healthcare facilities, commercial laundries, schools, and contract cleaners.
-          We provide cost-in-use pricing, bulk drum supply (20L, 200L, 1000L IBCs), installed dosing systems,
-          and staff hygiene training.
-        </p>
-      </div>
-
-      <div className="mt-10 grid gap-12 lg:grid-cols-12">
-        <div className="lg:col-span-7">
-          <div className="rounded-chip border border-line bg-surface p-6 sm:p-8">
-            <QuoteForm initialProduct={product} initialPack={pack} />
+      <div className="max-w-[44rem]">
+        <h1 className="text-h1">Request a quote</h1>
+        <p className="mt-3 text-body text-ink-muted">For pallet quantities, products we do not list, or a whole site&rsquo;s cleaning schedule. We price it within one working day and email you a link to accept; accepting places the order at the quoted prices.</p>
+        <ActionForm action={requestQuoteAction} submitLabel="Send the request" busyLabel="Sending…" className="mt-8 border border-line bg-surface p-6">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Input name="name" label="Your name" defaultValue={who?.name ?? ""} required autoComplete="name" />
+            <Input name="organisation" label="Organisation" optional autoComplete="organization" />
+            <Input name="email" label="Email address" type="email" defaultValue={who?.email ?? ""} required autoComplete="email" helper="The quote link goes here." />
+            <PhoneInput name="phone" label="Phone number" defaultValue={who?.phone?.replace(/^\+254/, "0") ?? ""} required />
           </div>
-        </div>
-
-        <div className="space-y-6 lg:col-span-5">
-          <div className="rounded-chip border border-line bg-surface p-6">
-            <h2 className="text-h4 font-semibold text-ink">The Safuney Advantage</h2>
-            <ul className="mt-4 space-y-3 text-small text-ink">
-              <li className="flex gap-2">
-                <span className="text-accent font-bold">✓</span>
-                <span><strong>Cost-in-use calculation</strong>: We price per ready-to-use diluted litre and per kg of linen, not just per drum.</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-accent font-bold">✓</span>
-                <span><strong>Free 14-day trials</strong>: On-site comparative trial with loaner dosing systems for hotels and laundries.</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-accent font-bold">✓</span>
-                <span><strong>KRA eTIMS & KEBS compliant</strong>: Full tax invoices and certified documentation for audit safety.</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-accent font-bold">✓</span>
-                <span><strong>Direct plant dispatch</strong>: Formulated and quality-controlled at our Ruai plant with dedicated delivery fleet.</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="rounded-chip border border-line bg-ground p-6">
-            <h3 className="text-label font-semibold text-ink">Already an approved credit customer?</h3>
-            <p className="mt-2 text-small text-ink-muted">
-              Logged-in organisations can place purchase orders directly on 30-day invoice terms through the online checkout.
-            </p>
-            <div className="mt-4">
-              <Link
-                href="/account/credit-application"
-                className="inline-flex items-center text-small font-medium text-accent underline underline-offset-[3px]"
-              >
-                Apply for a corporate credit account →
-              </Link>
-            </div>
-          </div>
-        </div>
+          {hasCart ? (
+            <label className="flex items-start gap-3 border border-line p-4">
+              <input type="checkbox" name="includeCart" defaultChecked className="mt-1 size-4 accent-accent" />
+              <span className="text-body text-ink">
+                Include the {cart!.lines.length} line{cart!.lines.length === 1 ? "" : "s"} in my cart
+                <span className="block text-small text-ink-muted">{cart!.lines.map((l) => `${l.name} ${l.packLabel} × ${l.qty}`).join(" · ")}</span>
+              </span>
+            </label>
+          ) : null}
+          <fieldset className="flex flex-col gap-3">
+            <legend className="text-body font-medium text-ink">What do you need?</legend>
+            <p className="text-small text-ink-muted">Product, pack size and quantity per line. Brands you use today are fine; we will match or suggest.</p>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="grid grid-cols-[1fr_6rem] gap-3">
+                <Input name={`line${i}`} label={`Line ${i}`} defaultValue={i === 1 ? prefill : ""} placeholder={i === 1 ? "Chlorine disinfectant 20 L" : ""} required={i === 1 && !hasCart} />
+                <Input name={`qty${i}`} label="Qty" type="number" min={1} max={9999} defaultValue={1} inputMode="numeric" />
+              </div>
+            ))}
+          </fieldset>
+          <Textarea name="notes" label="Anything else" optional rows={3} helper="Delivery site, how often you order, dilution or dispensing needs." />
+        </ActionForm>
       </div>
     </div>
   );

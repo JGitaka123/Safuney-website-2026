@@ -62,7 +62,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
             heading="Products in this category are being published"
             body="Prices, pack sizes and safety data sheets appear here as each product is reviewed. Ask us now and we will quote the same day."
             actions={[
-              <Link key="q" href={`/contact?topic=quote&category=${slug}`} className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
+              <Link key="q" href={`/quote?category=${slug}`} className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
                 Request a quote
               </Link>,
               <a key="c" href={`tel:${site.contact.phone.e164}`} className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
@@ -100,7 +100,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
                     <Link key="clear" href={base} className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
                       Clear filters
                     </Link>,
-                    <Link key="quote" href={`/contact?topic=quote&category=${slug}`} className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
+                    <Link key="quote" href={`/quote?category=${slug}`} className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
                       Request a quote
                     </Link>,
                   ]}

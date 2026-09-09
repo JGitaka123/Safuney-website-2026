@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useId } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { KENYAN_COUNTIES, normaliseKenyanMobile, type KenyanCounty } from "@safuney/config";
 import { Alert, Button, Input, PhoneInput, ProgressSteps, Select, Textarea } from "@safuney/ui";
@@ -46,10 +47,14 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
   const [isSubmitting, startTransition] = useTransition();
 
   // Contact state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [organisation, setOrganisation] = useState("");
+  const [name, setName] = useState(context.viewer?.name ?? "");
+  const [email, setEmail] = useState(context.viewer?.email ?? "");
+  const [phone, setPhone] = useState(context.viewer?.phone?.replace(/^\+254/, "0") ?? "");
+  const [organisation, setOrganisation] = useState(context.viewer?.organisation?.name ?? "");
+  const org = context.viewer?.organisation ?? null;
+  // A buyer's order at or above the organisation's threshold waits for an approver (see OrderService).
+  const needsApproval =
+    org?.role === "BUYER" && org.approvalThresholdMinorUnits !== null && org.approvalThresholdMinorUnits !== undefined && BigInt(cart.totalMinorUnits) >= BigInt(org.approvalThresholdMinorUnits);
 
   // Delivery state
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("DELIVERY");
@@ -288,6 +293,14 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
       </div>
 
       <ProgressSteps steps={STEPS} current={currentStep} className="mb-8" />
+
+      {org ? (
+        <p className="mb-8 border border-line bg-surface p-4 text-small text-ink">
+          Ordering for <span className="font-medium">{org.name}</span>
+          {org.role === "BUYER" && org.approvalThresholdLabel ? <> · orders of {org.approvalThresholdLabel} and above go to an approver before payment</> : null}
+          {org.creditAvailableLabel ? <> · credit available {org.creditAvailableLabel}</> : null}.
+        </p>
+      ) : null}
 
       {formError ? (
         <Alert id={formSummaryId} variant="error" title="Cannot proceed with order" className="mb-8">
@@ -590,8 +603,8 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                   </div>
                 </label>
 
-                {/* Invoice (Available for approved credit accounts) */}
-                {isAvailable("INVOICE") ? (
+                {/* Invoice: only approved credit accounts, and only within the available credit. */}
+                <div>
                   <label className={methodClass("INVOICE")}>
                     <input
                       type="radio"
@@ -599,58 +612,41 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                       value="INVOICE"
                       checked={paymentMethod === "INVOICE"}
                       onChange={() => setPaymentMethod("INVOICE")}
+                      disabled={!isAvailable("INVOICE")}
                       className="mt-1 size-4 accent-accent"
                     />
                     <div className="w-full">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="block font-medium text-ink">Invoice — organisation credit account</span>
-                        <span className="inline-flex rounded-chip border border-accent bg-accent-wash px-2 py-0.5 text-caption font-semibold text-accent">
-                          30-day terms approved
-                        </span>
-                      </div>
-                      <span className="mt-1 block text-small text-ink-muted">
-                        Billed to <strong>{context.session?.customerName}</strong> (KRA PIN: {context.session?.kraPin ?? "N/A"}). Available credit: KES {(Number(context.session?.availableCreditMinorUnits ?? 0) / 100).toLocaleString("en-KE", { minimumFractionDigits: 2 })}.
+                      <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
+                      <span className="block text-small text-ink-muted">
+                        {isAvailable("INVOICE")
+                          ? `Billed to ${org?.name ?? "your account"}${org?.creditAvailableLabel ? `, ${org.creditAvailableLabel} of credit available` : ""}.`
+                          : availability("INVOICE")?.reason ?? "For approved credit accounts."}
                       </span>
-
-                      {paymentMethod === "INVOICE" && (
-                        <div className="mt-4 max-w-sm space-y-3">
-                          <Input
-                            label="Purchase order number (PO #)"
-                            value={poNumber}
-                            onChange={(e) => setPoNumber(e.target.value)}
-                            optional
-                            helper="Recorded on your eTIMS tax invoice and packing slip."
-                          />
-
-                          {context.session?.approvalThresholdMinorUnits &&
-                          BigInt(cart.totalMinorUnits) > BigInt(context.session.approvalThresholdMinorUnits) &&
-                          context.session.memberRole === "BUYER" ? (
-                            <div className="rounded-chip border border-line bg-ground p-3 text-caption text-ink">
-                              ℹ️ <strong>Internal sign-off needed</strong>: This order total exceeds your organisation&apos;s purchasing threshold (KES {(Number(context.session.approvalThresholdMinorUnits) / 100).toLocaleString("en-KE")}) and will be queued for your finance approver.
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
+                      {!isAvailable("INVOICE") && !org ? (
+                        <Link href="/account/credit" className="mt-1 inline-block text-small text-accent underline underline-offset-[3px]">
+                          Apply for a credit account
+                        </Link>
+                      ) : null}
                     </div>
                   </label>
-                ) : (
-                  <div className="border border-line bg-ground-deep p-4 opacity-75">
-                    <div className="flex items-start gap-3">
-                      <input type="radio" disabled className="mt-1 size-4" />
-                      <div>
-                        <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
-                        <span className="block text-small text-ink-muted">
-                          {availability("INVOICE")?.reason ??
-                            "For approved credit accounts."}{" "}
-                          <a href="/account/credit-application" className="text-accent underline">
-                            Apply for a credit account
-                          </a>
-                          .
-                        </span>
-                      </div>
+                  {/* Outside the radio's label so the field keeps its own accessible name. */}
+                  {paymentMethod === "INVOICE" && isAvailable("INVOICE") ? (
+                    <div className="mt-3 flex max-w-sm flex-col gap-3 border-l-2 border-accent pl-4">
+                      <Input
+                        label="Purchase order number"
+                        value={poNumber}
+                        onChange={(e) => setPoNumber(e.target.value)}
+                        optional
+                        helper="Printed on your tax invoice and packing slip."
+                      />
+                      {needsApproval ? (
+                        <p className="border border-line bg-ground p-3 text-small text-ink">
+                          <strong className="font-medium">Sign-off needed.</strong> This order is above {org!.approvalThresholdLabel}, so it goes to an approver in your organisation before anything is invoiced.
+                        </p>
+                      ) : null}
                     </div>
-                  </div>
-                )}
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-8 flex flex-wrap justify-between gap-3">
@@ -738,7 +734,7 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                     )}
                     {paymentMethod === "CARD" && <span>Card payment (Visa/Mastercard via Paystack)</span>}
                     {paymentMethod === "COD" && <span>Cash or M-Pesa on delivery</span>}
-                    {paymentMethod === "INVOICE" && <span>Invoice to your credit account</span>}
+                    {paymentMethod === "INVOICE" && <span>Invoice to {org?.name ?? "your credit account"}{org?.creditAvailableLabel ? ` (credit available ${org.creditAvailableLabel})` : ""}</span>}
                   </p>
                 </div>
 

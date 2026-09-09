@@ -8,6 +8,8 @@ import { services } from "@/lib/env";
 import { readCart } from "@/lib/cart/cookies";
 import { CART_COOKIE } from "@/lib/cart/service";
 import { orderService, paymentRegistry, publicBaseUrl } from "@/lib/orders/context";
+import { viewer } from "@/lib/auth/session";
+import { creditPosition } from "@/lib/b2b/credit";
 import { OrderError } from "@/lib/orders/service";
 import { notifyOrderPlaced } from "@/lib/notify";
 import { db } from "@safuney/db";
@@ -51,85 +53,72 @@ export type PlaceOrderResponse =
   | { ok: true; orderNumber: string; accessToken: string; next: { kind: "prompt"; message: string } | { kind: "redirect"; url: string } | { kind: "offline"; instructions: string } }
   | { ok: false; formError?: string; fieldErrors?: Record<string, string> };
 
-import { getCurrentSession } from "@/lib/auth/session";
-import { creditService } from "@/lib/credit";
-
 export interface CheckoutContext {
   methods: Array<{ method: "MPESA" | "CARD" | "INVOICE" | "COD"; available: boolean; reason?: string }>;
+  /** Signed-in customer details for prefilling and the organisation the order is placed for. */
+  viewer: { name: string | null; email: string | null; phone: string | null; organisation: { id: string; name: string; role: "OWNER" | "BUYER" | "APPROVER"; approvalThresholdLabel: string | null;
+      /** Minor units as a decimal string; bigint does not cross to the client. */
+      approvalThresholdMinorUnits: string | null; creditAvailableLabel: string | null } | null } | null;
   deliveryConfigured: boolean;
   zones: Array<{ slug: string; name: string; counties: string[]; slots: string[]; leadTimeDays: number }>;
   minimumMinorUnits: string;
-  session?: {
-    customerName: string;
-    kraPin: string | null;
-    availableCreditMinorUnits: string;
-    isStopSupply: boolean;
-    memberRole: string | null;
-    approvalThresholdMinorUnits: string | null;
-  } | null;
 }
 
 /** What the checkout page needs to render its options. */
+/** The organisation a signed-in member orders for (the first membership until a switcher exists). */
+export async function organisationFor(who: Awaited<ReturnType<typeof viewer>>) {
+  const m = who?.memberships.find((x) => x.customer.type === "ORGANISATION");
+  if (!m) return null;
+  const customer = await db().customer.findUnique({ where: { id: m.customerId }, select: { id: true, displayName: true, status: true, creditLimitMinorUnits: true, approvalThresholdMinorUnits: true } });
+  if (!customer) return null;
+  const credit = await creditPosition(db(), customer.id);
+  return { id: customer.id, name: customer.displayName, role: m.role, credit, approvalThresholdMinorUnits: customer.approvalThresholdMinorUnits };
+}
+
 export async function getCheckoutContext(): Promise<CheckoutContext> {
   const registry = paymentRegistry();
+  const who = services.database() ? await viewer() : null;
+  const org = who ? await organisationFor(who) : null;
   const deliveryConfigured = services.database() ? Boolean(await getSetting("delivery.configured")) : false;
   const zones = services.database() ? await db().deliveryZone.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, select: { slug: true, name: true, counties: true, slots: true, leadTimeDays: true } }) : [];
   const minimum = services.database() ? String(await getSetting("orders.minimumMinorUnits")) : "0";
-
-  const session = await getCurrentSession();
-  let b2bCredit = null;
-  let invoiceAvailable = false;
-  let invoiceReason: string | undefined = "For approved credit accounts. Apply for an account or sign in to order on invoice.";
-
-  if (session?.customer) {
-    if (session.customer.status === "CREDIT_APPROVED") {
-      let profile = null;
-      if (services.database()) {
-        try {
-          profile = await creditService().getCreditProfile(session.customer.id);
-        } catch {
-          profile = null;
-        }
-      }
-      const available = profile?.availableCreditMinorUnits ?? session.customer.creditLimitMinorUnits;
-      const isStopSupply = profile?.isStopSupply ?? false;
-      invoiceAvailable = !isStopSupply && available > 0n;
-      if (isStopSupply) {
-        invoiceReason = profile?.stopSupplyReason ?? "Credit suspended (invoice overdue past 15 days).";
-      } else if (available <= 0n) {
-        invoiceReason = "Available credit limit reached. Settle open invoices to restore credit.";
-      } else {
-        invoiceReason = undefined;
-      }
-      b2bCredit = {
-        customerName: session.customer.displayName,
-        kraPin: session.customer.kraPin,
-        availableCreditMinorUnits: available.toString(),
-        isStopSupply,
-        memberRole: session.memberRole,
-        approvalThresholdMinorUnits: session.customer.approvalThresholdMinorUnits ? session.customer.approvalThresholdMinorUnits.toString() : null,
-      };
-    }
-  }
-
   return {
     methods: [
       { method: "MPESA", available: registry.MPESA.isConfigured(), reason: registry.MPESA.isConfigured() ? undefined : "M-Pesa payments open once our Paybill is connected." },
       { method: "CARD", available: registry.CARD.isConfigured(), reason: registry.CARD.isConfigured() ? undefined : "Card payments open once our card provider is connected." },
       { method: "COD", available: true },
-      { method: "INVOICE", available: invoiceAvailable, reason: invoiceReason },
+      org?.credit.approved
+        ? {
+            method: "INVOICE",
+            available: !org.credit.stopSupply && org.credit.availableMinorUnits > 0n,
+            reason: org.credit.stopSupply
+              ? (org.credit.stopSupplyReason ?? undefined)
+              : org.credit.availableMinorUnits > 0n
+                ? undefined
+                : `Your credit limit is fully used (${money.formatKes(org.credit.outstandingMinorUnits)} outstanding). Settle an open invoice or pay another way.`,
+          }
+        : { method: "INVOICE", available: false, reason: org ? "Your organisation does not have a credit account yet. Apply from your account page." : "For approved credit accounts. Sign in to your organisation account, or apply for one." },
     ],
+    viewer: who
+      ? {
+          name: who.name,
+          email: who.email,
+          phone: who.phone,
+          organisation: org ? { id: org.id, name: org.name, role: org.role, approvalThresholdLabel: org.approvalThresholdMinorUnits !== null ? money.formatKes(org.approvalThresholdMinorUnits) : null, approvalThresholdMinorUnits: org.approvalThresholdMinorUnits?.toString() ?? null, creditAvailableLabel: org.credit.approved ? money.formatKes(org.credit.availableMinorUnits) : null } : null,
+        }
+      : null,
     deliveryConfigured,
     zones,
     minimumMinorUnits: minimum,
-    session: b2bCredit,
   };
 }
 
 /** Delivery fee for the current cart and county (server-computed; the client only displays it). */
 export async function quoteDeliveryAction(county: string | null): Promise<{ ok: true; feeLabel: string | null; zone: string | null; free: boolean; slots: string[]; grandTotalLabel: string } | { ok: false; message: string }> {
   if (!services.database()) return { ok: false, message: "Delivery quotes are unavailable right now." };
-  const cart = await readCart();
+  const who = await viewer();
+  const org = who ? await organisationFor(who) : null;
+  const cart = await readCart(org?.id);
   if (!cart) return { ok: false, message: "Your cart is empty." };
   const q = await orderService().quoteDelivery(cart.weightGrams, cart.subtotalMinorUnits, county);
   if (county && !q.zone) return { ok: false, message: `We do not deliver to ${county} yet. Collect from Mombasa Road, Nairobi, or ask us for a courier quote.` };
@@ -154,18 +143,19 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
   const token = (await cookies()).get(CART_COOKIE)?.value;
   if (!token) return { ok: false, formError: "Your cart is empty." };
   const d = parsed.data;
-  const session = await getCurrentSession();
   try {
+    const who = await viewer();
+    const org = who ? await organisationFor(who) : null;
     const result = await orderService().placeOrder({
       cartToken: token,
-      contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || session?.customer?.displayName || undefined },
+      userId: who?.id,
+      customerId: org?.id,
+      placedByRole: org?.role,
+      contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || undefined },
       delivery: d.delivery.method === "PICKUP" ? { method: "PICKUP", slot: d.delivery.slot } : { method: "DELIVERY", county: d.delivery.county, town: d.delivery.town, line1: d.delivery.line1 || undefined, landmark: d.delivery.landmark || undefined, deliveryNotes: d.delivery.deliveryNotes || undefined, slot: d.delivery.slot },
       paymentMethod: d.paymentMethod,
       poNumber: d.poNumber || undefined,
       notes: d.notes || undefined,
-      userId: session?.user?.id,
-      customerId: session?.customer?.id,
-      memberRole: session?.memberRole ?? undefined,
       baseUrl: publicBaseUrl(),
     });
     // Notify in the background of the request; failures never block the order.
@@ -182,7 +172,7 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
     };
   } catch (e) {
     if (e instanceof OrderError) {
-      const field = e.code === "NO_DELIVERY" ? "delivery.county" : e.code === "METHOD_UNAVAILABLE" ? "paymentMethod" : undefined;
+      const field = e.code === "NO_DELIVERY" ? "delivery.county" : e.code === "METHOD_UNAVAILABLE" || e.code === "CREDIT" ? "paymentMethod" : undefined;
       return { ok: false, formError: e.message, ...(field ? { fieldErrors: { [field]: e.message } } : {}) };
     }
     console.error("placeOrder failed", e);

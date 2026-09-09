@@ -26,7 +26,7 @@ export default async function OrderSheetPage() {
             heading="The order sheet opens with online ordering"
             body="When the shop launches this page lists every pack size with its price and a quantity box, so a whole order goes in the cart from one screen. Until then we quote the same day."
             actions={[
-              <Link key="quote" href="/contact?topic=quote" className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
+              <Link key="quote" href="/quote" className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
                 Request a quote
               </Link>,
               <a key="call" href={`tel:${site.contact.phone.e164}`} className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">

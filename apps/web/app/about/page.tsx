@@ -97,7 +97,7 @@ export default function AboutPage() {
           </li>
           <li>
             <strong>Ask for a quote.</strong> For bulk orders, a product that is not listed, or a site-wide programme,{" "}
-            <Link href="/contact?topic=quote">request a quote</Link> and we will price it for you.
+            <Link href="/quote">request a quote</Link> and we will price it for you.
           </li>
           <li>
             <strong>Open a credit account.</strong> Organisations that order regularly can apply to pay on invoice.{" "}
