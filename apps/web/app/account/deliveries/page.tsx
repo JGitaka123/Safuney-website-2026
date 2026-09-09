@@ -7,6 +7,7 @@ import { readCart } from "@/lib/cart/cookies";
 import { orderService, paymentRegistry } from "@/lib/orders/context";
 import { creditPosition } from "@/lib/b2b/credit";
 import { INTERVALS, SubscriptionService } from "@/lib/b2b/subscriptions";
+import { AddressService } from "@/lib/account/addresses";
 import { scheduleFromCartAction } from "@/lib/b2b/subscription-actions";
 import { AccountNav } from "@/components/account/account-nav";
 import { ActionForm } from "@/components/account/action-form";
@@ -31,6 +32,7 @@ export default async function DeliveriesPage() {
   const who = await requireViewer("/account/deliveries");
   const organisation = who.memberships.find((m) => m.customer.type === "ORGANISATION");
   const schedules = await new SubscriptionService(db(), orderService()).listFor(who.id);
+  const addresses = await new AddressService(db()).listFor(who.id);
   const cart = await readCart();
   const registry = paymentRegistry();
   const credit = organisation ? await creditPosition(db(), organisation.customerId) : null;
@@ -58,6 +60,7 @@ export default async function DeliveriesPage() {
                     intervalLabel: INTERVAL_LABEL[s.intervalDays] ?? `Every ${s.intervalDays} days`,
                     nextRunLabel: formatDate(s.nextRunAt),
                     paymentMethod: s.paymentMethod,
+                    destination: s.address ? `${s.address.label ? `${s.address.label}: ` : ""}${s.address.town}, ${s.address.county}` : "Collection from Mombasa Road",
                     items: s.items.map((i) => `${i.variant.product.name} ${i.variant.packLabel} × ${i.qty}`),
                     runs: s.runs.map((r) => ({ id: r.id, status: r.status, when: formatDate(r.ranAt), orderNumber: r.order?.number ?? null, href: r.order ? `/orders/${r.order.number}?token=${r.order.accessToken}` : null, error: r.error })),
                   }}
@@ -101,7 +104,15 @@ export default async function DeliveriesPage() {
                     {registry.CARD.isConfigured() ? <option value="CARD">Card link on the day</option> : null}
                     {credit?.approved ? <option value="INVOICE">Invoice (credit account)</option> : null}
                   </Select>
-                  <p className="text-small text-ink-muted">Collected from Mombasa Road unless you add a delivery address to the account (coming with the account pages in Phase 5).</p>
+                  <Select name="addressId" label="Deliver to" defaultValue={addresses.find((a) => a.isDefault)?.id ?? ""} helper={addresses.length === 0 ? "Add a delivery address in your account to have schedules delivered." : "Delivery is quoted per order from the zone rules."}>
+                    <option value="">Collect from Mombasa Road, Nairobi</option>
+                    {addresses.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.label ? `${a.label}: ` : ""}
+                        {a.town}, {a.county}
+                      </option>
+                    ))}
+                  </Select>
                 </ActionForm>
               </>
             )}

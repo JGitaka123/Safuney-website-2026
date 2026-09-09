@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db, type PaymentMethod } from "@safuney/db";
 import { requireViewer } from "@/lib/auth/session";
 import { readCart } from "@/lib/cart/cookies";
+import { AddressService } from "@/lib/account/addresses";
 import { orderService } from "@/lib/orders/context";
 import { SubscriptionError, SubscriptionService } from "./subscriptions";
 import type { ActionResult } from "./actions";
@@ -27,8 +28,13 @@ export async function scheduleFromCartAction(formData: FormData): Promise<Action
   if (!["MPESA", "CARD", "COD", "INVOICE"].includes(method)) return { ok: false, message: "Choose how each delivery is paid." };
   const first = new Date(String(formData.get("firstRunAt") ?? ""));
   if (Number.isNaN(first.getTime())) return { ok: false, message: "Choose the first delivery date." };
+  const addressId = String(formData.get("addressId") ?? "") || null;
+  if (addressId) {
+    const mine = await new AddressService(db()).listFor(who.id);
+    if (!mine.some((a) => a.id === addressId)) return { ok: false, message: "Choose one of your saved addresses, or collection." };
+  }
   try {
-    await subscriptions().create(who.id, { intervalDays: Number(formData.get("intervalDays") ?? 28), firstRunAt: first, paymentMethod: method, addressId: null, items: cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })) });
+    await subscriptions().create(who.id, { intervalDays: Number(formData.get("intervalDays") ?? 28), firstRunAt: first, paymentMethod: method, addressId, items: cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })) });
   } catch (e) {
     return fail(e);
   }

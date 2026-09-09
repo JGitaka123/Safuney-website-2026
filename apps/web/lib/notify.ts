@@ -80,3 +80,38 @@ export async function notifyOrderPaid(o: OrderNotification, receipt: string | nu
   const sms = o.phone ? await sendSms(o.phone, `Safuney: payment of ${total} received for ${o.number}${receipt ? ` (${receipt})` : ""}. We are preparing your order. ${link}`) : "off";
   return { email, sms };
 }
+
+export type FulfilmentStatus = "PACKED" | "DISPATCHED" | "DELIVERED";
+
+/**
+ * Status notifications (master prompt Phase 5): packed, dispatched (with the rider), delivered. Email
+ * and SMS, each skipped cleanly when not configured. One sentence each; the link carries the detail.
+ */
+export async function notifyOrderStatus(o: OrderNotification, status: FulfilmentStatus, extra: { riderName?: string | null; riderPhone?: string | null; receivedBy?: string | null } = {}): Promise<{ email: string; sms: string }> {
+  const link = `${o.baseUrl}/orders/${o.number}?token=${o.accessToken}`;
+  const copy: Record<FulfilmentStatus, { subject: string; body: string; sms: string }> = {
+    PACKED: {
+      subject: `Order ${o.number} is packed`,
+      body: `Your order ${o.number} is packed and waiting for the rider. We will tell you when it leaves.`,
+      sms: `Safuney: order ${o.number} is packed and will be dispatched next.`,
+    },
+    DISPATCHED: {
+      subject: `Order ${o.number} is on its way`,
+      body: `Your order ${o.number} has left Mombasa Road${extra.riderName ? ` with ${extra.riderName}${extra.riderPhone ? ` (${extra.riderPhone})` : ""}` : ""}.${o.paymentMethod === "COD" ? ` Have ${money.formatKes(o.totalMinorUnits)} ready in cash or M-Pesa for the rider.` : ""}`,
+      sms: `Safuney: order ${o.number} is on its way${extra.riderName ? ` with ${extra.riderName}${extra.riderPhone ? ` ${extra.riderPhone}` : ""}` : ""}.${o.paymentMethod === "COD" ? ` Pay ${money.formatKes(o.totalMinorUnits)} to the rider.` : ""}`,
+    },
+    DELIVERED: {
+      subject: `Order ${o.number} delivered`,
+      body: `Order ${o.number} was delivered${extra.receivedBy ? ` and received by ${extra.receivedBy}` : ""}. Thank you. Reorder any time from your account.`,
+      sms: `Safuney: order ${o.number} delivered${extra.receivedBy ? `, received by ${extra.receivedBy}` : ""}. Thank you.`,
+    },
+  };
+  const c = copy[status];
+  let email = "off";
+  if (o.email && services.email()) {
+    const r = await sendEmail({ to: o.email, subject: `${c.subject} — ${site.legalName}`, text: `${c.body}\n\nTrack it here: ${link}\n\n${site.legalName}` });
+    email = r.sent ? "sent" : r.reason;
+  }
+  const sms = o.phone ? await sendSms(o.phone, `${c.sms} ${link}`) : "off";
+  return { email, sms };
+}

@@ -53,6 +53,14 @@ function eventTypeLabel(type: string, status: string | null): string {
       return "Not approved";
     case "approval_expired":
       return "Approval window passed; order cancelled";
+    case "order_packed":
+      return "Packed";
+    case "order_dispatched":
+      return "Out for delivery";
+    case "order_delivered":
+      return "Delivered";
+    case "cod_collected":
+      return "Payment collected on delivery";
     case "reservation_released":
       return "Reservation expired";
     case "order_confirmed":
