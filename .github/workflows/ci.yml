@@ -58,7 +58,7 @@ jobs:
         run: pnpm --filter @safuney/db migrate:deploy
       - name: Unit and integration tests
         run: pnpm test
-      - name: Build (runs prebuild: prisma generate + migrate deploy)
+      - name: Build (prebuild runs prisma generate and migrate deploy)
         run: pnpm build
       - name: Placeholder guard
         run: pnpm guard:placeholders
