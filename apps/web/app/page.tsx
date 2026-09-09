@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ZoneBand, ButtonLink } from "@safuney/ui";
 import { site } from "@/config/site";
@@ -7,6 +8,12 @@ import { localBusinessJsonLd, jsonLdString, organizationJsonLd } from "@/lib/seo
 import { ZoneBar } from "@/components/site/zone-bar";
 import { TrustStrip } from "@/components/site/trust-strip";
 import { INDUSTRIES } from "@/lib/content/solutions";
+
+export const metadata: Metadata = {
+  // Only the home page claims "/" as its canonical, and only it has a Swahili twin today. Setting
+  // either on the root layout would apply them to every page that does not override them.
+  alternates: { canonical: "/", languages: { en: "/", sw: "/sw" } },
+};
 
 export default async function HomePage() {
   const [categories, zoneCounts, kraPin, vatNumber] = await Promise.all([getCategories(), getZoneCounts(), getSetting("company.kraPin"), getSetting("company.vatNumber")]);

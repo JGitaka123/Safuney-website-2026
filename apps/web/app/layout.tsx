@@ -19,7 +19,10 @@ export const metadata: Metadata = {
   // Interim site must not be indexed until domain cut-over (ADR 0002); the switch is SITE_INDEXABLE=1
   // on the production deployment, and a preview is never indexable whatever it says.
   robots: isIndexable() ? { index: true, follow: true } : { index: false, follow: false },
-  alternates: { canonical: "/", languages: { en: "/", sw: "/sw" } },
+  // No `alternates` here on purpose. Metadata is inherited, so a canonical set on the root layout
+  // would make every page that does not override it declare the home page as its canonical — which
+  // tells a search engine the whole site is one page, and drops the SEO audit to 0.88. Canonicals and
+  // hreflang belong on the pages that know their own address; `metadataBase` is what resolves them.
   openGraph: {
     type: "website",
     siteName: site.legalName,
