@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Unit, ApplicationZone } from "../generated/client/client";
+import { PrismaClient, Unit, ApplicationZone, HazardClass, RelationKind } from "../generated/client/client";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(here, "../../..");
@@ -197,7 +197,217 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
     await prisma.featureFlag.upsert({ where: { key }, create: { key, description, enabled: false }, update: { description } });
   }
 
-  return { categories: categoryIds.size, products: products.size, variants, zones: zones.length };
+  const demo = process.env["SEED_DEMO"] === "1" ? await seedDemo(prisma) : 0;
+
+  return { categories: categoryIds.size, products: products.size, variants, zones: zones.length, demo };
+}
+
+/**
+ * SEED_DEMO=1 — preview and CI only. Marks the harvested products as reviewed and gives them
+ * illustrative prices, stock, dilution guidance, hazard classes and tags so the catalogue, cart and
+ * checkout can be exercised end to end. Every figure here is invented for demonstration and is
+ * replaced by the PO's catalogue import. Refuses to run against a production deployment.
+ */
+export async function seedDemo(prisma: PrismaClient): Promise<number> {
+  if (process.env["VERCEL_ENV"] === "production") throw new Error("SEED_DEMO must never run against production");
+
+  const demo: Record<string, {
+    price: Record<string, string>; // packLabel -> ex-VAT KES
+    stock?: Record<string, number>;
+    hazard?: HazardClass;
+    tags: string[];
+    dilution?: Array<{ use: string; ratio: number; contactTimeMinutes?: number; note?: string }>;
+    howToUse: string;
+    longDescription: string;
+    faq?: Array<{ q: string; a: string }>;
+    weightGramsPerLitre?: number;
+    extraPacks?: Array<{ value: string; unit: Unit; label: string }>;
+  }> = {
+    "qac-surface-food-contact-sanitiser": {
+      price: { "1 L": "380", "5 L": "1450", "20 L": "5200" },
+      stock: { "1 L": 120, "5 L": 42, "20 L": 8 },
+      hazard: HazardClass.IRRITANT,
+      tags: ["sanitiser", "food-contact", "no-rinse", "concentrate"],
+      dilution: [
+        { use: "Food-contact surfaces (no rinse)", ratio: 100, contactTimeMinutes: 1 },
+        { use: "General surfaces and equipment", ratio: 50, contactTimeMinutes: 5 },
+        { use: "Fogging and heavy contamination", ratio: 20, contactTimeMinutes: 10 },
+      ],
+      howToUse: "Clean the surface first: sanitisers do not work through grease or soil. Dilute with cold water at the ratio for the job, apply with a trigger spray or cloth, keep the surface wet for the contact time, then let it air dry. On food-contact surfaces use the 1:100 dilution and do not rinse.",
+      longDescription: "A quaternary ammonium compound (QAC) sanitiser for surfaces that touch food and for general equipment in kitchens, food processing and service areas. Effective against a broad range of bacteria at the stated dilutions and contact times; leaves no odour and does not corrode stainless steel at working strength.",
+      faq: [
+        { q: "Do I need to rinse after use?", a: "Not at 1:100 on food-contact surfaces. At stronger dilutions, rinse with potable water before food contact." },
+        { q: "Can I mix it with bleach?", a: "No. Never mix sanitisers or any cleaning chemicals; use them one at a time and rinse between products." },
+      ],
+      extraPacks: [{ value: "1", unit: Unit.L, label: "1 L" }, { value: "5", unit: Unit.L, label: "5 L" }, { value: "20", unit: Unit.L, label: "20 L" }],
+    },
+    "chlorine-salad-fruit-wash-powder": {
+      price: { "1 kg": "980" },
+      stock: { "1 kg": 25 },
+      hazard: HazardClass.OXIDISER,
+      tags: ["food-contact", "produce-wash", "chlorine"],
+      dilution: [{ use: "Salad and fruit wash", ratio: 500, contactTimeMinutes: 2, note: "Rinse produce with potable water after soaking." }],
+      howToUse: "Dissolve the measured powder fully in cold water before adding produce. Soak for the contact time, then rinse under running potable water. Make a fresh solution for each batch.",
+      longDescription: "A chlorine-based powder for washing salads, fruit and vegetables in commercial kitchens and food preparation areas. Dissolves quickly and gives a measured chlorine dose per batch.",
+      extraPacks: [{ value: "1", unit: Unit.KG, label: "1 kg" }],
+    },
+    "general-purpose-cleaner-disinfectant": {
+      price: { "5 L": "1150", "20 L": "3990" },
+      stock: { "5 L": 60, "20 L": 12 },
+      hazard: HazardClass.IRRITANT,
+      tags: ["disinfectant", "general-cleaning", "concentrate", "floors"],
+      dilution: [
+        { use: "Daily cleaning of floors and surfaces", ratio: 80, contactTimeMinutes: 5 },
+        { use: "Disinfection after spills", ratio: 40, contactTimeMinutes: 10 },
+      ],
+      howToUse: "Dilute in a bucket or trigger spray, apply to the surface, leave wet for the contact time and wipe or mop off. No rinse needed on floors; rinse food-contact surfaces.",
+      longDescription: "A combined cleaner and disinfectant for floors, walls, washrooms and general surfaces in offices, schools, hospitality and healthcare common areas. Cleans and disinfects in one step at the daily dilution.",
+      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }, { value: "20", unit: Unit.L, label: "20 L" }],
+    },
+    "chlorine-disinfectant-bleach": {
+      price: { "5 L": "690", "20 L": "2400" },
+      stock: { "5 L": 100, "20 L": 30 },
+      hazard: HazardClass.CORROSIVE,
+      tags: ["disinfectant", "chlorine", "laundry", "washrooms"],
+      dilution: [
+        { use: "Washroom and toilet disinfection", ratio: 20, contactTimeMinutes: 10 },
+        { use: "Laundry whitening (per 10 L wash)", ratio: 100 },
+        { use: "Blood and body-fluid spills", ratio: 10, contactTimeMinutes: 10, note: "Wear gloves and eye protection." },
+      ],
+      howToUse: "Always add product to water, never water to product. Use in a ventilated area, wear gloves, and keep away from acids and other cleaners. Make up fresh each day.",
+      longDescription: "A sodium hypochlorite disinfectant and bleaching solution for washrooms, isolation areas, laundries and spill response. Broad-spectrum activity at the stated dilutions.",
+      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }, { value: "20", unit: Unit.L, label: "20 L" }],
+    },
+    "alcohol-hand-sanitiser": {
+      price: { "500 ml": "420", "5 L": "3200" },
+      stock: { "500 ml": 200, "5 L": 15 },
+      hazard: HazardClass.FLAMMABLE,
+      tags: ["hand-hygiene", "alcohol", "ready-to-use"],
+      dilution: [{ use: "Hand rub", ratio: 0, note: "Apply 3 ml to dry hands and rub until dry, about 30 seconds." }],
+      howToUse: "Apply to dry hands and rub all surfaces, including between the fingers and around the thumbs, until dry. Do not rinse or wipe. Keep away from flames and heat.",
+      longDescription: "An alcohol-based hand rub for washrooms, kitchens, reception areas and clinical settings, in a 500 ml dispenser bottle and a 5 L refill.",
+      extraPacks: [{ value: "500", unit: Unit.ML, label: "500 ml" }, { value: "5", unit: Unit.L, label: "5 L" }],
+    },
+    "descaler-kitchen-housekeeping": {
+      price: { "5 L": "1650" },
+      stock: { "5 L": 18 },
+      hazard: HazardClass.CORROSIVE,
+      tags: ["descaler", "acid", "kettles", "dishwashers", "concentrate"],
+      dilution: [
+        { use: "Kettles, urns and boilers", ratio: 10, contactTimeMinutes: 20 },
+        { use: "Dishwasher descaling cycle", ratio: 20, contactTimeMinutes: 15 },
+        { use: "Taps, sinks and tiles", ratio: 40, contactTimeMinutes: 5 },
+      ],
+      howToUse: "Wear gloves and eye protection. Dilute, apply or circulate, allow the contact time, then rinse thoroughly with clean water. Do not use on marble, terrazzo or enamel.",
+      longDescription: "An acidic descaler that removes limescale from kettles, urns, dishwashers, boilers, taps and tiled surfaces in kitchens and housekeeping.",
+      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }],
+    },
+    "oven-grill-hood-cleaner": {
+      price: { "5 L": "1850", "20 L": "6400" },
+      stock: { "5 L": 22, "20 L": 5 },
+      hazard: HazardClass.CORROSIVE,
+      tags: ["degreaser", "ovens", "extraction-hoods", "heavy-duty"],
+      dilution: [
+        { use: "Ovens and grills (cold)", ratio: 0, contactTimeMinutes: 15, note: "Apply neat to a cold surface." },
+        { use: "Extraction hoods and filters", ratio: 5, contactTimeMinutes: 10 },
+        { use: "Fryers and heavy grease", ratio: 3, contactTimeMinutes: 15 },
+      ],
+      howToUse: "Switch the appliance off and let it cool. Wear gloves, goggles and an apron. Apply, allow the contact time, agitate with a pad, then rinse thoroughly. Not for aluminium.",
+      longDescription: "A heavy-duty alkaline degreaser for ovens, grills, extraction hoods, filters and fryers in commercial kitchens. Breaks down burnt-on carbon and grease.",
+      faq: [{ q: "Can it be used on aluminium?", a: "No. It is an alkaline product and will discolour and pit aluminium. Use it on stainless steel, enamel and cast iron only." }],
+    },
+    "crockery-cutlery-destainer": {
+      price: { "15 kg": "5900" },
+      stock: { "15 kg": 6 },
+      hazard: HazardClass.OXIDISER,
+      tags: ["destainer", "dishwashing", "chlorine", "powder"],
+      dilution: [{ use: "Soak tank for crockery and cutlery", ratio: 200, contactTimeMinutes: 20, note: "Rinse in the dishwasher after soaking." }],
+      howToUse: "Dissolve in hot water in a soak tank, immerse crockery and cutlery for the contact time, then run through the dishwasher. Do not soak silver-plated cutlery.",
+      longDescription: "A chlorinated powder that removes tea, coffee and tannin stains from crockery and cutlery in a soak tank before machine washing.",
+    },
+    "enzyme-drain-septic-treatment": {
+      price: { "5 L": "2100" },
+      stock: { "5 L": 14 },
+      hazard: HazardClass.NONE,
+      tags: ["drains", "septic", "biological", "odour-control"],
+      dilution: [
+        { use: "Drain maintenance (weekly, per drain)", ratio: 0, note: "Pour 250 ml down the drain last thing at night." },
+        { use: "Septic tank (per 5,000 L, monthly)", ratio: 0, note: "Flush 1 L down the nearest toilet." },
+      ],
+      howToUse: "Use at the end of the day so the enzymes work overnight without being flushed away. Do not use with bleach or acid within 12 hours.",
+      longDescription: "A biological drain cleaner and septic tank treatment. Enzymes and bacteria digest fat, oil and grease in drains, grease traps and septic systems and control odour without corrosive chemicals.",
+      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }],
+    },
+  };
+
+  let count = 0;
+  for (const [slug, d] of Object.entries(demo)) {
+    const product = await prisma.product.findUnique({ where: { slug }, include: { variants: true } });
+    if (!product) continue;
+    await prisma.product.update({
+      where: { id: product.id },
+      data: {
+        needsPoReview: false,
+        isActive: true,
+        hazardClass: d.hazard ?? HazardClass.NONE,
+        tags: d.tags,
+        dilutionGuidance: d.dilution ?? [],
+        howToUse: d.howToUse,
+        longDescription: d.longDescription,
+        faq: d.faq ?? [],
+      },
+    });
+    for (const pack of d.extraPacks ?? []) {
+      const sku = `${slug.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}-${pack.label.replace(/\s+/g, "").toUpperCase()}`;
+      await prisma.productVariant.upsert({
+        where: { sku },
+        create: { productId: product.id, sku, packSizeValue: pack.value, unit: pack.unit, packLabel: pack.label },
+        update: {},
+      });
+    }
+    const variants = await prisma.productVariant.findMany({ where: { productId: product.id } });
+    for (const v of variants) {
+      const price = d.price[v.packLabel];
+      if (!price) {
+        // Placeholder "each" variant from the CSV that the demo has replaced with real pack sizes.
+        if (v.packLabel === "each" && Object.keys(d.price).length > 0) await prisma.productVariant.delete({ where: { id: v.id } });
+        continue;
+      }
+      const litres = v.unit === Unit.L ? Number(v.packSizeValue) : v.unit === Unit.ML ? Number(v.packSizeValue) / 1000 : v.unit === Unit.KG ? Number(v.packSizeValue) : Number(v.packSizeValue) / 1000;
+      await prisma.productVariant.update({
+        where: { id: v.id },
+        data: {
+          priceMinorUnits: BigInt(price) * 100n,
+          stockOnHand: d.stock?.[v.packLabel] ?? 10,
+          stockReserved: 0,
+          weightGrams: Math.round(litres * (d.weightGramsPerLitre ?? 1050)) + 150,
+          isActive: true,
+          sortOrder: Math.round(litres * 10),
+        },
+      });
+    }
+    count++;
+  }
+
+  // Related products: things that are genuinely used together.
+  const bySlug = async (s: string) => (await prisma.product.findUnique({ where: { slug: s } }))?.id;
+  const pairs: Array<[string, string, RelationKind]> = [
+    ["oven-grill-hood-cleaner", "general-purpose-cleaner-disinfectant", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+    ["qac-surface-food-contact-sanitiser", "general-purpose-cleaner-disinfectant", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+    ["chlorine-disinfectant-bleach", "enzyme-drain-septic-treatment", RelationKind.ALTERNATIVE],
+    ["crockery-cutlery-destainer", "descaler-kitchen-housekeeping", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+  ];
+  for (const [a, b, kind] of pairs) {
+    const [fromProductId, toProductId] = [await bySlug(a), await bySlug(b)];
+    if (!fromProductId || !toProductId) continue;
+    await prisma.productRelation.upsert({
+      where: { fromProductId_toProductId_kind: { fromProductId, toProductId, kind } },
+      create: { fromProductId, toProductId, kind },
+      update: {},
+    });
+  }
+  await prisma.featureFlag.upsert({ where: { key: "shop.enabled" }, create: { key: "shop.enabled", enabled: true }, update: { enabled: true } });
+  return count;
 }
 
 function unitLabel(u: Unit): string {
@@ -214,7 +424,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
   seed(prisma)
     .then((r) => {
-      console.log(`seed: ${r.categories} categories, ${r.products} products, ${r.variants} variants, ${r.zones} delivery zones`);
+      console.log(`seed: ${r.categories} categories, ${r.products} products, ${r.variants} variants, ${r.zones} delivery zones${r.demo ? `, ${r.demo} demo products priced (SEED_DEMO)` : ""}`);
       return prisma.$disconnect();
     })
     .catch(async (e) => {
