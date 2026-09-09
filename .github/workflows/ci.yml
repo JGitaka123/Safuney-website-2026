@@ -84,6 +84,8 @@ jobs:
         run: pnpm guard:placeholders
       - name: Money type guard
         run: pnpm guard:money
+      - name: Swahili catalogue guard
+        run: pnpm guard:i18n
 
   e2e:
     name: Playwright + axe (mobile first)

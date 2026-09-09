@@ -1,14 +1,27 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ZoneBand, ButtonLink } from "@safuney/ui";
 import { site } from "@/config/site";
 import { getCategories, getZoneCounts } from "@/lib/catalogue";
+import { getSetting } from "@/lib/settings";
+import { localBusinessJsonLd, jsonLdString, organizationJsonLd } from "@/lib/seo/jsonld";
 import { ZoneBar } from "@/components/site/zone-bar";
+import { TrustStrip } from "@/components/site/trust-strip";
+import { INDUSTRIES } from "@/lib/content/solutions";
+
+export const metadata: Metadata = {
+  // Only the home page claims "/" as its canonical, and only it has a Swahili twin today. Setting
+  // either on the root layout would apply them to every page that does not override them.
+  alternates: { canonical: "/", languages: { en: "/", sw: "/sw" } },
+};
 
 export default async function HomePage() {
-  const [categories, zoneCounts] = await Promise.all([getCategories(), getZoneCounts()]);
+  const [categories, zoneCounts, kraPin, vatNumber] = await Promise.all([getCategories(), getZoneCounts(), getSetting("company.kraPin"), getSetting("company.vatNumber")]);
+  const business = localBusinessJsonLd({ kraPin, vatNumber });
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(business ? [organizationJsonLd(), business] : [organizationJsonLd()]) }} />
       {/* Hero: headline on ground (plan §4.3). The photograph slot above it is filled once the PO's shoot lands (photography.md). */}
       <section aria-labelledby="hero-heading" className="border-b border-line bg-surface">
         <div className="mx-auto grid max-w-page gap-8 px-5 py-12 md:grid-cols-12 md:px-6 md:py-20">
@@ -149,6 +162,15 @@ export default async function HomePage() {
         <div>
           <h2 className="text-h2">Who we serve</h2>
           <p className="mt-6 max-w-[62ch] text-ink-muted">{site.industries.join(", ")}.</p>
+          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+            {INDUSTRIES.map((i) => (
+              <li key={i.slug}>
+                <Link href={`/solutions/${i.slug}`} className="text-accent underline underline-offset-[3px] hover:decoration-2">
+                  {i.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
           <p className="mt-6">
             <Link href="/contact" className="text-accent underline underline-offset-[3px] hover:decoration-2">
               Talk to us about your site
@@ -156,6 +178,8 @@ export default async function HomePage() {
           </p>
         </div>
       </section>
+
+      <TrustStrip facts={{ kraPin, vatNumber }} />
     </>
   );
 }

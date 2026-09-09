@@ -24,11 +24,14 @@ export const site = {
   nav: {
     primary: [
       { href: "/products", label: "Products" },
+      { href: "/solutions", label: "Solutions" },
       { href: "/services", label: "Services" },
       { href: "/about", label: "About" },
       { href: "/contact", label: "Contact" },
     ],
     help: [
+      { href: "/solutions", label: "Solutions by industry" },
+      { href: "/resources", label: "Guides and safety data" },
       { href: "/delivery-and-returns", label: "Delivery and returns" },
       { href: "/quote", label: "Request a quote" },
       { href: "/account/credit", label: "Open a credit account" },

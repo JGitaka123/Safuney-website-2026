@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { site } from "@/config/site";
+import { LanguageSwitcher } from "./language-switcher";
 
 export function SiteFooter() {
   const { contact } = site;
@@ -75,6 +76,7 @@ export function SiteFooter() {
       <div className="border-t border-line">
         <div className="mx-auto flex max-w-page flex-wrap items-center justify-between gap-4 px-5 py-5 text-caption text-ink-muted md:px-6">
           <p>© {new Date().getFullYear()} {site.legalName}. All rights reserved.</p>
+          <LanguageSwitcher />
           <ul className="flex flex-wrap gap-6">
             {site.nav.legal.map((item) => (
               <li key={item.href}>

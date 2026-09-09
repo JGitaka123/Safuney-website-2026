@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@safuney/db";
+import { revalidateCatalogue, revalidateProductId, revalidateVariant } from "@/lib/catalogue/revalidate";
 import { adminAction, AdminError, type AdminResult } from "./action";
 import { applyImport, ImportError } from "./catalogue-csv";
 
@@ -25,6 +26,7 @@ export const setVariantPrice = adminAction(
     await db().productVariant.update({ where: { id: variantId }, data: { priceMinorUnits: minor } });
     ctx.audit({ entity: "ProductVariant", entityId: variantId, before: { priceMinorUnits: before.priceMinorUnits }, after: { priceMinorUnits: minor } });
     revalidatePath("/admin/catalogue");
+    await revalidateVariant(variantId);
     return { ok: true, message: `Price for ${before.sku} updated.`, id: variantId };
   },
 );
@@ -46,6 +48,7 @@ export const adjustStock = adminAction(
     ]);
     ctx.audit({ entity: "ProductVariant", entityId: variantId, before: { stockOnHand: before.stockOnHand }, after: { stockOnHand: counted, reason } });
     revalidatePath("/admin/catalogue");
+    await revalidateVariant(variantId);
     return { ok: true, message: `${before.sku} set to ${counted}.`, id: variantId };
   },
 );
@@ -61,6 +64,7 @@ export const setProductReviewed = adminAction(
     await db().product.update({ where: { id: productId }, data: { needsPoReview: !reviewed, isActive: reviewed ? true : before.isActive } });
     ctx.audit({ entity: "Product", entityId: productId, before: { needsPoReview: before.needsPoReview, isActive: before.isActive }, after: { needsPoReview: !reviewed, isActive: reviewed ? true : before.isActive } });
     revalidatePath("/admin/catalogue");
+    await revalidateProductId(productId);
     return { ok: true, message: reviewed ? `${before.name} is now visible to customers.` : `${before.name} is hidden until reviewed.`, id: productId };
   },
 );
@@ -74,6 +78,7 @@ export const importCatalogue = adminAction(
       const { created, updated } = await applyImport(csv, ctx.who.id);
       ctx.audit({ entity: "Product", after: { created, updated, bytes: csv.length } });
       revalidatePath("/admin/catalogue");
+      await revalidateCatalogue();
       return { ok: true, message: `${created} new, ${updated} updated.` };
     } catch (e) {
       if (e instanceof ImportError) throw new AdminError(e.message);

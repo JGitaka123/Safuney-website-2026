@@ -37,7 +37,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: product.seoTitle ?? product.name,
     description: product.seoDescription ?? product.shortDescription,
     alternates: { canonical: `/products/${category}/${slug}` },
-    openGraph: { title: product.name, description: product.shortDescription, images: product.images.map((i) => i.url) },
+    // `images` is set only when there are real photographs: an empty array here would override the
+    // generated share card from opengraph-image.tsx and leave the link with no image at all.
+    openGraph: {
+      title: product.name,
+      description: product.shortDescription,
+      ...(product.images.length > 0 ? { images: product.images.map((i) => i.url) } : {}),
+    },
   };
 }
 
