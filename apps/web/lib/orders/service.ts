@@ -16,11 +16,11 @@ import { PaymentProviderError } from "@safuney/payments";
 import { randomBytes } from "node:crypto";
 import { quoteFee, zoneForCounty, type ZoneLike } from "@/lib/delivery";
 import { nextOrderNumber } from "./numbers";
+import { APPROVAL_HOLD_DAYS, RESERVATION_MINUTES, releaseExpiredReservations, releaseItems } from "./reservations";
 import { resolvePrices } from "@/lib/b2b/pricing";
 import { assertCreditFor, CreditError } from "@/lib/b2b/credit";
 import { issueTaxInvoice } from "@/lib/b2b/invoices";
 
-export const RESERVATION_MINUTES = 30;
 export const MAX_PAYMENT_ATTEMPTS = 5;
 
 export interface ContactInput {
@@ -51,8 +51,7 @@ export interface PlaceOrderInput {
   baseUrl: string;
 }
 
-/** Orders awaiting approval hold their stock this long before the reservation is released. */
-export const APPROVAL_HOLD_DAYS = 7;
+
 
 export class OrderError extends Error {
   constructor(
@@ -73,6 +72,8 @@ export interface PlaceOrderResult {
 }
 
 export type Registry = Record<PaymentMethod, PaymentAdapter>;
+
+export { APPROVAL_HOLD_DAYS, RESERVATION_MINUTES };
 
 export class OrderService {
   constructor(
@@ -95,6 +96,10 @@ export class OrderService {
     const adapter = this.adapters[input.paymentMethod];
     if (!adapter.isConfigured()) throw new OrderError("METHOD_UNAVAILABLE", "That payment method is not available right now. Choose another.");
     if (input.paymentMethod === "INVOICE" && !input.customerId) throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Sign in to your organisation account or choose another method.");
+
+    // Free anything held past its window on these packs before we read availability.
+    const cartLines = await this.prisma.cartItem.findMany({ where: { cart: { token: input.cartToken } }, select: { variantId: true } });
+    if (cartLines.length > 0) await releaseExpiredReservations(this.prisma, { variantIds: cartLines.map((l) => l.variantId), now: this.now() });
 
     const placed = await this.prisma.$transaction(async (tx) => {
       const customer = input.customerId ? await tx.customer.findUnique({ where: { id: input.customerId }, select: { id: true, priceListId: true, approvalThresholdMinorUnits: true, priceList: { select: { isActive: true } } } }) : null;
@@ -257,23 +262,12 @@ export class OrderService {
   async rejectOrder(orderId: string, approverUserId: string, reason: string): Promise<void> {
     const order = await this.assertApprover(orderId, approverUserId);
     await this.prisma.$transaction(async (tx) => {
-      await this.releaseItems(tx, order.items, order.number, "approval_rejected");
+      await releaseItems(tx, order.items, order.number, "approval_rejected");
       await tx.order.update({ where: { id: order.id }, data: { status: "CANCELLED", reservationExpiresAt: null } });
       await tx.orderEvent.create({ data: { orderId: order.id, status: "CANCELLED", type: "order_rejected", actorId: approverUserId, payload: { reason } } });
     });
   }
 
-  private async releaseItems(tx: Prisma.TransactionClient, items: Array<{ variantId: string | null; qty: number }>, reference: string, reason: string) {
-    for (const item of items) {
-      if (!item.variantId) continue;
-      const v = await tx.productVariant.findUnique({ where: { id: item.variantId }, select: { stockReserved: true } });
-      const release = Math.min(item.qty, v?.stockReserved ?? 0);
-      if (release > 0) {
-        await tx.productVariant.update({ where: { id: item.variantId }, data: { stockReserved: { decrement: release } } });
-        await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "RELEASE", qty: -release, reason, reference } });
-      }
-    }
-  }
 
   /**
    * "Pay another way": switch an unpaid order to a different method and start collection with it.
@@ -456,19 +450,9 @@ export class OrderService {
     return { status: fresh.status, paymentStatus: fresh.payments[0]?.status ?? null, message: statusMessage(fresh.status, fresh.paymentMethod) };
   }
 
-  /** Release reservations of unpaid orders past their expiry (cron). */
+  /** Daily cron sweep. Availability checks release lazily too, so stock is never held past its window. */
   async releaseExpiredReservations(): Promise<number> {
-    const expired = await this.prisma.order.findMany({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_FAILED", "AWAITING_APPROVAL"] }, reservationExpiresAt: { lt: this.now() } }, include: { items: true } });
-    for (const order of expired) {
-      await this.prisma.$transaction(async (tx) => {
-        await this.releaseItems(tx, order.items, order.number, order.status === "AWAITING_APPROVAL" ? "approval_expired" : "reservation_expired");
-        // An order nobody approved within the hold is cancelled; unpaid orders keep their status and can still be paid (stock permitting).
-        const status: OrderStatus = order.status === "AWAITING_APPROVAL" ? "CANCELLED" : order.status;
-        await tx.order.update({ where: { id: order.id }, data: { reservationExpiresAt: null, status } });
-        await tx.orderEvent.create({ data: { orderId: order.id, status, type: order.status === "AWAITING_APPROVAL" ? "approval_expired" : "reservation_released", payload: { after: order.status === "AWAITING_APPROVAL" ? `${APPROVAL_HOLD_DAYS} days` : `${RESERVATION_MINUTES} min` } } });
-      });
-    }
-    return expired.length;
+    return releaseExpiredReservations(this.prisma, { now: this.now() });
   }
 }
 

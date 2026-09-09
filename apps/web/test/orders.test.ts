@@ -157,6 +157,31 @@ run("order service", () => {
     }
   });
 
+  it("frees stock held past its window on the next availability check, without waiting for the cron", async () => {
+    // Its own pack with 3 in stock, so earlier tests in this file cannot skew it.
+    const product = await prisma.product.findFirstOrThrow({ where: { slug: `ord-p-${stamp}` } });
+    const vLazy = (await prisma.productVariant.create({ data: { productId: product.id, sku: `OL-${stamp}`, packSizeValue: "2", unit: "L", packLabel: "2 L", priceMinorUnits: 50000n, vatRateBps: 1600, stockOnHand: 3, weightGrams: 2200 } })).id;
+
+    // One abandoned checkout holds 2 of the 3.
+    const token = await cartWith([[vLazy, 2]]);
+    const r = await orders.placeOrder({ cartToken: token, contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: vLazy } })).stockReserved).toBe(2);
+
+    // A second customer cannot take all 3 while the hold stands.
+    const second = await carts.getOrCreate(undefined);
+    await expect(carts.add(second.token, vLazy, 3)).rejects.toMatchObject({ code: "STOCK" });
+
+    // The window passes. No cron runs.
+    await prisma.order.update({ where: { id: r.orderId }, data: { reservationExpiresAt: new Date(Date.now() - 60_000) } });
+
+    // Adding to a cart sweeps the packs it is about to read, so the stock is there.
+    await carts.add(second.token, vLazy, 3);
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: vLazy } })).stockReserved).toBe(0);
+    const released = await prisma.orderEvent.findMany({ where: { orderId: r.orderId, type: "reservation_released" } });
+    expect(released).toHaveLength(1);
+    await carts.setQty(second.token, vLazy, 0);
+  });
+
   it("releases expired reservations", async () => {
     const before = (await prisma.productVariant.findUniqueOrThrow({ where: { id: vA } })).stockReserved;
     await prisma.order.updateMany({ where: { guestEmail: contact.email, status: "PENDING_PAYMENT" }, data: { reservationExpiresAt: new Date(Date.now() - 1000) } });

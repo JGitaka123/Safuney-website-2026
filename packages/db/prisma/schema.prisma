@@ -550,6 +550,8 @@ model Order {
   @@index([customerId, createdAt])
   @@index([status])
   @@index([userId])
+  /// Sweeping expired stock reservations: read on every availability check, so it must be cheap.
+  @@index([status, reservationExpiresAt])
 }
 
 model OrderItem {

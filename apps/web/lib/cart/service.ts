@@ -4,6 +4,7 @@
  * checkout (Phase 3), so the cart only ever holds "intent".
  */
 import { money, Prisma, type PrismaClient } from "@safuney/db";
+import { releaseExpiredReservations } from "@/lib/orders/reservations";
 import { randomBytes } from "node:crypto";
 
 export const CART_COOKIE = "sfn_cart";
@@ -136,6 +137,8 @@ export class CartService {
 
   private async assertAvailable(variantId: string, qty: number) {
     if (!Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) throw new CartError("QTY", `Quantity must be between 1 and ${MAX_QTY}.`);
+    // Someone else's abandoned checkout must not hold this pack past its window (see reservations.ts).
+    await releaseExpiredReservations(this.prisma, { variantIds: [variantId] });
     const v = await this.prisma.productVariant.findUnique({
       where: { id: variantId },
       select: { isActive: true, stockOnHand: true, stockReserved: true, isMadeToOrder: true, packLabel: true, product: { select: { name: true, isActive: true, needsPoReview: true } } },
