@@ -407,6 +407,17 @@ export async function seedDemo(prisma: PrismaClient): Promise<number> {
     });
   }
   await prisma.featureFlag.upsert({ where: { key: "shop.enabled" }, create: { key: "shop.enabled", enabled: true }, update: { enabled: true } });
+
+  // Illustrative delivery rules so checkout can be exercised (PO question 8 replaces these).
+  const zoneRules: Record<string, { feeRules: unknown; freeAboveMinorUnits: bigint | null; slots: string[]; leadTimeDays: number }> = {
+    "nairobi-metro": { feeRules: [{ maxWeightGrams: 15000, maxOrderMinorUnits: "1000000", feeMinorUnits: "35000" }, { maxWeightGrams: 60000, feeMinorUnits: "70000" }, { feeMinorUnits: "150000" }], freeAboveMinorUnits: 2500000n, slots: ["Morning (8 am to 12 pm)", "Afternoon (12 pm to 5 pm)"], leadTimeDays: 1 },
+    "kiambu-thika": { feeRules: [{ maxWeightGrams: 15000, feeMinorUnits: "60000" }, { maxWeightGrams: 60000, feeMinorUnits: "110000" }, { feeMinorUnits: "220000" }], freeAboveMinorUnits: 4000000n, slots: ["Next working day"], leadTimeDays: 2 },
+    "other-counties": { feeRules: [{ maxWeightGrams: 30000, feeMinorUnits: "150000" }, { maxWeightGrams: 100000, feeMinorUnits: "350000" }], freeAboveMinorUnits: null, slots: ["Courier, 2 to 4 working days"], leadTimeDays: 3 },
+  };
+  for (const [slug, z] of Object.entries(zoneRules)) {
+    await prisma.deliveryZone.update({ where: { slug }, data: { feeRules: z.feeRules as never, freeAboveMinorUnits: z.freeAboveMinorUnits, slots: z.slots, leadTimeDays: z.leadTimeDays, isActive: true } });
+  }
+  await prisma.setting.upsert({ where: { key: "delivery.configured" }, create: { key: "delivery.configured", value: true }, update: { value: true } });
   return count;
 }
 

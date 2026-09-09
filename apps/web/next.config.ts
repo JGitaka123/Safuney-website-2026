@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ["@safuney/db", "@safuney/ui", "@safuney/config"],
+  transpilePackages: ["@safuney/db", "@safuney/ui", "@safuney/config", "@safuney/payments"],
   serverExternalPackages: ["pg", "@prisma/adapter-pg"],
   images: { formats: ["image/avif", "image/webp"] },
   async headers() {

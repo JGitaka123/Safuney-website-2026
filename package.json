@@ -15,10 +15,11 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "guard:placeholders": "node scripts/placeholder-guard.mjs",
-    "ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm guard:placeholders",
+    "ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm guard:placeholders && pnpm guard:money",
     "migrate:check": "node scripts/migrate-check.mjs",
     "test:e2e": "pnpm --filter @safuney/web test:e2e",
     "lhci": "pnpm --filter @safuney/web lhci",
-    "sync:fonts": "node scripts/sync-fonts.mjs"
+    "sync:fonts": "node scripts/sync-fonts.mjs",
+    "guard:money": "node scripts/money-guard.mjs"
   }
 }
