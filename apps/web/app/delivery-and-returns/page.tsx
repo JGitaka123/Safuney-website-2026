@@ -35,7 +35,7 @@ export default function DeliveryAndReturnsPage() {
         <p>
           The delivery charge depends on the zone and the weight of the order. It is quoted at checkout, before you
           pay, and confirmed on your order confirmation. If your address is outside our delivery zones, or you need a
-          courier quote for a large order, <Link href="/contact?topic=quote">ask us for a quote</Link>.
+          courier quote for a large order, <Link href="/quote">ask us for a quote</Link>.
         </p>
 
         <h2>Collecting from our office</h2>

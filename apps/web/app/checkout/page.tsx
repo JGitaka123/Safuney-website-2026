@@ -48,7 +48,8 @@ export default async function CheckoutPage() {
     );
   }
 
-  const [cart, context] = await Promise.all([readCart(), getCheckoutContext()]);
+  const context = await getCheckoutContext();
+  const cart = await readCart(context.viewer?.organisation?.id);
   const lines = cart?.lines ?? [];
 
   if (lines.length === 0) {

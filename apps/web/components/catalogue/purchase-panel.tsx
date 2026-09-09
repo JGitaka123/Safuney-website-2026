@@ -97,7 +97,7 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
           {selected?.stock.key === "out" ? (
             <div className="flex flex-col gap-3">
               <p className="text-small">This pack is out of stock. Choose another pack size, or ask us when it is back.</p>
-              <Link href={`/contact?topic=quote&sku=${selected.sku}`} className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
+              <Link href={`/quote?sku=${selected.sku}`} className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
                 Ask about {selected.label}
               </Link>
             </div>
@@ -106,13 +106,13 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
               Add to cart
             </Button>
           )}
-          <Link href="/contact?topic=quote" className="text-small text-accent underline underline-offset-[3px]">
+          <Link href={`/quote?product=${encodeURIComponent(productName)}${selected ? `&pack=${encodeURIComponent(selected.label)}` : ""}`} className="text-small text-accent underline underline-offset-[3px]">
             Buying in bulk? Request a quote
           </Link>
         </>
       ) : (
         <div className="flex flex-col gap-3">
-          <Link href={`/contact?topic=quote&sku=${selected?.sku ?? ""}`} className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
+          <Link href={`/quote?sku=${selected?.sku ?? ""}`} className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
             Request a quote
           </Link>
           <p className="text-small text-ink-muted">Online ordering opens with the full catalogue. Until then we quote the same day.</p>

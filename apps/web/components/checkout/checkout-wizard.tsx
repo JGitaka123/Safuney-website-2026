@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useId } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { KENYAN_COUNTIES, normaliseKenyanMobile, type KenyanCounty } from "@safuney/config";
 import { Alert, Button, Input, PhoneInput, ProgressSteps, Select, Textarea } from "@safuney/ui";
@@ -51,6 +52,9 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
   const [phone, setPhone] = useState(context.viewer?.phone?.replace(/^\+254/, "0") ?? "");
   const [organisation, setOrganisation] = useState(context.viewer?.organisation?.name ?? "");
   const org = context.viewer?.organisation ?? null;
+  // A buyer's order at or above the organisation's threshold waits for an approver (see OrderService).
+  const needsApproval =
+    org?.role === "BUYER" && org.approvalThresholdMinorUnits !== null && org.approvalThresholdMinorUnits !== undefined && BigInt(cart.totalMinorUnits) >= BigInt(org.approvalThresholdMinorUnits);
 
   // Delivery state
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("DELIVERY");
@@ -599,24 +603,50 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                   </div>
                 </label>
 
-                {/* Invoice: only approved credit accounts (Phase 4 sign-in) */}
-                <label className={methodClass("INVOICE")}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="INVOICE"
-                    checked={paymentMethod === "INVOICE"}
-                    onChange={() => setPaymentMethod("INVOICE")}
-                    disabled={!isAvailable("INVOICE")}
-                    className="mt-1 size-4 accent-accent"
-                  />
-                  <div>
-                    <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
-                    <span className="block text-small text-ink-muted">
-                      {isAvailable("INVOICE") ? "We invoice your account on dispatch." : availability("INVOICE")?.reason ?? "For approved credit accounts. Call +254 796 808 822 to apply."}
-                    </span>
-                  </div>
-                </label>
+                {/* Invoice: only approved credit accounts, and only within the available credit. */}
+                <div>
+                  <label className={methodClass("INVOICE")}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="INVOICE"
+                      checked={paymentMethod === "INVOICE"}
+                      onChange={() => setPaymentMethod("INVOICE")}
+                      disabled={!isAvailable("INVOICE")}
+                      className="mt-1 size-4 accent-accent"
+                    />
+                    <div className="w-full">
+                      <span className="block font-medium text-ink">Invoice (approved credit accounts)</span>
+                      <span className="block text-small text-ink-muted">
+                        {isAvailable("INVOICE")
+                          ? `Billed to ${org?.name ?? "your account"}${org?.creditAvailableLabel ? `, ${org.creditAvailableLabel} of credit available` : ""}.`
+                          : availability("INVOICE")?.reason ?? "For approved credit accounts."}
+                      </span>
+                      {!isAvailable("INVOICE") && !org ? (
+                        <Link href="/account/credit" className="mt-1 inline-block text-small text-accent underline underline-offset-[3px]">
+                          Apply for a credit account
+                        </Link>
+                      ) : null}
+                    </div>
+                  </label>
+                  {/* Outside the radio's label so the field keeps its own accessible name. */}
+                  {paymentMethod === "INVOICE" && isAvailable("INVOICE") ? (
+                    <div className="mt-3 flex max-w-sm flex-col gap-3 border-l-2 border-accent pl-4">
+                      <Input
+                        label="Purchase order number"
+                        value={poNumber}
+                        onChange={(e) => setPoNumber(e.target.value)}
+                        optional
+                        helper="Printed on your tax invoice and packing slip."
+                      />
+                      {needsApproval ? (
+                        <p className="border border-line bg-ground p-3 text-small text-ink">
+                          <strong className="font-medium">Sign-off needed.</strong> This order is above {org!.approvalThresholdLabel}, so it goes to an approver in your organisation before anything is invoiced.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-8 flex flex-wrap justify-between gap-3">

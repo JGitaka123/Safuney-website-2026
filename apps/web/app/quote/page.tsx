@@ -12,7 +12,22 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-export default async function QuotePage() {
+/** Whatever the visitor was looking at when they asked, turned into the first line of the request. */
+function prefillFrom(params: Record<string, string | string[] | undefined>): string {
+  const one = (k: string) => (Array.isArray(params[k]) ? params[k]?.[0] : params[k])?.trim() || "";
+  const sku = one("sku");
+  const product = one("product");
+  const pack = one("pack");
+  const category = one("category");
+  const q = one("q");
+  if (sku) return sku;
+  if (product) return pack ? `${product} ${pack}` : product;
+  if (category) return category.replace(/-/g, " ");
+  return q;
+}
+
+export default async function QuotePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const prefill = prefillFrom(await searchParams);
   const who = services.database() ? await viewer() : null;
   const cart = services.database() ? await readCart() : null;
   const hasCart = Boolean(cart && cart.lines.length > 0);
@@ -42,7 +57,7 @@ export default async function QuotePage() {
             <p className="text-small text-ink-muted">Product, pack size and quantity per line. Brands you use today are fine; we will match or suggest.</p>
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="grid grid-cols-[1fr_6rem] gap-3">
-                <Input name={`line${i}`} label={`Line ${i}`} placeholder={i === 1 ? "Chlorine disinfectant 20 L" : ""} required={i === 1 && !hasCart} />
+                <Input name={`line${i}`} label={`Line ${i}`} defaultValue={i === 1 ? prefill : ""} placeholder={i === 1 ? "Chlorine disinfectant 20 L" : ""} required={i === 1 && !hasCart} />
                 <Input name={`qty${i}`} label="Qty" type="number" min={1} max={9999} defaultValue={1} inputMode="numeric" />
               </div>
             ))}

@@ -158,7 +158,7 @@ export function OrderSheet({ groups, priceHeading }: Props) {
             <Button type="button" variant="secondary" onClick={() => setFilter("")}>
               Clear the search
             </Button>
-            <Link href={`/contact?topic=quote&q=${encodeURIComponent(filter.trim())}`} className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
+            <Link href={`/quote?q=${encodeURIComponent(filter.trim())}`} className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
               Request a quote
             </Link>
           </div>

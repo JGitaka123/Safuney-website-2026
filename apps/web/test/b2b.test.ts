@@ -5,7 +5,7 @@ import { createRegistry } from "@safuney/payments";
 import { CartService } from "@/lib/cart/service";
 import { OrderService } from "@/lib/orders/service";
 import { OrganisationService } from "@/lib/b2b/organisations";
-import { creditPosition } from "@/lib/b2b/credit";
+import { creditPosition, STOP_SUPPLY_GRACE_DAYS } from "@/lib/b2b/credit";
 import { resolvePrices } from "@/lib/b2b/pricing";
 
 const url = process.env["DATABASE_URL"];
@@ -153,6 +153,39 @@ run("B2B: organisations, approvals, price lists and credit", () => {
     const again = await orders.placeOrder({ cartToken: token, contact, delivery: { method: "PICKUP" }, paymentMethod: "INVOICE", userId: owner, customerId, placedByRole: "OWNER", baseUrl: base });
     expect(again.status).toBe("CONFIRMED");
     expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: variant } })).stockReserved).toBe(reservedBefore + 1);
+  });
+
+  it("stops supply on credit when an invoice sits more than the grace period past its due date", async () => {
+    // One unpaid invoice, pushed past its due date by more than the grace period.
+    const invoice = await prisma.invoice.findFirstOrThrow({ where: { customerId, type: "TAX" }, orderBy: { issuedAt: "desc" } });
+    const wellPastDue = new Date(Date.now() - (STOP_SUPPLY_GRACE_DAYS + 2) * 86_400_000);
+    await prisma.invoice.update({ where: { id: invoice.id }, data: { paidAt: null, dueDate: wellPastDue } });
+
+    const stopped = await creditPosition(prisma, customerId);
+    expect(stopped.stopSupply).toBe(true);
+    expect(stopped.overdueMinorUnits).toBe(invoice.totalMinorUnits);
+    // No headroom at all while supply is stopped, whatever the limit says.
+    expect(stopped.availableMinorUnits).toBe(0n);
+    expect(stopped.stopSupplyReason).toContain(invoice.number);
+
+    // Checkout refuses the method, and says which invoice to settle.
+    const token = await cartWith(1);
+    await expect(orders.placeOrder({ cartToken: token, contact, delivery: { method: "PICKUP" }, paymentMethod: "INVOICE", userId: owner, customerId, placedByRole: "OWNER", baseUrl: base })).rejects.toMatchObject({
+      code: "CREDIT",
+      message: expect.stringContaining(invoice.number),
+    });
+    // Other methods still work: the account is stopped on credit, not shut out.
+    const cod = await orders.placeOrder({ cartToken: token, contact, delivery: { method: "PICKUP" }, paymentMethod: "COD", userId: owner, customerId, placedByRole: "OWNER", baseUrl: base });
+    expect(cod.status).toBe("CONFIRMED");
+
+    // Inside the grace period it is overdue but still supplied.
+    await prisma.invoice.update({ where: { id: invoice.id }, data: { dueDate: new Date(Date.now() - 2 * 86_400_000) } });
+    const grace = await creditPosition(prisma, customerId);
+    expect(grace).toMatchObject({ stopSupply: false, stopSupplyReason: null });
+    expect(grace.overdueMinorUnits).toBe(invoice.totalMinorUnits);
+    expect(grace.availableMinorUnits).toBeGreaterThan(0n);
+
+    await prisma.invoice.update({ where: { id: invoice.id }, data: { paidAt: new Date() } });
   });
 
   it("an approved invoice order above the threshold is credit-checked at approval time", async () => {

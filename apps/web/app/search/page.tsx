@@ -110,7 +110,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               </>
             }
             actions={[
-              <Link key="quote" href={`/contact?topic=quote&q=${encodeURIComponent(q)}`} className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
+              <Link key="quote" href={`/quote?q=${encodeURIComponent(q)}`} className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
                 Request a quote
               </Link>,
               <Link key="products" href="/products" className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
@@ -130,7 +130,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             {products.length === 0 ? (
               <p className="mt-4 max-w-[62ch] text-body text-ink-muted">
                 No products match &apos;{q}&apos;, but the categories and documents below might.{" "}
-                <Link href={`/contact?topic=quote&q=${encodeURIComponent(q)}`} className="text-accent underline underline-offset-[3px]">
+                <Link href={`/quote?q=${encodeURIComponent(q)}`} className="text-accent underline underline-offset-[3px]">
                   Ask us for a quote
                 </Link>{" "}
                 if you cannot find it.

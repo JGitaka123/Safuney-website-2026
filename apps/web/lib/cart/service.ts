@@ -5,6 +5,7 @@
  */
 import { money, Prisma, type PrismaClient } from "@safuney/db";
 import { releaseExpiredReservations } from "@/lib/orders/reservations";
+import { priceListFor, resolvePrices } from "@/lib/b2b/pricing";
 import { randomBytes } from "node:crypto";
 
 export const CART_COOKIE = "sfn_cart";
@@ -79,10 +80,10 @@ export function newToken(): string {
   return randomBytes(24).toString("base64url");
 }
 
-export function summarise(cart: CartRecord): CartSummary {
+export function summarise(cart: CartRecord, customPriceMap?: Map<string, bigint>): CartSummary {
   const lines: CartLine[] = cart.items.map((it) => {
     const v = it.variant;
-    const unit = v.priceMinorUnits;
+    const unit = customPriceMap?.get(v.id) ?? v.priceMinorUnits;
     const lineExVat = money.times(unit, it.qty);
     const p = v.product;
     return {
@@ -120,9 +121,26 @@ export function summarise(cart: CartRecord): CartSummary {
 export class CartService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async find(token: string): Promise<CartSummary | null> {
+  /**
+   * The customer's negotiated prices for the packs in this cart, so the cart shows what checkout will
+   * charge. Uses the same resolver the order transaction uses (tiers by quantity, active lists only),
+   * because the two must never disagree.
+   */
+  private async customerPrices(customerId: string | null | undefined, cart: CartRecord): Promise<Map<string, bigint>> {
+    if (!customerId || cart.items.length === 0) return new Map();
+    const priceListId = await priceListFor(this.prisma, customerId);
+    if (!priceListId) return new Map();
+    return resolvePrices(
+      this.prisma,
+      priceListId,
+      cart.items.map((i) => ({ variantId: i.variantId, qty: i.qty, listPriceMinorUnits: i.variant.priceMinorUnits })),
+    );
+  }
+
+  async find(token: string, customerId?: string): Promise<CartSummary | null> {
     const cart = await this.prisma.cart.findFirst({ where: { token, expiresAt: { gt: new Date() } }, include: cartInclude });
-    return cart ? summarise(cart) : null;
+    if (!cart) return null;
+    return summarise(cart, await this.customerPrices(customerId ?? cart.customerId, cart));
   }
 
   async getOrCreate(token: string | undefined, userId?: string): Promise<CartSummary> {

@@ -56,7 +56,9 @@ export type PlaceOrderResponse =
 export interface CheckoutContext {
   methods: Array<{ method: "MPESA" | "CARD" | "INVOICE" | "COD"; available: boolean; reason?: string }>;
   /** Signed-in customer details for prefilling and the organisation the order is placed for. */
-  viewer: { name: string | null; email: string | null; phone: string | null; organisation: { id: string; name: string; role: "OWNER" | "BUYER" | "APPROVER"; approvalThresholdLabel: string | null; creditAvailableLabel: string | null } | null } | null;
+  viewer: { name: string | null; email: string | null; phone: string | null; organisation: { id: string; name: string; role: "OWNER" | "BUYER" | "APPROVER"; approvalThresholdLabel: string | null;
+      /** Minor units as a decimal string; bigint does not cross to the client. */
+      approvalThresholdMinorUnits: string | null; creditAvailableLabel: string | null } | null } | null;
   deliveryConfigured: boolean;
   zones: Array<{ slug: string; name: string; counties: string[]; slots: string[]; leadTimeDays: number }>;
   minimumMinorUnits: string;
@@ -86,7 +88,15 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
       { method: "CARD", available: registry.CARD.isConfigured(), reason: registry.CARD.isConfigured() ? undefined : "Card payments open once our card provider is connected." },
       { method: "COD", available: true },
       org?.credit.approved
-        ? { method: "INVOICE", available: org.credit.availableMinorUnits > 0n, reason: org.credit.availableMinorUnits > 0n ? undefined : `Your credit limit is fully used (${money.formatKes(org.credit.outstandingMinorUnits)} outstanding). Settle an open invoice or pay another way.` }
+        ? {
+            method: "INVOICE",
+            available: !org.credit.stopSupply && org.credit.availableMinorUnits > 0n,
+            reason: org.credit.stopSupply
+              ? (org.credit.stopSupplyReason ?? undefined)
+              : org.credit.availableMinorUnits > 0n
+                ? undefined
+                : `Your credit limit is fully used (${money.formatKes(org.credit.outstandingMinorUnits)} outstanding). Settle an open invoice or pay another way.`,
+          }
         : { method: "INVOICE", available: false, reason: org ? "Your organisation does not have a credit account yet. Apply from your account page." : "For approved credit accounts. Sign in to your organisation account, or apply for one." },
     ],
     viewer: who
@@ -94,7 +104,7 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
           name: who.name,
           email: who.email,
           phone: who.phone,
-          organisation: org ? { id: org.id, name: org.name, role: org.role, approvalThresholdLabel: org.approvalThresholdMinorUnits !== null ? money.formatKes(org.approvalThresholdMinorUnits) : null, creditAvailableLabel: org.credit.approved ? money.formatKes(org.credit.availableMinorUnits) : null } : null,
+          organisation: org ? { id: org.id, name: org.name, role: org.role, approvalThresholdLabel: org.approvalThresholdMinorUnits !== null ? money.formatKes(org.approvalThresholdMinorUnits) : null, approvalThresholdMinorUnits: org.approvalThresholdMinorUnits?.toString() ?? null, creditAvailableLabel: org.credit.approved ? money.formatKes(org.credit.availableMinorUnits) : null } : null,
         }
       : null,
     deliveryConfigured,
@@ -106,7 +116,9 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
 /** Delivery fee for the current cart and county (server-computed; the client only displays it). */
 export async function quoteDeliveryAction(county: string | null): Promise<{ ok: true; feeLabel: string | null; zone: string | null; free: boolean; slots: string[]; grandTotalLabel: string } | { ok: false; message: string }> {
   if (!services.database()) return { ok: false, message: "Delivery quotes are unavailable right now." };
-  const cart = await readCart();
+  const who = await viewer();
+  const org = who ? await organisationFor(who) : null;
+  const cart = await readCart(org?.id);
   if (!cart) return { ok: false, message: "Your cart is empty." };
   const q = await orderService().quoteDelivery(cart.weightGrams, cart.subtotalMinorUnits, county);
   if (county && !q.zone) return { ok: false, message: `We do not deliver to ${county} yet. Collect from Mombasa Road, Nairobi, or ask us for a courier quote.` };

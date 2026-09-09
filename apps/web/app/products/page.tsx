@@ -55,7 +55,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
         {shown.length === 0 ? (
           <p className="mt-4 max-w-[62ch]">
             Nothing is filed under {selected?.label.toLowerCase()} yet.{" "}
-            <Link href="/contact?topic=quote" className="text-accent underline underline-offset-[3px]">
+            <Link href="/quote" className="text-accent underline underline-offset-[3px]">
               Ask us and we will usually source it
             </Link>
             .
@@ -76,7 +76,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
                   {typeof c.productCount === "number" && c.productCount > 0 ? (
                     <span className="tnum">{c.productCount} products listed.</span>
                   ) : (
-                    <Link href={`/contact?topic=quote&category=${c.slug}`} className="text-accent underline underline-offset-[3px]">
+                    <Link href={`/quote?category=${c.slug}`} className="text-accent underline underline-offset-[3px]">
                       Request a quote for {c.name.toLowerCase()}
                     </Link>
                   )}

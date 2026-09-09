@@ -24,7 +24,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/products">Browse products</ButtonLink>
-              <ButtonLink href="/contact?topic=quote" variant="secondary">
+              <ButtonLink href="/quote" variant="secondary">
                 Request a quote
               </ButtonLink>
             </div>

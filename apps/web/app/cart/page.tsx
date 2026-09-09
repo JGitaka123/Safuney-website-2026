@@ -6,12 +6,16 @@ import { readCart } from "@/lib/cart/cookies";
 import { getPriceDisplayMode } from "@/lib/settings";
 import { CartLine } from "@/components/cart/cart-line";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { viewer } from "@/lib/auth/session";
+import { organisationFor } from "@/lib/checkout/actions";
 
 export const metadata: Metadata = { title: "Cart", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 export default async function CartPage() {
-  const [cart, mode] = await Promise.all([readCart(), getPriceDisplayMode()]);
+  const who = await viewer();
+  const org = who ? await organisationFor(who) : null;
+  const [cart, mode] = await Promise.all([readCart(org?.id), getPriceDisplayMode()]);
   const lines = cart?.lines ?? [];
 
   if (lines.length === 0) {

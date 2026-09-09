@@ -240,7 +240,7 @@ export default function DesignSystemPage() {
             <Specimen title="Link styled as a button">
               <div className="flex flex-wrap gap-3">
                 <ButtonLink href="/products">Browse products</ButtonLink>
-                <ButtonLink href="/contact?topic=quote" variant="secondary">
+                <ButtonLink href="/quote" variant="secondary">
                   Request a quote
                 </ButtonLink>
               </div>
@@ -396,7 +396,7 @@ export default function DesignSystemPage() {
                   zones={["RED"]}
                   packs={["5 L", "20 L"]}
                   action={
-                    <ButtonLink href="/contact?topic=quote" variant="secondary" fullWidth>
+                    <ButtonLink href="/quote" variant="secondary" fullWidth>
                       Request quote
                     </ButtonLink>
                   }
@@ -539,7 +539,7 @@ export default function DesignSystemPage() {
                 <Button key="clear" variant="secondary">
                   Clear filters
                 </Button>,
-                <ButtonLink key="quote" href="/contact?topic=quote" variant="secondary">
+                <ButtonLink key="quote" href="/quote" variant="secondary">
                   Request a quote
                 </ButtonLink>,
               ]}

@@ -176,9 +176,9 @@ export class OrderService {
       // Credit is checked when the invoice order is confirmed (now, or at approval), with the customer row locked.
       if (input.paymentMethod === "INVOICE" && !needsApproval) {
         try {
-          await assertCreditFor(tx, customer!.id, total);
+          await assertCreditFor(tx, customer!.id, total, this.now());
         } catch (e) {
-          if (e instanceof CreditError) throw new OrderError(e.code === "LIMIT" ? "CREDIT" : "METHOD_UNAVAILABLE", e.message);
+          if (e instanceof CreditError) throw new OrderError(e.code === "NOT_APPROVED" ? "METHOD_UNAVAILABLE" : "CREDIT", e.message);
           throw e;
         }
       }
@@ -244,9 +244,9 @@ export class OrderService {
     await this.prisma.$transaction(async (tx) => {
       if (order.paymentMethod === "INVOICE") {
         try {
-          await assertCreditFor(tx, order.customerId!, order.totalMinorUnits);
+          await assertCreditFor(tx, order.customerId!, order.totalMinorUnits, this.now());
         } catch (e) {
-          if (e instanceof CreditError) throw new OrderError(e.code === "LIMIT" ? "CREDIT" : "METHOD_UNAVAILABLE", e.message);
+          if (e instanceof CreditError) throw new OrderError(e.code === "NOT_APPROVED" ? "METHOD_UNAVAILABLE" : "CREDIT", e.message);
           throw e;
         }
       }
@@ -285,9 +285,9 @@ export class OrderService {
       await this.prisma.$transaction(async (tx) => {
         if (method === "INVOICE") {
           try {
-            await assertCreditFor(tx, order.customerId!, order.totalMinorUnits);
+            await assertCreditFor(tx, order.customerId!, order.totalMinorUnits, this.now());
           } catch (e) {
-            if (e instanceof CreditError) throw new OrderError(e.code === "LIMIT" ? "CREDIT" : "METHOD_UNAVAILABLE", e.message);
+            if (e instanceof CreditError) throw new OrderError(e.code === "NOT_APPROVED" ? "METHOD_UNAVAILABLE" : "CREDIT", e.message);
             throw e;
           }
         }
