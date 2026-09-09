@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, typecheck, build, placeholder guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # Version is read from "packageManager" in package.json.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Placeholder guard
+        run: pnpm guard:placeholders
+
+  # Phase 1 adds: unit + integration (Neon branch per PR), Playwright e2e + axe against the Vercel preview URL,
+  # Lighthouse CI (>= 95 mobile), Prisma migrate check.

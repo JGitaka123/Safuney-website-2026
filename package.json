@@ -1,0 +1,20 @@
+{
+  "name": "safuney-website-2026",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Safuney Limited — website and online shop (monorepo)",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @safuney/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @safuney/web start",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "guard:placeholders": "node scripts/placeholder-guard.mjs",
+    "ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm guard:placeholders"
+  }
+}

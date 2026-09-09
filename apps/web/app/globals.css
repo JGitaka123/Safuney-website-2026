@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  /* Interim palette for the holding page only. The real design system lands in Phase 1 (docs/design/plan.md). */
+  --color-ink: #12212b;
+  --color-ink-muted: #4d5c66;
+  --color-paper: #f6f8f8;
+  --color-line: #d5dce0;
+  --color-steel: #0b5e73;
+  --color-steel-deep: #073e4c;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-steel);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

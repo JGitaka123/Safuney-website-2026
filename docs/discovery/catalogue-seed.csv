@@ -1,0 +1,22 @@
+category_slug,category_name,parent_category_slug,product_slug,product_name,brand,short_description,pack_size,unit,sku,price_minor_units,compare_at_minor_units,vat_rate_bps,hazard_class,dilution_guidance,source,needs_po_review
+foodservice,Foodservice and kitchen hygiene,,,,,"Detergents, degreasers and disinfectants for the food and beverage industry (category only — no products observed on current site)",,,,0,0,1600,,,brief,true
+laundry,Laundry,,,,,"Commercial laundry detergents and fabric conditioners (category only — no products observed)",,,,0,0,1600,,,brief,true
+housekeeping,Housekeeping and janitorial,,,,,"General janitorial products (category only — no products observed)",,,,0,0,1600,,,brief,true
+healthcare,Healthcare and medical-equipment cleaning,,,,,"Critical cleaning for human-health and veterinary applications (category only — no products observed)",,,,0,0,1600,,,brief,true
+laboratory,Laboratory cleaning,,,,,"Precision cleaning of laboratory equipment, glassware and safety ware (category only — no products observed)",,,,0,0,1600,,,brief,true
+industrial,Industrial and degreasing,,,,,"Category from brief; not observed on current site",,,,0,0,1600,,,brief,true
+agricultural,Agricultural,,,,,"Category from brief; not observed on current site",,,,0,0,1600,,,brief,true
+equipment,Equipment and consumables,,,,,"Brooms, brushes, dispensers (category from brief; not observed on current site)",,,,0,0,1600,,,brief,true
+disinfection,Disinfection and sanitisation,,,,,"Observed category: products.php?a=Disinfection+and+Sanitization",,,,0,0,1600,,,snippet,true
+disinfection,Disinfection and sanitisation,,qac-surface-food-contact-sanitiser,QAC-based sanitiser for surface and food-contact areas,,"Quaternary ammonium compound sanitiser for surfaces and food-contact areas",,,,0,0,1600,,,snippet,true
+disinfection,Disinfection and sanitisation,,chlorine-salad-fruit-wash-powder,Powder chlorine-based salad and fruit cleaner,,"Chlorine-based powder for washing salads and fruit",,,,0,0,1600,,,snippet,true
+disinfection,Disinfection and sanitisation,,general-purpose-cleaner-disinfectant,General purpose cleaner disinfectant,,"Combined cleaner and disinfectant for general surfaces",,,,0,0,1600,,,snippet,true
+disinfection,Disinfection and sanitisation,,chlorine-disinfectant-bleach,Chlorine-based disinfectant and bleaching solution,,"Chlorine-based disinfectant and bleach",,,,0,0,1600,,,snippet,true
+disinfection,Disinfection and sanitisation,,alcohol-hand-sanitiser,Alcohol-based hand sanitiser (liquid / gel),,"Alcohol-based hand sanitiser; liquid and gel forms mentioned",,,,0,0,1600,,,snippet,true
+specialty,Specialty products,,,,,"Observed category: products.php?a=specialty+products",,,,0,0,1600,,,snippet,true
+specialty,Specialty products,,descaler-kitchen-housekeeping,Descaler for kitchen and housekeeping equipment,,"Descaler for kitchen and other housekeeping equipment",,,,0,0,1600,,,snippet,true
+specialty,Specialty products,,oven-grill-hood-cleaner,Oven / grill / hood cleaner,,"Cleaner for ovens, grills and extraction hoods",5,L,,0,0,1600,,,snippet,true
+specialty,Specialty products,,oven-grill-hood-cleaner,Oven / grill / hood cleaner,,"Cleaner for ovens, grills and extraction hoods",20,L,,0,0,1600,,,snippet,true
+specialty,Specialty products,,crockery-cutlery-destainer,Destainer for crockery and cutlery,,"Destaining powder for crockery and cutlery",15,kg,,0,0,1600,,,snippet,true
+specialty,Specialty products,,enzyme-drain-septic-treatment,Enzyme-based biological drain cleaner and septic tank treatment,,"Biological (enzyme) drain cleaner and septic tank treatment",,,,0,0,1600,,,snippet,true
+personal-hygiene,Personal hygiene,,,,,"Observed category: products.php?a=Personal+Hygiene (no product names visible)",,,,0,0,1600,,,snippet,true
