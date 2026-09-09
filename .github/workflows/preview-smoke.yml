@@ -1,0 +1,50 @@
+name: Preview smoke
+
+# Runs the browser suite against the real Vercel preview URL once Vercel reports the deployment ready.
+# Needs no secrets. If Vercel Deployment Protection blocks the preview, the PO can either disable
+# "Vercel Authentication" for previews (Project → Settings → Deployment Protection) or add a bypass
+# token as VERCEL_AUTOMATION_BYPASS_SECRET (this workflow forwards it as the x-vercel-protection-bypass header).
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  smoke:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment != 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.environment_url }}
+      LHCI_URL: ${{ github.event.deployment_status.environment_url }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check the preview answers
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" "$PLAYWRIGHT_BASE_URL/")
+          echo "preview responded $code"
+          if [ "$code" != "200" ]; then echo "::warning::Preview not reachable without authentication (HTTP $code). See workflow comment."; exit 0; fi
+          echo "REACHABLE=1" >> "$GITHUB_ENV"
+      - name: Install Playwright browsers
+        if: env.REACHABLE == '1'
+        run: pnpm --filter @safuney/web exec playwright install --with-deps chromium
+      - name: Playwright + axe against preview
+        if: env.REACHABLE == '1'
+        run: pnpm --filter @safuney/web test:e2e
+        env:
+          CI: "true"
+      - name: Lighthouse against preview
+        if: env.REACHABLE == '1'
+        run: pnpm --filter @safuney/web lhci

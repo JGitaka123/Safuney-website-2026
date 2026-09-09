@@ -4,15 +4,31 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node ../../scripts/prebuild.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "lhci": "lhci autorun"
   },
   "dependencies": {
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "@safuney/db": "workspace:*",
+    "@safuney/ui": "workspace:*",
+    "@safuney/config": "workspace:*",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@vercel/analytics": "2.0.1",
+    "@vercel/speed-insights": "2.0.0",
+    "zod": "4.5.4",
+    "resend": "6.26.0",
+    "@upstash/redis": "1.38.4",
+    "@upstash/ratelimit": "2.0.8",
+    "clsx": "2.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -22,6 +38,11 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "5.0.0",
+    "@playwright/test": "1.63.0",
+    "@axe-core/playwright": "4.13.0",
+    "@lhci/cli": "0.15.1",
+    "@vitejs/plugin-react": "6.1.1"
   }
 }

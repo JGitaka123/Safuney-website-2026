@@ -12,38 +12,133 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # CI database (GitHub-hosted Postgres service). Production uses Neon via Vercel env vars.
+  DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/safuney_ci
+
 jobs:
   checks:
     name: Lint, typecheck, build, placeholder guard
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: safuney_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-        # Version is read from "packageManager" in package.json.
-
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Install
         run: pnpm install --frozen-lockfile
-
+      - name: Prisma generate
+        run: pnpm --filter @safuney/db generate
       - name: Lint
         run: pnpm lint
-
       - name: Typecheck
         run: pnpm typecheck
-
-      - name: Build
+      - name: Prisma migrate check (migrations describe the schema)
+        run: pnpm migrate:check
+      - name: Migrate CI database
+        run: pnpm --filter @safuney/db migrate:deploy
+      - name: Unit and integration tests
+        run: pnpm test
+      - name: Build (runs prebuild: prisma generate + migrate deploy)
         run: pnpm build
-        env:
-          NEXT_TELEMETRY_DISABLED: "1"
-
       - name: Placeholder guard
         run: pnpm guard:placeholders
+      - name: Upload build for browser jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: |
+            apps/web/.next
+            !apps/web/.next/cache
+          retention-days: 1
 
-  # Phase 1 adds: unit + integration (Neon branch per PR), Playwright e2e + axe against the Vercel preview URL,
-  # Lighthouse CI (>= 95 mobile), Prisma migrate check.
+  e2e:
+    name: Playwright + axe (mobile first)
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: safuney_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @safuney/db generate
+      - run: pnpm --filter @safuney/db migrate:deploy
+      - run: pnpm --filter @safuney/db seed
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: apps/web/.next
+      - name: Install Playwright browsers
+        run: pnpm --filter @safuney/web exec playwright install --with-deps chromium
+      - name: Run e2e
+        run: pnpm --filter @safuney/web test:e2e
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
+
+  lighthouse:
+    name: Lighthouse (mobile, >= 95)
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @safuney/db generate
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: apps/web/.next
+      - name: Lighthouse CI
+        run: pnpm --filter @safuney/web lhci
+        env:
+          # No DATABASE_URL: pages render from static config, which is what a cold visitor sees.
+          DATABASE_URL: ""
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: apps/web/.lighthouseci
+          retention-days: 7
