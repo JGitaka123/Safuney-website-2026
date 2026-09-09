@@ -111,7 +111,17 @@ jobs:
       - name: Build
         run: pnpm --filter @safuney/web build
       - name: Install Playwright browsers
-        run: pnpm --filter @safuney/web exec playwright install --with-deps chromium
+        # --with-deps runs apt-get, whose mirrors fail often enough to redden a green PR. Retry the
+        # whole step, then fall back to the browser download alone (the runner image already carries
+        # the system libraries); only a real browser-download failure stops the job.
+        run: |
+          for attempt in 1 2 3; do
+            if pnpm --filter @safuney/web exec playwright install --with-deps chromium; then exit 0; fi
+            echo "playwright install attempt $attempt failed; retrying in $((attempt * 15))s"
+            sleep $((attempt * 15))
+          done
+          echo "apt dependencies could not be installed; trying the browser download on its own"
+          pnpm --filter @safuney/web exec playwright install chromium
       - name: Run e2e
         run: pnpm --filter @safuney/web test:e2e
         env:
