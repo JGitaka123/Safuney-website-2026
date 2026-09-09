@@ -25,7 +25,7 @@ run("order service", () => {
     carts = new CartService(prisma);
     orders = new OrderService(prisma, registry);
     const cat = await prisma.category.create({ data: { slug: `ord-cat-${stamp}`, name: "Order test" } });
-    const p = await prisma.product.create({ data: { slug: `ord-p-${stamp}`, name: "Order test degreaser", shortDescription: "x", categoryId: cat.id, isActive: true, needsPoReview: false } });
+    const p = await prisma.product.create({ data: { slug: `ord-p-${stamp}`, name: "Order test formulation", shortDescription: "x", categoryId: cat.id, isActive: true, needsPoReview: false } });
     vA = (await prisma.productVariant.create({ data: { productId: p.id, sku: `OA-${stamp}`, packSizeValue: "5", unit: "L", packLabel: "5 L", priceMinorUnits: 125000n, vatRateBps: 1600, stockOnHand: 3, weightGrams: 5200 } })).id;
     vB = (await prisma.productVariant.create({ data: { productId: p.id, sku: `OB-${stamp}`, packSizeValue: "20", unit: "L", packLabel: "20 L", priceMinorUnits: 400000n, vatRateBps: 1600, stockOnHand: 0, isMadeToOrder: true, weightGrams: 21000 } })).id;
     await prisma.deliveryZone.upsert({
