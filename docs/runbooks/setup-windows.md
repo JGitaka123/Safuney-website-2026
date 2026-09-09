@@ -147,6 +147,7 @@ never paste values into chat or commit them.
 | --- | --- | --- |
 | `DATABASE_URL` | Neon integration | Catalogue, leads, orders. Without it the site still renders from static config and database features switch off. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (or `KV_REST_API_URL`, `KV_REST_API_TOKEN`) | Upstash integration | Rate limiting, sessions, cache. Without them an in-memory fallback is used (fine for previews, not for production). |
+| `AUTH_SECRET` | All | Signs sign-in sessions. Generate once with `openssl rand -base64 32` (or `npx auth secret`); different value per environment. |
 | `RESEND_API_KEY` | Resend integration | Contact-form and order emails. |
 | `EMAIL_FROM` | you | Sender shown on emails, e.g. `Safuney <no-reply@safuney.com>`. The domain must be verified in Resend. |
 | `LEADS_INBOX` | you | Where contact-form leads are delivered. Defaults to `info@safuney.com`. |

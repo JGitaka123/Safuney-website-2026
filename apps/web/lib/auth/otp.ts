@@ -21,8 +21,10 @@ export type OtpRequestResult =
 
 /** Phone in E.164 (+2547…); the identifier stored against the code. */
 export function otpIdentifierForPhone(phone: string): string | null {
-  const local = normaliseKenyanMobile(phone);
-  return local ? `phone:+254${local.replace(/^0/, "")}` : null;
+  const normalised = normaliseKenyanMobile(phone);
+  if (!normalised) return null;
+  // normaliseKenyanMobile returns E.164 (+2547…); accept a 07… form defensively.
+  return `phone:${normalised.startsWith("+") ? normalised : `+254${normalised.replace(/^0/, "")}`}`;
 }
 
 export function otpIdentifierForEmail(email: string): string | null {

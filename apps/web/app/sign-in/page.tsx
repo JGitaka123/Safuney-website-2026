@@ -21,7 +21,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <h1 className="text-h1">Sign in</h1>
         <p className="mt-2 text-body text-ink-muted">See your orders, reorder in one tap and manage your organisation&rsquo;s account.</p>
         <div className="mt-8 border border-line bg-surface p-6 md:p-8">
-          <SignInForm next={target} mockMode={authMockMode()} smsAvailable={smsConfigured()} emailAvailable={services.email() || authMockMode()} expired={expired === "1"} />
+          <SignInForm next={target} mockMode={authMockMode()} smsAvailable={smsConfigured()} emailAvailable={services.email()} expired={expired === "1"} />
         </div>
         <p className="mt-6 text-small text-ink-muted">
           Safuney staff:{" "}

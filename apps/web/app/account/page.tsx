@@ -5,6 +5,8 @@ import { Button, ButtonLink, EmptyState } from "@safuney/ui";
 import { requireViewer } from "@/lib/auth/session";
 import { signOutAction } from "@/lib/auth/actions";
 import { statusMessage } from "@/lib/orders/service";
+import { AccountNav } from "@/components/account/account-nav";
+import { ReorderButton } from "@/components/account/reorder-button";
 
 export const metadata: Metadata = { title: "Your account", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -38,6 +40,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </form>
       </div>
 
+      <AccountNav current="/account" organisation={organisations.length > 0} />
+
       {denied ? (
         <p role="alert" className="mt-6 border border-line bg-surface p-4 text-body text-ink">
           That page is for Safuney staff.
@@ -63,9 +67,12 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                     </Link>
                     <p className="text-small text-ink-muted">{statusMessage(o.status, o.paymentMethod)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-body font-medium tabular-nums text-ink">{money.formatKes(o.totalMinorUnits)}</p>
-                    <p className="text-small tabular-nums text-ink-muted">{formatDate(o.placedAt ?? o.createdAt)}</p>
+                  <div className="flex flex-col items-end gap-2 text-right">
+                    <div>
+                      <p className="text-body font-medium tabular-nums text-ink">{money.formatKes(o.totalMinorUnits)}</p>
+                      <p className="text-small tabular-nums text-ink-muted">{formatDate(o.placedAt ?? o.createdAt)}</p>
+                    </div>
+                    <ReorderButton orderId={o.id} orderNumber={o.number} />
                   </div>
                 </li>
               ))}
@@ -78,8 +85,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           {organisations.length === 0 ? (
             <div className="mt-3 border border-line bg-surface p-5">
               <p className="text-body text-ink">Order for a hotel, hospital, school or business? An organisation account gives your team one place to order, with approvals, a purchase-order number on every order and the option to pay on invoice.</p>
-              <Link href="/contact?topic=credit" className="mt-4 inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
-                Ask about an organisation account
+              <Link href="/account/organisation/new" className="mt-4 inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
+                Set up an organisation
               </Link>
             </div>
           ) : (

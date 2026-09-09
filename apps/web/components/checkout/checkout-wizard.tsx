@@ -46,10 +46,11 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
   const [isSubmitting, startTransition] = useTransition();
 
   // Contact state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [organisation, setOrganisation] = useState("");
+  const [name, setName] = useState(context.viewer?.name ?? "");
+  const [email, setEmail] = useState(context.viewer?.email ?? "");
+  const [phone, setPhone] = useState(context.viewer?.phone?.replace(/^\+254/, "0") ?? "");
+  const [organisation, setOrganisation] = useState(context.viewer?.organisation?.name ?? "");
+  const org = context.viewer?.organisation ?? null;
 
   // Delivery state
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("DELIVERY");
@@ -288,6 +289,14 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
       </div>
 
       <ProgressSteps steps={STEPS} current={currentStep} className="mb-8" />
+
+      {org ? (
+        <p className="mb-8 border border-line bg-surface p-4 text-small text-ink">
+          Ordering for <span className="font-medium">{org.name}</span>
+          {org.role === "BUYER" && org.approvalThresholdLabel ? <> · orders of {org.approvalThresholdLabel} and above go to an approver before payment</> : null}
+          {org.creditAvailableLabel ? <> · credit available {org.creditAvailableLabel}</> : null}.
+        </p>
+      ) : null}
 
       {formError ? (
         <Alert id={formSummaryId} variant="error" title="Cannot proceed with order" className="mb-8">
@@ -695,7 +704,7 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                     )}
                     {paymentMethod === "CARD" && <span>Card payment (Visa/Mastercard via Paystack)</span>}
                     {paymentMethod === "COD" && <span>Cash or M-Pesa on delivery</span>}
-                    {paymentMethod === "INVOICE" && <span>Invoice to your credit account</span>}
+                    {paymentMethod === "INVOICE" && <span>Invoice to {org?.name ?? "your credit account"}{org?.creditAvailableLabel ? ` (credit available ${org.creditAvailableLabel})` : ""}</span>}
                   </p>
                 </div>
 

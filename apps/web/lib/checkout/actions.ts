@@ -9,6 +9,7 @@ import { readCart } from "@/lib/cart/cookies";
 import { CART_COOKIE } from "@/lib/cart/service";
 import { orderService, paymentRegistry, publicBaseUrl } from "@/lib/orders/context";
 import { viewer } from "@/lib/auth/session";
+import { creditPosition } from "@/lib/b2b/credit";
 import { OrderError } from "@/lib/orders/service";
 import { notifyOrderPlaced } from "@/lib/notify";
 import { db } from "@safuney/db";
@@ -54,14 +55,28 @@ export type PlaceOrderResponse =
 
 export interface CheckoutContext {
   methods: Array<{ method: "MPESA" | "CARD" | "INVOICE" | "COD"; available: boolean; reason?: string }>;
+  /** Signed-in customer details for prefilling and the organisation the order is placed for. */
+  viewer: { name: string | null; email: string | null; phone: string | null; organisation: { id: string; name: string; role: "OWNER" | "BUYER" | "APPROVER"; approvalThresholdLabel: string | null; creditAvailableLabel: string | null } | null } | null;
   deliveryConfigured: boolean;
   zones: Array<{ slug: string; name: string; counties: string[]; slots: string[]; leadTimeDays: number }>;
   minimumMinorUnits: string;
 }
 
 /** What the checkout page needs to render its options. */
+/** The organisation a signed-in member orders for (the first membership until a switcher exists). */
+export async function organisationFor(who: Awaited<ReturnType<typeof viewer>>) {
+  const m = who?.memberships.find((x) => x.customer.type === "ORGANISATION");
+  if (!m) return null;
+  const customer = await db().customer.findUnique({ where: { id: m.customerId }, select: { id: true, displayName: true, status: true, creditLimitMinorUnits: true, approvalThresholdMinorUnits: true } });
+  if (!customer) return null;
+  const credit = await creditPosition(db(), customer.id);
+  return { id: customer.id, name: customer.displayName, role: m.role, credit, approvalThresholdMinorUnits: customer.approvalThresholdMinorUnits };
+}
+
 export async function getCheckoutContext(): Promise<CheckoutContext> {
   const registry = paymentRegistry();
+  const who = services.database() ? await viewer() : null;
+  const org = who ? await organisationFor(who) : null;
   const deliveryConfigured = services.database() ? Boolean(await getSetting("delivery.configured")) : false;
   const zones = services.database() ? await db().deliveryZone.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" }, select: { slug: true, name: true, counties: true, slots: true, leadTimeDays: true } }) : [];
   const minimum = services.database() ? String(await getSetting("orders.minimumMinorUnits")) : "0";
@@ -70,8 +85,18 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
       { method: "MPESA", available: registry.MPESA.isConfigured(), reason: registry.MPESA.isConfigured() ? undefined : "M-Pesa payments open once our Paybill is connected." },
       { method: "CARD", available: registry.CARD.isConfigured(), reason: registry.CARD.isConfigured() ? undefined : "Card payments open once our card provider is connected." },
       { method: "COD", available: true },
-      { method: "INVOICE", available: false, reason: "For approved credit accounts. Apply for an account and we will switch it on." },
+      org?.credit.approved
+        ? { method: "INVOICE", available: org.credit.availableMinorUnits > 0n, reason: org.credit.availableMinorUnits > 0n ? undefined : `Your credit limit is fully used (${money.formatKes(org.credit.outstandingMinorUnits)} outstanding). Settle an open invoice or pay another way.` }
+        : { method: "INVOICE", available: false, reason: org ? "Your organisation does not have a credit account yet. Apply from your account page." : "For approved credit accounts. Sign in to your organisation account, or apply for one." },
     ],
+    viewer: who
+      ? {
+          name: who.name,
+          email: who.email,
+          phone: who.phone,
+          organisation: org ? { id: org.id, name: org.name, role: org.role, approvalThresholdLabel: org.approvalThresholdMinorUnits !== null ? money.formatKes(org.approvalThresholdMinorUnits) : null, creditAvailableLabel: org.credit.approved ? money.formatKes(org.credit.availableMinorUnits) : null } : null,
+        }
+      : null,
     deliveryConfigured,
     zones,
     minimumMinorUnits: minimum,
@@ -108,9 +133,12 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
   const d = parsed.data;
   try {
     const who = await viewer();
+    const org = who ? await organisationFor(who) : null;
     const result = await orderService().placeOrder({
       cartToken: token,
       userId: who?.id,
+      customerId: org?.id,
+      placedByRole: org?.role,
       contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || undefined },
       delivery: d.delivery.method === "PICKUP" ? { method: "PICKUP", slot: d.delivery.slot } : { method: "DELIVERY", county: d.delivery.county, town: d.delivery.town, line1: d.delivery.line1 || undefined, landmark: d.delivery.landmark || undefined, deliveryNotes: d.delivery.deliveryNotes || undefined, slot: d.delivery.slot },
       paymentMethod: d.paymentMethod,
@@ -132,7 +160,7 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
     };
   } catch (e) {
     if (e instanceof OrderError) {
-      const field = e.code === "NO_DELIVERY" ? "delivery.county" : e.code === "METHOD_UNAVAILABLE" ? "paymentMethod" : undefined;
+      const field = e.code === "NO_DELIVERY" ? "delivery.county" : e.code === "METHOD_UNAVAILABLE" || e.code === "CREDIT" ? "paymentMethod" : undefined;
       return { ok: false, formError: e.message, ...(field ? { fieldErrors: { [field]: e.message } } : {}) };
     }
     console.error("placeOrder failed", e);

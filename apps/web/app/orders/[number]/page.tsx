@@ -47,6 +47,12 @@ function eventTypeLabel(type: string, status: string | null): string {
       return "Payment cancelled";
     case "payment_method_changed":
       return "Payment method changed";
+    case "order_approved":
+      return "Approved";
+    case "order_rejected":
+      return "Not approved";
+    case "approval_expired":
+      return "Approval window passed; order cancelled";
     case "reservation_released":
       return "Reservation expired";
     case "order_confirmed":
@@ -106,7 +112,7 @@ export default async function OrderDetailPage({ params, searchParams }: OrderPag
 
       <div className="mt-6 flex flex-col justify-between gap-4 border-b border-line pb-6 md:flex-row md:flex-wrap md:items-end">
         <div>
-          <p className="text-small font-medium text-accent">{order.status === "PAID" || order.status === "CONFIRMED" ? "Order confirmed" : order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_FAILED" ? "Order saved, payment outstanding" : "Your order"}</p>
+          <p className="text-small font-medium text-accent">{order.status === "PAID" || order.status === "CONFIRMED" ? "Order confirmed" : order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_FAILED" ? "Order saved, payment outstanding" : order.status === "AWAITING_APPROVAL" ? "Order waiting for approval" : "Your order"}</p>
           <h1 className="mt-1 whitespace-nowrap font-mono text-h1 font-semibold text-ink">{order.number}</h1>
           <p className="mt-1 text-small text-ink-muted">
             Placed on <span className="tabular-nums">{formatKenyaDate(order.placedAt ?? order.createdAt)}</span>

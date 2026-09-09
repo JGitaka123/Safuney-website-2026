@@ -752,6 +752,10 @@ model Quote {
   contactPhone String
   status       QuoteStatus @default(REQUESTED)
   notes        String?
+  /// Unguessable token in the emailed link that lets the requester view and accept the quote
+  accessToken  String      @unique @default(cuid())
+  /// Sales' message to the customer when the quote is sent
+  salesNote    String?
   pricedById   String?
   pricedAt     DateTime?
   validUntil   DateTime?

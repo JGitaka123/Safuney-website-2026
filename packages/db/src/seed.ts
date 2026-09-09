@@ -9,7 +9,8 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, Unit, ApplicationZone, HazardClass, RelationKind } from "../generated/client/client";
+import { hashPassword } from "./password";
+import { PrismaClient, Unit, ApplicationZone, HazardClass, RelationKind, UserRole } from "../generated/client/client";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(here, "../../..");
@@ -418,6 +419,13 @@ export async function seedDemo(prisma: PrismaClient): Promise<number> {
     await prisma.deliveryZone.update({ where: { slug }, data: { feeRules: z.feeRules as never, freeAboveMinorUnits: z.freeAboveMinorUnits, slots: z.slots, leadTimeDays: z.leadTimeDays, isActive: true } });
   }
   await prisma.setting.upsert({ where: { key: "delivery.configured" }, create: { key: "delivery.configured", value: true }, update: { value: true } });
+
+  // Demo staff for previews and CI: the password is DEMO_STAFF_PASSWORD (default below), no second factor
+  // until they enrol one. Never created in production (this function refuses to run there).
+  const staffPassword = hashPassword(process.env["DEMO_STAFF_PASSWORD"] ?? "safuney-demo-2026");
+  for (const [email, role, name] of [["sales@safuney.test", UserRole.SALES, "Demo sales"], ["finance@safuney.test", UserRole.FINANCE, "Demo finance"], ["admin@safuney.test", UserRole.ADMIN, "Demo admin"]] as const) {
+    await prisma.user.upsert({ where: { email }, create: { email, name, role, passwordHash: staffPassword, emailVerified: new Date() }, update: { role, passwordHash: staffPassword, isActive: true } });
+  }
   return count;
 }
 

@@ -10,12 +10,15 @@
  *  #5 every status change appends an OrderEvent; nothing is overwritten.
  */
 import * as money from "@safuney/db/money";
-import { Prisma, type OrderStatus, type PaymentMethod, type PrismaClient } from "@safuney/db";
+import { Prisma, type MemberRole, type OrderStatus, type PaymentMethod, type PrismaClient } from "@safuney/db";
 import type { InitiateResult, ParsedCallback, PaymentAdapter, RawCallback } from "@safuney/payments";
 import { PaymentProviderError } from "@safuney/payments";
 import { randomBytes } from "node:crypto";
 import { quoteFee, zoneForCounty, type ZoneLike } from "@/lib/delivery";
 import { nextOrderNumber } from "./numbers";
+import { resolvePrices } from "@/lib/b2b/pricing";
+import { assertCreditFor, CreditError } from "@/lib/b2b/credit";
+import { issueTaxInvoice } from "@/lib/b2b/invoices";
 
 export const RESERVATION_MINUTES = 30;
 export const MAX_PAYMENT_ATTEMPTS = 5;
@@ -40,13 +43,20 @@ export interface PlaceOrderInput {
   notes?: string;
   userId?: string;
   customerId?: string;
+  /** Role of the signed-in member in the organisation the order is for; buyers may need approval. */
+  placedByRole?: MemberRole;
+  /** An accepted quote: its unit prices are used instead of list or price-list prices (audited on the event). */
+  quoteId?: string;
   /** Public base URL used for provider callbacks and return pages. */
   baseUrl: string;
 }
 
+/** Orders awaiting approval hold their stock this long before the reservation is released. */
+export const APPROVAL_HOLD_DAYS = 7;
+
 export class OrderError extends Error {
   constructor(
-    public readonly code: "EMPTY_CART" | "STOCK" | "UNAVAILABLE" | "NO_DELIVERY" | "METHOD_UNAVAILABLE" | "NOT_FOUND" | "ATTEMPTS" | "STATE" | "PROVIDER",
+    public readonly code: "EMPTY_CART" | "STOCK" | "UNAVAILABLE" | "NO_DELIVERY" | "METHOD_UNAVAILABLE" | "NOT_FOUND" | "ATTEMPTS" | "STATE" | "PROVIDER" | "CREDIT" | "FORBIDDEN",
     message: string,
   ) {
     super(message);
@@ -56,6 +66,7 @@ export class OrderError extends Error {
 export interface PlaceOrderResult {
   orderId: string;
   orderNumber: string;
+  status: OrderStatus;
   accessToken: string;
   totalMinorUnits: bigint;
   next: InitiateResult;
@@ -83,13 +94,11 @@ export class OrderService {
   async placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
     const adapter = this.adapters[input.paymentMethod];
     if (!adapter.isConfigured()) throw new OrderError("METHOD_UNAVAILABLE", "That payment method is not available right now. Choose another.");
-    if (input.paymentMethod === "INVOICE") {
-      // Only approved credit accounts may buy on invoice (enforced properly with limits in Phase 4).
-      const customer = input.customerId ? await this.prisma.customer.findUnique({ where: { id: input.customerId } }) : null;
-      if (!customer || customer.status !== "CREDIT_APPROVED" || customer.creditLimitMinorUnits <= 0n) throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Apply for an account or choose another method.");
-    }
+    if (input.paymentMethod === "INVOICE" && !input.customerId) throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Sign in to your organisation account or choose another method.");
 
     const placed = await this.prisma.$transaction(async (tx) => {
+      const customer = input.customerId ? await tx.customer.findUnique({ where: { id: input.customerId }, select: { id: true, priceListId: true, approvalThresholdMinorUnits: true, priceList: { select: { isActive: true } } } }) : null;
+      if (input.customerId && !customer) throw new OrderError("NOT_FOUND", "That organisation account no longer exists.");
       const cart = await tx.cart.findFirst({ where: { token: input.cartToken, expiresAt: { gt: this.now() } }, include: { items: { orderBy: { createdAt: "asc" } } } });
       if (!cart || cart.items.length === 0) throw new OrderError("EMPTY_CART", "Your cart is empty.");
 
@@ -98,6 +107,18 @@ export class OrderService {
       await tx.$queryRaw`SELECT id FROM "ProductVariant" WHERE id IN (${Prisma.join(ids)}) FOR UPDATE`;
       const variants = await tx.productVariant.findMany({ where: { id: { in: ids } }, include: { product: { select: { name: true, isActive: true, needsPoReview: true } } } });
       const byId = new Map(variants.map((v) => [v.id, v]));
+      // Customer-specific prices (price list tiers) or list prices; the server decides either way.
+      const prices = await resolvePrices(
+        tx,
+        customer?.priceList?.isActive ? customer.priceListId : null,
+        cart.items.map((i) => ({ variantId: i.variantId, qty: i.qty, listPriceMinorUnits: byId.get(i.variantId)?.priceMinorUnits ?? 0n })),
+      );
+      // An accepted quote overrides both: the quoted unit prices are the agreed ones.
+      if (input.quoteId) {
+        const quote = await tx.quote.findUnique({ where: { id: input.quoteId }, include: { items: true } });
+        if (!quote || quote.status !== "ACCEPTED") throw new OrderError("STATE", "That quote is no longer open.");
+        for (const qi of quote.items) if (qi.variantId && qi.unitPriceMinorUnits !== null) prices.set(qi.variantId, qi.unitPriceMinorUnits);
+      }
 
       let subtotal = 0n;
       let vat = 0n;
@@ -106,17 +127,18 @@ export class OrderService {
       for (const line of cart.items) {
         const v = byId.get(line.variantId);
         if (!v || !v.isActive || !v.product.isActive || v.product.needsPoReview) throw new OrderError("UNAVAILABLE", `${v?.product.name ?? "A product"} in your cart is no longer available. Remove it and try again.`);
-        if (v.priceMinorUnits <= 0n) throw new OrderError("UNAVAILABLE", `${v.product.name} ${v.packLabel} has no price yet. Request a quote instead.`);
+        const unitPrice = prices.get(v.id) ?? v.priceMinorUnits;
+        if (unitPrice <= 0n) throw new OrderError("UNAVAILABLE", `${v.product.name} ${v.packLabel} has no price yet. Request a quote instead.`);
         const available = v.stockOnHand - v.stockReserved;
         if (!v.isMadeToOrder && line.qty > available) {
           throw new OrderError("STOCK", available > 0 ? `Only ${available} × ${v.product.name} ${v.packLabel} available. Reduce the quantity.` : `${v.product.name} ${v.packLabel} sold out while it was in your cart. Choose another pack, or ask us when it is back.`);
         }
-        const lineExVat = money.times(v.priceMinorUnits, line.qty);
+        const lineExVat = money.times(unitPrice, line.qty);
         const lineVat = money.vatOn(lineExVat, v.vatRateBps);
         subtotal += lineExVat;
         vat += lineVat;
         weight += (v.weightGrams ?? 0) * line.qty;
-        items.push({ variantId: v.id, sku: v.sku, name: v.product.name, packLabel: v.packLabel, unitPriceMinorUnits: v.priceMinorUnits, qty: line.qty, vatRateBps: v.vatRateBps, lineTotalMinorUnits: lineExVat, lineVatMinorUnits: lineVat });
+        items.push({ variantId: v.id, sku: v.sku, name: v.product.name, packLabel: v.packLabel, unitPriceMinorUnits: unitPrice, qty: line.qty, vatRateBps: v.vatRateBps, lineTotalMinorUnits: lineExVat, lineVatMinorUnits: lineVat });
         // Reserve. The CHECK constraint (reserved <= on hand) protects made-to-order overflow too: for
         // made-to-order we only reserve what exists.
         const reserve = v.isMadeToOrder ? Math.min(line.qty, Math.max(0, available)) : line.qty;
@@ -143,7 +165,19 @@ export class OrderService {
 
       const total = subtotal + vat + deliveryFee;
       const number = await nextOrderNumber(tx, this.now());
-      const initialStatus: OrderStatus = input.paymentMethod === "COD" || input.paymentMethod === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
+      // Approval: a buyer's order at or above the organisation's threshold waits for an approver.
+      const needsApproval = Boolean(customer && customer.approvalThresholdMinorUnits !== null && total >= customer.approvalThresholdMinorUnits && input.placedByRole === "BUYER");
+      const initialStatus: OrderStatus = needsApproval ? "AWAITING_APPROVAL" : input.paymentMethod === "COD" || input.paymentMethod === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
+      // Credit is checked when the invoice order is confirmed (now, or at approval), with the customer row locked.
+      if (input.paymentMethod === "INVOICE" && !needsApproval) {
+        try {
+          await assertCreditFor(tx, customer!.id, total);
+        } catch (e) {
+          if (e instanceof CreditError) throw new OrderError(e.code === "LIMIT" ? "CREDIT" : "METHOD_UNAVAILABLE", e.message);
+          throw e;
+        }
+      }
+      const reservationExpiresAt = initialStatus === "PENDING_PAYMENT" ? new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) : initialStatus === "AWAITING_APPROVAL" ? new Date(this.now().getTime() + APPROVAL_HOLD_DAYS * 86_400_000) : null;
       const order = await tx.order.create({
         data: {
           number,
@@ -165,18 +199,80 @@ export class OrderService {
           poNumber: input.poNumber ?? null,
           notes: input.notes ?? null,
           placedAt: this.now(),
-          reservationExpiresAt: initialStatus === "PENDING_PAYMENT" ? new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) : null,
+          reservationExpiresAt,
           items: { createMany: { data: items } },
-          events: { create: { status: initialStatus, type: "order_placed", payload: { paymentMethod: input.paymentMethod, itemCount: items.length } } },
+          events: { create: { status: initialStatus, type: "order_placed", actorId: input.userId ?? null, payload: { paymentMethod: input.paymentMethod, itemCount: items.length, priceListId: customer?.priceListId ?? null, quoteId: input.quoteId ?? null, needsApproval } } },
         },
       });
+      if (initialStatus === "CONFIRMED" && input.paymentMethod === "INVOICE") await issueTaxInvoice(tx, order.id, this.now());
       // The cart has become an order.
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
       return order;
     });
 
+    if (placed.status === "AWAITING_APPROVAL") {
+      return { orderId: placed.id, orderNumber: placed.number, accessToken: placed.accessToken, totalMinorUnits: placed.totalMinorUnits, status: placed.status, next: { kind: "offline", providerRequestId: `approval:${placed.id}`, instructions: "Waiting for an approver in your organisation." } };
+    }
     const next = await this.initiatePayment(placed.id, input.baseUrl);
-    return { orderId: placed.id, orderNumber: placed.number, accessToken: placed.accessToken, totalMinorUnits: placed.totalMinorUnits, next };
+    return { orderId: placed.id, orderNumber: placed.number, accessToken: placed.accessToken, totalMinorUnits: placed.totalMinorUnits, status: placed.status, next };
+  }
+
+  /** Who may approve: an OWNER or APPROVER member of the organisation the order belongs to. */
+  private async assertApprover(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+    if (!order) throw new OrderError("NOT_FOUND", "Order not found.");
+    if (!order.customerId) throw new OrderError("FORBIDDEN", "This order does not belong to an organisation.");
+    const member = await this.prisma.customerMember.findUnique({ where: { customerId_userId: { customerId: order.customerId, userId } } });
+    if (!member || member.role === "BUYER") throw new OrderError("FORBIDDEN", "Only an approver or owner of the organisation can decide this order.");
+    if (order.status !== "AWAITING_APPROVAL") throw new OrderError("STATE", `This order is ${order.status.toLowerCase().replace(/_/g, " ")} and no longer needs approval.`);
+    return order;
+  }
+
+  /**
+   * Approval: the order proceeds as if just placed. Invoice orders are confirmed against credit
+   * (checked now, with the customer row locked) and invoiced; cash on delivery is confirmed;
+   * M-Pesa and card go to pending payment and collection starts.
+   */
+  async approveOrder(orderId: string, approverUserId: string, baseUrl: string): Promise<{ status: OrderStatus; next: InitiateResult }> {
+    const order = await this.assertApprover(orderId, approverUserId);
+    const nextStatus: OrderStatus = order.paymentMethod === "COD" || order.paymentMethod === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
+    await this.prisma.$transaction(async (tx) => {
+      if (order.paymentMethod === "INVOICE") {
+        try {
+          await assertCreditFor(tx, order.customerId!, order.totalMinorUnits);
+        } catch (e) {
+          if (e instanceof CreditError) throw new OrderError(e.code === "LIMIT" ? "CREDIT" : "METHOD_UNAVAILABLE", e.message);
+          throw e;
+        }
+      }
+      await tx.order.update({ where: { id: order.id }, data: { status: nextStatus, approvedById: approverUserId, approvedAt: this.now(), reservationExpiresAt: nextStatus === "PENDING_PAYMENT" ? new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) : null } });
+      await tx.orderEvent.create({ data: { orderId: order.id, status: nextStatus, type: "order_approved", actorId: approverUserId, payload: { paymentMethod: order.paymentMethod } } });
+      if (nextStatus === "CONFIRMED" && order.paymentMethod === "INVOICE") await issueTaxInvoice(tx, order.id, this.now());
+    });
+    const next = await this.initiatePayment(order.id, baseUrl);
+    return { status: nextStatus, next };
+  }
+
+  /** Rejection cancels the order and releases its stock; the reason is on the event for the buyer. */
+  async rejectOrder(orderId: string, approverUserId: string, reason: string): Promise<void> {
+    const order = await this.assertApprover(orderId, approverUserId);
+    await this.prisma.$transaction(async (tx) => {
+      await this.releaseItems(tx, order.items, order.number, "approval_rejected");
+      await tx.order.update({ where: { id: order.id }, data: { status: "CANCELLED", reservationExpiresAt: null } });
+      await tx.orderEvent.create({ data: { orderId: order.id, status: "CANCELLED", type: "order_rejected", actorId: approverUserId, payload: { reason } } });
+    });
+  }
+
+  private async releaseItems(tx: Prisma.TransactionClient, items: Array<{ variantId: string | null; qty: number }>, reference: string, reason: string) {
+    for (const item of items) {
+      if (!item.variantId) continue;
+      const v = await tx.productVariant.findUnique({ where: { id: item.variantId }, select: { stockReserved: true } });
+      const release = Math.min(item.qty, v?.stockReserved ?? 0);
+      if (release > 0) {
+        await tx.productVariant.update({ where: { id: item.variantId }, data: { stockReserved: { decrement: release } } });
+        await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "RELEASE", qty: -release, reason, reference } });
+      }
+    }
   }
 
   /**
@@ -189,15 +285,22 @@ export class OrderService {
     if (order.status !== "PENDING_PAYMENT" && order.status !== "PAYMENT_FAILED") throw new OrderError("STATE", `This order is ${order.status.toLowerCase().replace(/_/g, " ")}; its payment method can no longer be changed.`);
     const adapter = this.adapters[method];
     if (!adapter.isConfigured()) throw new OrderError("METHOD_UNAVAILABLE", "That payment method is not available right now. Choose another.");
-    if (method === "INVOICE" && (!order.customer || order.customer.status !== "CREDIT_APPROVED" || order.customer.creditLimitMinorUnits <= 0n)) {
-      throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Apply for an account or choose another method.");
-    }
+    if (method === "INVOICE" && !order.customerId) throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Apply for an account or choose another method.");
     if (method !== order.paymentMethod) {
       const nextStatus: OrderStatus = method === "COD" || method === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
-      await this.prisma.$transaction([
-        this.prisma.order.update({ where: { id: order.id }, data: { paymentMethod: method, status: nextStatus, reservationExpiresAt: nextStatus === "CONFIRMED" ? null : new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) } }),
-        this.prisma.orderEvent.create({ data: { orderId: order.id, status: nextStatus, type: "payment_method_changed", payload: { from: order.paymentMethod, to: method } } }),
-      ]);
+      await this.prisma.$transaction(async (tx) => {
+        if (method === "INVOICE") {
+          try {
+            await assertCreditFor(tx, order.customerId!, order.totalMinorUnits);
+          } catch (e) {
+            if (e instanceof CreditError) throw new OrderError(e.code === "LIMIT" ? "CREDIT" : "METHOD_UNAVAILABLE", e.message);
+            throw e;
+          }
+        }
+        await tx.order.update({ where: { id: order.id }, data: { paymentMethod: method, status: nextStatus, reservationExpiresAt: nextStatus === "CONFIRMED" ? null : new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) } });
+        await tx.orderEvent.create({ data: { orderId: order.id, status: nextStatus, type: "payment_method_changed", payload: { from: order.paymentMethod, to: method } } });
+        if (method === "INVOICE") await issueTaxInvoice(tx, order.id, this.now());
+      });
     }
     return this.initiatePayment(order.id, baseUrl);
   }
@@ -355,20 +458,14 @@ export class OrderService {
 
   /** Release reservations of unpaid orders past their expiry (cron). */
   async releaseExpiredReservations(): Promise<number> {
-    const expired = await this.prisma.order.findMany({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_FAILED"] }, reservationExpiresAt: { lt: this.now() } }, include: { items: true } });
+    const expired = await this.prisma.order.findMany({ where: { status: { in: ["PENDING_PAYMENT", "PAYMENT_FAILED", "AWAITING_APPROVAL"] }, reservationExpiresAt: { lt: this.now() } }, include: { items: true } });
     for (const order of expired) {
       await this.prisma.$transaction(async (tx) => {
-        for (const item of order.items) {
-          if (!item.variantId) continue;
-          const v = await tx.productVariant.findUnique({ where: { id: item.variantId }, select: { stockReserved: true } });
-          const release = Math.min(item.qty, v?.stockReserved ?? 0);
-          if (release > 0) {
-            await tx.productVariant.update({ where: { id: item.variantId }, data: { stockReserved: { decrement: release } } });
-            await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "RELEASE", qty: -release, reason: "reservation_expired", reference: order.number } });
-          }
-        }
-        await tx.order.update({ where: { id: order.id }, data: { reservationExpiresAt: null } });
-        await tx.orderEvent.create({ data: { orderId: order.id, status: order.status, type: "reservation_released", payload: { after: `${RESERVATION_MINUTES} min` } } });
+        await this.releaseItems(tx, order.items, order.number, order.status === "AWAITING_APPROVAL" ? "approval_expired" : "reservation_expired");
+        // An order nobody approved within the hold is cancelled; unpaid orders keep their status and can still be paid (stock permitting).
+        const status: OrderStatus = order.status === "AWAITING_APPROVAL" ? "CANCELLED" : order.status;
+        await tx.order.update({ where: { id: order.id }, data: { reservationExpiresAt: null, status } });
+        await tx.orderEvent.create({ data: { orderId: order.id, status, type: order.status === "AWAITING_APPROVAL" ? "approval_expired" : "reservation_released", payload: { after: order.status === "AWAITING_APPROVAL" ? `${APPROVAL_HOLD_DAYS} days` : `${RESERVATION_MINUTES} min` } } });
       });
     }
     return expired.length;
@@ -383,6 +480,8 @@ export function amountMatches(paid: bigint, expected: bigint): boolean {
 
 export function statusMessage(status: OrderStatus, method: PaymentMethod): string {
   switch (status) {
+    case "AWAITING_APPROVAL":
+      return "Waiting for an approver in your organisation. Nothing is charged until it is approved.";
     case "PENDING_PAYMENT":
       return method === "MPESA" ? "Waiting for the M-Pesa payment. Check your phone for the prompt and enter your PIN." : "Waiting for the card payment to be confirmed.";
     case "PAYMENT_FAILED":
