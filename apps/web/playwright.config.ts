@@ -29,7 +29,10 @@ export default defineConfig({
     launchOptions: process.env["PLAYWRIGHT_CHROMIUM_PATH"] ? { executablePath: process.env["PLAYWRIGHT_CHROMIUM_PATH"] } : {},
   },
   projects: [
-    { name: "mobile", use: { ...devices["Pixel 7"], viewport: { width: 360, height: 780 } } },
+    // Signs each staff role in once for the whole run and saves its state. Staff sign-in is rate
+    // limited per address, so specs reuse these rather than signing in themselves.
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "mobile", use: { ...devices["Pixel 7"], viewport: { width: 360, height: 780 } }, dependencies: ["setup"] },
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } }, dependencies: ["mobile"] },
   ],
   webServer: external
