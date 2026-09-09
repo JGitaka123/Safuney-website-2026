@@ -56,6 +56,10 @@ jobs:
         run: pnpm migrate:check
       - name: Migrate CI database
         run: pnpm --filter @safuney/db migrate:deploy
+      - name: Seed demo catalogue (integration tests search it)
+        run: pnpm --filter @safuney/db seed
+        env:
+          SEED_DEMO: "1"
       - name: Unit and integration tests
         run: pnpm test
       - name: Build (prebuild runs prisma generate and migrate deploy)
