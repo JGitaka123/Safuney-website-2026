@@ -1,6 +1,6 @@
 # Phase 4 plan — B2B accounts, approvals, price lists, quotes, credit
 
-**Date:** 2026-09-09 · **Status:** in progress · Spec: master prompt §6 Phase 4, §2 stack (auth), §5 data model.
+**Date:** 2026-09-09 · **Status:** built; see `docs/reports/2026-09-09-phase-4.md` · Spec: master prompt §6 Phase 4, §2 stack (auth), §5 data model.
 
 ## Scope (from the brief)
 1. Organisation accounts: multi-user (buyer, approver), approval workflow above a threshold, PO number on
@@ -73,7 +73,8 @@ adapter on the existing `User`/`Account`/`Session`/`VerificationToken` models.
 3. Saved lists, reorder, scheduled deliveries (C).
 4. RFQ (D) and credit onboarding (E).
 
-## Decisions to record
-- ADR 0008: Auth.js v5 beta on the App Router (why not v4, why not a custom session layer).
-- ADR 0009: Vercel Blob for uploads (single vendor already in use; R2 would add a credential and a
-  CORS surface for no gain at this volume).
+## Decisions recorded
+- ADR 0008: Auth.js v5 on the App Router, JWT sessions, no customer passwords.
+- File uploads were not built in this phase: the credit application takes document links (shared
+  drive) and finance asks for files by email. Vercel Blob is the intended store when the admin console
+  (Phase 6) adds uploads for products, documents and credit files; the decision is recorded there.

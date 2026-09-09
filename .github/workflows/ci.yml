@@ -158,7 +158,7 @@ jobs:
       - name: Lighthouse CI
         run: pnpm --filter @safuney/web lhci
         env:
-          SITE_PAGES: /,/products,/products/disinfection,/products/disinfection/qac-surface-food-contact-sanitiser,/cart,/checkout,/contact
+          SITE_PAGES: /,/products,/products/disinfection,/products/disinfection/qac-surface-food-contact-sanitiser,/cart,/checkout,/contact,/sign-in,/quote
       - uses: actions/upload-artifact@v4
         if: always()
         with:
