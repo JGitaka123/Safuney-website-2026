@@ -39,5 +39,8 @@ export default defineConfig({
         url: baseURL,
         reuseExistingServer: !process.env["CI"],
         timeout: 60_000,
+        // Surface server-side errors (a 500 page says nothing) in the test output.
+        stdout: "ignore",
+        stderr: "pipe",
       },
 });

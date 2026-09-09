@@ -62,15 +62,6 @@ jobs:
         run: pnpm build
       - name: Placeholder guard
         run: pnpm guard:placeholders
-      - name: Upload build for browser jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: |
-            apps/web/.next
-            !apps/web/.next/cache
-          include-hidden-files: true
-          retention-days: 1
 
   e2e:
     name: Playwright + axe (mobile first)
@@ -100,10 +91,11 @@ jobs:
       - run: pnpm --filter @safuney/db generate
       - run: pnpm --filter @safuney/db migrate:deploy
       - run: pnpm --filter @safuney/db seed
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-build
-          path: apps/web/.next
+      # Built here rather than shipped from the checks job: Turbopack links externals such as
+      # @prisma/client into .next/node_modules as symlinks into the pnpm store, which do not survive an
+      # artifact round-trip.
+      - name: Build
+        run: pnpm --filter @safuney/web build
       - name: Install Playwright browsers
         run: pnpm --filter @safuney/web exec playwright install --with-deps chromium
       - name: Run e2e
@@ -131,14 +123,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @safuney/db generate
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-build
-          path: apps/web/.next
+      - name: Build (no database: pages render from static config, as a cold visitor sees them)
+        run: pnpm --filter @safuney/web build
+        env:
+          DATABASE_URL: ""
       - name: Lighthouse CI
         run: pnpm --filter @safuney/web lhci
         env:
-          # No DATABASE_URL: pages render from static config, which is what a cold visitor sees.
           DATABASE_URL: ""
       - uses: actions/upload-artifact@v4
         if: always()
