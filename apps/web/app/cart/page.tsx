@@ -20,7 +20,7 @@ export default async function CartPage() {
         <Breadcrumbs items={[{ label: "Cart" }]} />
         <h1 className="mt-3 text-h1">Your cart</h1>
         <div className="mt-8 max-w-2xl">
-          <EmptyState heading="Your cart is empty" body="Start with the zone you clean most.">
+          <EmptyState headingLevel={2} heading="Your cart is empty" body="Start with the zone you clean most.">
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
               {ZONES.map((z) => (
                 <li key={z.key}>

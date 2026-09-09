@@ -77,7 +77,7 @@ export function Facets({ base, filters, facets, idPrefix = "facet" }: FacetsProp
       </FacetGroup>
 
       {facets.priceRange ? (
-        <FacetGroup id={`${idPrefix}-price`} title="Price">
+        <FacetGroup id={`${idPrefix}-price`} title="Price" list={false}>
           <form action={base} method="get" className="flex flex-col gap-3">
             {/* Keep the other filters when the price form submits. */}
             {[...withFilter(filters, { priceMin: undefined, priceMax: undefined }).split("&")]
@@ -106,13 +106,13 @@ export function Facets({ base, filters, facets, idPrefix = "facet" }: FacetsProp
   );
 }
 
-function FacetGroup({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+function FacetGroup({ id, title, children, list = true }: { id: string; title: string; children: React.ReactNode; list?: boolean }) {
   return (
     <fieldset aria-labelledby={id} className="min-w-0">
       <p id={id} className="text-label text-ink">
         {title}
       </p>
-      <ul className="mt-2 flex flex-col">{children}</ul>
+      {list ? <ul className="mt-2 flex flex-col">{children}</ul> : <div className="mt-2">{children}</div>}
     </fieldset>
   );
 }

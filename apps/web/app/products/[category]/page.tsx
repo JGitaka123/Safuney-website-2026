@@ -58,6 +58,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       {!page ? (
         <div className="mt-10">
           <EmptyState
+            headingLevel={2}
             heading="Products in this category are being published"
             body="Prices, pack sizes and safety data sheets appear here as each product is reviewed. Ask us now and we will quote the same day."
             actions={[

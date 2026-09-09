@@ -29,6 +29,8 @@ export interface SearchBoxProps {
   autoFocus?: boolean;
   /** Called after a result or the results page has been opened, e.g. to close a sheet. */
   onNavigate?: () => void;
+  /** Accessible name of the search landmark; keep it unique per page. */
+  landmarkLabel?: string;
   className?: string;
 }
 
@@ -52,7 +54,7 @@ function toItems(r: SearchApiResponse): Item[] {
  * Enter opens the highlighted result or, with nothing highlighted, the full results page; Escape closes.
  * Stale responses are aborted so the list never shows results for an earlier query.
  */
-export function SearchBox({ layout = "popover", labelVisible = false, autoFocus, onNavigate, className }: SearchBoxProps) {
+export function SearchBox({ layout = "popover", labelVisible = false, autoFocus, onNavigate, landmarkLabel = "Site search", className }: SearchBoxProps) {
   const router = useRouter();
   const uid = useId();
   const inputId = `search-${uid}`;
@@ -69,16 +71,23 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
   const trimmed = q.trim();
   const searchable = trimmed.length >= MIN_CHARS;
 
-  useEffect(() => {
-    abortRef.current?.abort();
-    if (!searchable) {
+  function onChange(value: string) {
+    setQ(value);
+    setOpen(true);
+    if (value.trim().length < MIN_CHARS) {
       setStatus({ state: "idle" });
       setActive(-1);
-      return;
+    } else {
+      // Keep the last results on screen while the next request is in flight.
+      setStatus((s) => (s.state === "done" ? s : { state: "loading" }));
     }
+  }
+
+  useEffect(() => {
+    abortRef.current?.abort();
+    if (!searchable) return;
     const controller = new AbortController();
     abortRef.current = controller;
-    setStatus((s) => (s.state === "done" ? s : { state: "loading" }));
     const timer = window.setTimeout(async () => {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, { signal: controller.signal, headers: { accept: "application/json" } });
@@ -183,10 +192,8 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
     { kind: "document", label: "Documents" },
   ];
 
-  let index = -1;
   const renderOption = (item: Item) => {
-    index += 1;
-    const i = index;
+    const i = items.indexOf(item);
     const selected = i === active;
     return (
       <div
@@ -213,6 +220,7 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
   return (
     <form
       role="search"
+      aria-label={landmarkLabel}
       action="/search"
       method="get"
       className={cn("relative", className)}
@@ -238,7 +246,7 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
           type="search"
           role="combobox"
           aria-expanded={showPanel}
-          aria-controls={listId}
+          aria-controls={showPanel && items.length > 0 ? listId : undefined}
           aria-activedescendant={showPanel && active >= 0 ? optionId(active) : undefined}
           aria-autocomplete="list"
           aria-describedby={`${inputId}-hint`}
@@ -247,10 +255,7 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
           maxLength={MAX_CHARS}
           autoFocus={autoFocus}
           value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setOpen(true);
-          }}
+          onChange={(e) => onChange(e.target.value)}
           onFocus={() => {
             if (searchable) setOpen(true);
           }}
@@ -268,10 +273,6 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
       </div>
 
       <div
-        ref={listRef}
-        id={listId}
-        role="listbox"
-        aria-label="Search results"
         hidden={!showPanel}
         className={cn(
           "max-h-[min(70vh,32rem)] overflow-y-auto border border-line bg-surface text-ink",
@@ -282,15 +283,16 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
         {status.state === "error" ? <p className="px-4 py-3 text-small text-ink">{status.message}</p> : null}
         {nothingFound ? (
           <p className="px-4 py-3 text-small text-ink">
-            No products found for &lsquo;{results?.q}&rsquo;. Check the spelling, or browse{" "}
+            No products found for &apos;{results?.q}&apos;. Check the spelling, or browse{" "}
             <Link href={FALLBACK_CATEGORY.href} onClick={() => navigate(FALLBACK_CATEGORY.href)} className="text-accent underline underline-offset-[3px]">
               {FALLBACK_CATEGORY.name}
             </Link>
             .
           </p>
         ) : null}
-        {results && items.length > 0
-          ? groups.map((g) => {
+        {items.length > 0 ? (
+          <div ref={listRef} id={listId} role="listbox" aria-label="Search results">
+            {groups.map((g) => {
               const inGroup = items.filter((it) => it.kind === g.kind);
               if (inGroup.length === 0) return null;
               return (
@@ -301,9 +303,10 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
                   {inGroup.map(renderOption)}
                 </div>
               );
-            })
-          : null}
-        {results && items.length > 0 ? items.filter((it) => it.kind === "all").map(renderOption) : null}
+            })}
+            {items.filter((it) => it.kind === "all").map(renderOption)}
+          </div>
+        ) : null}
       </div>
     </form>
   );

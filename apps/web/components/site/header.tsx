@@ -27,7 +27,7 @@ export async function SiteHeader() {
             ))}
           </ul>
         </nav>
-        <div className="hidden md:block flex-1 max-w-sm">
+        <div className="hidden md:block min-w-0 flex-1 max-w-sm">
           <SearchBox />
         </div>
         <div className="hidden items-center gap-3 md:flex">
