@@ -18,6 +18,8 @@ env:
   PAYMENTS_MODE: mock
   # Payment return URLs are built from the configured site URL; match the Playwright base URL.
   NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  # Auth.js needs a secret to sign sessions; this one is for CI only (production uses a Vercel secret).
+  AUTH_SECRET: ci-only-auth-secret-not-used-anywhere-else
   # CI database (GitHub-hosted Postgres service). Production uses Neon via Vercel env vars.
   DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/safuney_ci
   SHADOW_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/safuney_shadow

@@ -3,6 +3,7 @@ import { site } from "@/config/site";
 import { isFeatureEnabled } from "@/lib/settings";
 import { MobileSearch } from "@/components/search/mobile-search";
 import { SearchBox } from "@/components/search/search-box";
+import { AccountLink } from "./account-link";
 import { CartLink } from "./cart-link";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
@@ -31,6 +32,7 @@ export async function SiteHeader() {
           <SearchBox />
         </div>
         <div className="hidden items-center gap-3 md:flex">
+          {shop ? <AccountLink /> : null}
           {shop ? <CartLink /> : null}
           <Link href="/contact?topic=quote" className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
             Request a quote
@@ -41,6 +43,7 @@ export async function SiteHeader() {
         </div>
         <div className="flex items-center gap-1 md:hidden">
           <MobileSearch />
+          {shop ? <AccountLink /> : null}
           {shop ? <CartLink /> : null}
           <MobileNav />
         </div>

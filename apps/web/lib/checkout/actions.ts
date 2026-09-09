@@ -8,6 +8,7 @@ import { services } from "@/lib/env";
 import { readCart } from "@/lib/cart/cookies";
 import { CART_COOKIE } from "@/lib/cart/service";
 import { orderService, paymentRegistry, publicBaseUrl } from "@/lib/orders/context";
+import { viewer } from "@/lib/auth/session";
 import { OrderError } from "@/lib/orders/service";
 import { notifyOrderPlaced } from "@/lib/notify";
 import { db } from "@safuney/db";
@@ -106,8 +107,10 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
   if (!token) return { ok: false, formError: "Your cart is empty." };
   const d = parsed.data;
   try {
+    const who = await viewer();
     const result = await orderService().placeOrder({
       cartToken: token,
+      userId: who?.id,
       contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || undefined },
       delivery: d.delivery.method === "PICKUP" ? { method: "PICKUP", slot: d.delivery.slot } : { method: "DELIVERY", county: d.delivery.county, town: d.delivery.town, line1: d.delivery.line1 || undefined, landmark: d.delivery.landmark || undefined, deliveryNotes: d.delivery.deliveryNotes || undefined, slot: d.delivery.slot },
       paymentMethod: d.paymentMethod,
