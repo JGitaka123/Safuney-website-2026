@@ -1,0 +1,6 @@
+# Paths that require the product owner's review before merge.
+# Everything else may auto-merge on green CI.
+/packages/payments/**            @JGitaka123
+/packages/db/prisma/**           @JGitaka123
+/apps/web/app/(checkout)/**      @JGitaka123
+/.github/CODEOWNERS              @JGitaka123
