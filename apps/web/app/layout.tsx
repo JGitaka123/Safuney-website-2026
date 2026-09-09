@@ -1,27 +1,50 @@
 import type { Metadata, Viewport } from "next";
+import { preload } from "react-dom";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { site } from "@/config/site";
+import { config } from "@/lib/env";
+import { SiteHeader } from "@/components/site/header";
+import { SiteFooter } from "@/components/site/footer";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(config.siteUrl),
   title: {
     default: `${site.legalName} — professional cleaning and hygiene solutions, Kenya`,
     template: `%s — ${site.shortName}`,
   },
   description: site.tagline,
-  // Interim site must not be indexed until domain cut-over (Phase 9).
+  // Interim site must not be indexed until domain cut-over (Phase 9, ADR 0002).
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0b5e73",
+  themeColor: "#10202b",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Body weight; with font-display: optional the preload decides whether the first paint is Plex or the fallback.
+  preload("/fonts/plex-sans-400-core.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous", fetchPriority: "high" });
   return (
     <html lang="en-KE">
-      <body className="min-h-dvh">{children}</body>
+      <body className="flex min-h-dvh flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-button focus:bg-ink focus:px-4 focus:py-2 focus:text-white"
+        >
+          Skip to main content
+        </a>
+        <SiteHeader />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <SiteFooter />
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }

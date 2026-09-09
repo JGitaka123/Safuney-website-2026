@@ -4,14 +4,16 @@ The new website and online shop for **Safuney Limited**, Nairobi — supplier of
 hygiene chemicals and support services to institutional, hospitality, industrial, healthcare, foodservice
 and education customers. This repository replaces the brochure site at https://safuney.com.
 
-Status: **Phase 0.5 (holding page) / Phase 0 (discovery)**. See [`docs/`](docs/) for the plan and reports.
+Status: **Phase 1 (foundation)** — design system, database schema, core pages, CI gates. See [`docs/reports/`](docs/reports/) for phase reports and [`docs/design/plan.md`](docs/design/plan.md) for the design plan.
 
 ## Layout
 
 ```
-apps/web/        Next.js (App Router, TypeScript strict, Tailwind) — the site
-packages/        (from Phase 1) db (Prisma), payments, ui, config
-scripts/         CI guards, e.g. placeholder-guard.mjs
+apps/web/        Next.js (App Router, TypeScript strict, Tailwind v4) — the site
+packages/db/     Prisma 7 schema, migrations, seed, money helpers, integration tests
+packages/ui/     Design-system primitives (Button, Sheet, ZoneBadge, ProductCard, …) shown at /design
+packages/config/ Shared constants (VAT, Kenyan counties, phone normalisation) and tsconfig base
+scripts/         prebuild (prisma generate + migrate deploy), placeholder guard, migrate check
 docs/discovery/  Phase 0 — current-site inventory, content gaps, catalogue seed, PO questions
 docs/design/     Phase 1 — design plan and photography guidelines
 docs/decisions/  Architecture decision records
@@ -26,9 +28,15 @@ Requires Node 22 LTS and pnpm. First-time machine setup is in
 
 ```powershell
 pnpm install
-pnpm dev          # http://localhost:3000
-pnpm ci           # what CI runs: lint, typecheck, build, placeholder guard
+pnpm --filter @safuney/db generate     # generate the Prisma client (git-ignored)
+pnpm dev                                # http://localhost:3000
+pnpm ci                                 # lint, typecheck, build, placeholder guard
+pnpm test                               # unit + integration tests (integration needs DATABASE_URL)
+pnpm test:e2e                           # Playwright + axe against a production build
 ```
+
+A local Postgres works for development: set `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/safuney_dev`,
+then `pnpm --filter @safuney/db migrate:deploy` and `pnpm --filter @safuney/db seed`.
 
 Environment variables are never committed. Pull them from Vercel:
 
@@ -50,12 +58,17 @@ not indexed before cut-over.
 ## Rules enforced in CI
 
 - `pnpm lint`, `pnpm typecheck`, `pnpm build` must pass.
+- `pnpm migrate:check`: the migrations folder must fully describe `schema.prisma`.
+- `pnpm test`: unit tests plus integration tests against a Postgres service (stock, append-only order
+  events, payment idempotency, search vector, leads).
 - `pnpm guard:placeholders` scans the built output and source copy for template text ("Lorem", "Paragraph
   of text beneath the heading", "TODO" in shipped HTML, untranslated i18n keys) and fails the build.
+- Playwright + axe at a 360 px mobile viewport first, then desktop: every page, no horizontal overflow,
+  zero WCAG 2.1 AA violations, keyboard navigation.
+- Lighthouse CI on mobile: ≥ 95 on Performance, Accessibility, Best Practices and SEO; LCP < 2.0 s.
+- A second workflow re-runs the browser suite against each Vercel preview URL when it is reachable.
 - Paths listed in [`.github/CODEOWNERS`](.github/CODEOWNERS) (payments, database schema, checkout) need the
   product owner's review before merge.
-
-Later phases add unit, integration (Neon branch per PR), Playwright + axe, and Lighthouse (≥ 95 mobile).
 
 ## Contributing conventions
 
