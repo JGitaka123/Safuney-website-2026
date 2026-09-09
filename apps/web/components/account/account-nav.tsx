@@ -2,11 +2,13 @@ import Link from "next/link";
 
 const items = [
   { href: "/account", label: "Orders" },
+  { href: "/account/addresses", label: "Addresses" },
   { href: "/account/lists", label: "Saved lists" },
   { href: "/account/deliveries", label: "Scheduled deliveries" },
   { href: "/account/organisation", label: "Organisation" },
   { href: "/account/approvals", label: "Approvals" },
   { href: "/account/credit", label: "Credit and invoices" },
+  { href: "/account/profile", label: "Profile" },
 ] as const;
 
 /** Account section navigation; the organisation items only make sense for members, so they are hidden otherwise. */

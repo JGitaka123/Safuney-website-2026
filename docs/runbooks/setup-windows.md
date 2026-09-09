@@ -218,6 +218,13 @@ SMS, and magic links are written to the server log. Real SMS needs `AT_API_KEY`/
 password and an authenticator code; the demo seed creates `sales@safuney.test`, `finance@safuney.test`
 and `admin@safuney.test` with `DEMO_STAFF_PASSWORD` (default `safuney-demo-2026`) and no second factor.
 
+### Staff roles
+
+`SALES` prices quotes (`/sales`), `FINANCE` decides credit (`/sales/credit`), `WAREHOUSE` runs the
+board (`/warehouse`), `ADMIN` can do all of it. The demo seed creates one of each (`sales@`,
+`finance@`, `warehouse@`, `admin@safuney.test`). Production staff accounts are created in the admin
+console (Phase 6) and must enrol an authenticator app.
+
 ### Cron jobs (Vercel)
 
 **A Hobby account allows one run per day per job.** Anything more frequent is rejected at deploy time

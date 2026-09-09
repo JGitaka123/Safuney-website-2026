@@ -45,7 +45,10 @@ export class SubscriptionService {
   async listFor(userId: string) {
     const m = await this.customerFor(userId);
     if (!m) return [];
-    return this.prisma.subscription.findMany({ where: { customerId: m.customerId }, orderBy: { nextRunAt: "asc" }, include: { items: { include: { variant: { include: { product: { select: { name: true } } } } } }, runs: { orderBy: { ranAt: "desc" }, take: 3, include: { order: { select: { number: true, accessToken: true, status: true } } } } } });
+    const list = await this.prisma.subscription.findMany({ where: { customerId: m.customerId }, orderBy: { nextRunAt: "asc" }, include: { items: { include: { variant: { include: { product: { select: { name: true } } } } } }, runs: { orderBy: { ranAt: "desc" }, take: 3, include: { order: { select: { number: true, accessToken: true, status: true } } } } } });
+    const addressIds = list.map((s) => s.addressId).filter((x): x is string => Boolean(x));
+    const addresses = addressIds.length ? await this.prisma.address.findMany({ where: { id: { in: addressIds } } }) : [];
+    return list.map((s) => ({ ...s, address: addresses.find((a) => a.id === s.addressId) ?? null }));
   }
 
   async create(userId: string, input: ScheduleInput) {

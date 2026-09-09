@@ -423,7 +423,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<number> {
   // Demo staff for previews and CI: the password is DEMO_STAFF_PASSWORD (default below), no second factor
   // until they enrol one. Never created in production (this function refuses to run there).
   const staffPassword = hashPassword(process.env["DEMO_STAFF_PASSWORD"] ?? "safuney-demo-2026");
-  for (const [email, role, name] of [["sales@safuney.test", UserRole.SALES, "Demo sales"], ["finance@safuney.test", UserRole.FINANCE, "Demo finance"], ["admin@safuney.test", UserRole.ADMIN, "Demo admin"]] as const) {
+  for (const [email, role, name] of [["sales@safuney.test", UserRole.SALES, "Demo sales"], ["finance@safuney.test", UserRole.FINANCE, "Demo finance"], ["admin@safuney.test", UserRole.ADMIN, "Demo admin"], ["warehouse@safuney.test", UserRole.WAREHOUSE, "Demo warehouse"]] as const) {
     await prisma.user.upsert({ where: { email }, create: { email, name, role, passwordHash: staffPassword, emailVerified: new Date() }, update: { role, passwordHash: staffPassword, isActive: true } });
   }
   return count;

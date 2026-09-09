@@ -1,6 +1,6 @@
 # Phase 5 plan — customer account, orders, delivery
 
-**Date:** 2026-09-09 · **Status:** planned · Spec: master prompt §6 Phase 5.
+**Date:** 2026-09-09 · **Status:** built; see `docs/reports/2026-09-09-phase-5.md` · Spec: master prompt §6 Phase 5.
 
 ## Scope (from the brief)
 1. Account: order history with the `OrderEvent` timeline, tracking, reorder, invoices, addresses,

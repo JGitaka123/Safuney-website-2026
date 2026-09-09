@@ -10,6 +10,7 @@ export interface ScheduleView {
   intervalLabel: string;
   nextRunLabel: string;
   paymentMethod: string;
+  destination: string;
   items: string[];
   runs: Array<{ id: string; status: string; when: string; orderNumber: string | null; href: string | null; error: string | null }>;
 }
@@ -31,7 +32,9 @@ export function ScheduleCard({ schedule }: { schedule: ScheduleView }) {
           <li key={i}>{i}</li>
         ))}
       </ul>
-      <p className="mt-2 text-small text-ink-muted">{METHOD[schedule.paymentMethod] ?? schedule.paymentMethod}</p>
+      <p className="mt-2 text-small text-ink-muted">
+        {schedule.destination} · {METHOD[schedule.paymentMethod] ?? schedule.paymentMethod}
+      </p>
       {schedule.runs.length > 0 ? (
         <ul className="mt-3 border-t border-line pt-3 text-small">
           {schedule.runs.map((r) => (

@@ -465,6 +465,109 @@ export class OrderService {
     return { status: fresh.status, paymentStatus: fresh.payments[0]?.status ?? null, message: statusMessage(fresh.status, fresh.paymentMethod) };
   }
 
+  // ───────────────────────────── Warehouse (Phase 5) ─────────────────────────────
+
+  private async assertWarehouse(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true, isActive: true } });
+    if (!u || !u.isActive || !["WAREHOUSE", "ADMIN"].includes(u.role)) throw new OrderError("FORBIDDEN", "Only warehouse staff can change fulfilment.");
+  }
+
+  private async fulfilmentOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: { include: { variant: { select: { sku: true, stockOnHand: true, stockReserved: true, product: { select: { name: true } } } } } }, fulfilment: true } });
+    if (!order) throw new OrderError("NOT_FOUND", "Order not found.");
+    return order;
+  }
+
+  /** Orders the warehouse works on: paid or confirmed and not yet dispatched, oldest first. */
+  async warehouseQueue(userId: string) {
+    await this.assertWarehouse(userId);
+    return this.prisma.order.findMany({ where: { status: { in: ["PAID", "CONFIRMED", "PACKED", "DISPATCHED"] } }, orderBy: [{ status: "asc" }, { placedAt: "asc" }], include: { items: true, fulfilment: true, customer: { select: { displayName: true } } } });
+  }
+
+  /** The pick list is snapshotted on first view so it does not change under the picker. */
+  async pickList(orderId: string, userId: string) {
+    await this.assertWarehouse(userId);
+    const order = await this.fulfilmentOrder(orderId);
+    if (order.fulfilment?.pickListJson) return { order, lines: order.fulfilment.pickListJson as Array<{ sku: string; name: string; packLabel: string; qty: number }> };
+    const lines = order.items.map((i) => ({ sku: i.sku, name: i.name, packLabel: i.packLabel, qty: i.qty }));
+    await this.prisma.fulfilment.upsert({ where: { orderId }, create: { orderId, pickListJson: lines }, update: { pickListJson: lines } });
+    return { order, lines };
+  }
+
+  async markPacked(orderId: string, userId: string): Promise<void> {
+    await this.assertWarehouse(userId);
+    const order = await this.fulfilmentOrder(orderId);
+    if (order.status !== "PAID" && order.status !== "CONFIRMED") throw new OrderError("STATE", `Order ${order.number} is ${order.status.toLowerCase().replace(/_/g, " ")} and cannot be packed.`);
+    await this.prisma.$transaction([
+      this.prisma.fulfilment.upsert({ where: { orderId }, create: { orderId, packedAt: this.now(), packedById: userId }, update: { packedAt: this.now(), packedById: userId } }),
+      this.prisma.order.update({ where: { id: orderId }, data: { status: "PACKED" } }),
+      this.prisma.orderEvent.create({ data: { orderId, status: "PACKED", type: "order_packed", actorId: userId, payload: {} } }),
+    ]);
+  }
+
+  /**
+   * Dispatch moves stock from reserved to out, exactly once (guarded by the status transition), and
+   * records who is carrying it.
+   */
+  async dispatch(orderId: string, userId: string, rider: { name: string; phone: string }): Promise<void> {
+    await this.assertWarehouse(userId);
+    const order = await this.fulfilmentOrder(orderId);
+    if (order.status !== "PACKED") throw new OrderError("STATE", `Order ${order.number} must be packed before it is dispatched.`);
+    if (rider.name.trim().length < 2) throw new OrderError("STATE", "Who is delivering it? Enter the rider's name.");
+    await this.prisma.$transaction(async (tx) => {
+      const locked = await tx.order.updateMany({ where: { id: orderId, status: "PACKED" }, data: { status: "DISPATCHED" } });
+      if (locked.count !== 1) throw new OrderError("STATE", "This order was dispatched by someone else a moment ago.");
+      // M-Pesa and card orders left stock at payment (see applyVerified); cash and invoice orders are only
+      // reserved until now. The order's method decides, never the variant's counters, which belong to every order.
+      const movesStockNow = order.paymentMethod === "COD" || order.paymentMethod === "INVOICE";
+      if (movesStockNow) {
+        // Sorted by variant, like placement, payment and the expiry sweep, so none of them deadlock.
+        const lines = order.items.filter((i): i is typeof i & { variantId: string } => Boolean(i.variantId)).sort((a, b) => a.variantId.localeCompare(b.variantId));
+        for (const item of lines) {
+          const v = await tx.productVariant.findUniqueOrThrow({ where: { id: item.variantId }, select: { stockOnHand: true, stockReserved: true } });
+          // Release only what this order actually held; a made-to-order line reserved less than it ordered.
+          const release = Math.min(item.reservedQty, v.stockReserved);
+          const out = Math.min(item.qty, v.stockOnHand);
+          await tx.productVariant.update({ where: { id: item.variantId }, data: { stockReserved: { decrement: release }, stockOnHand: { decrement: out } } });
+          await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "OUT", qty: -out, reason: "dispatched", reference: order.number } });
+        }
+        await tx.orderItem.updateMany({ where: { orderId: order.id }, data: { reservedQty: 0 } });
+      }
+      await tx.fulfilment.upsert({ where: { orderId }, create: { orderId, dispatchedAt: this.now(), riderName: rider.name.trim(), riderPhone: rider.phone.trim() || null }, update: { dispatchedAt: this.now(), riderName: rider.name.trim(), riderPhone: rider.phone.trim() || null } });
+      await tx.orderEvent.create({ data: { orderId, status: "DISPATCHED", type: "order_dispatched", actorId: userId, payload: { rider: rider.name.trim(), riderPhone: rider.phone.trim() || null } } });
+    });
+  }
+
+  async markDelivered(orderId: string, userId: string, pod: { name: string; photoUrl?: string | null }): Promise<void> {
+    await this.assertWarehouse(userId);
+    const order = await this.fulfilmentOrder(orderId);
+    if (order.status !== "DISPATCHED") throw new OrderError("STATE", `Order ${order.number} is not out for delivery.`);
+    if (pod.name.trim().length < 2) throw new OrderError("STATE", "Who signed for it? Enter the receiver's name.");
+    await this.prisma.$transaction([
+      this.prisma.fulfilment.update({ where: { orderId }, data: { deliveredAt: this.now(), podName: pod.name.trim(), podPhotoUrl: pod.photoUrl ?? null } }),
+      this.prisma.order.update({ where: { id: orderId }, data: { status: "DELIVERED" } }),
+      this.prisma.orderEvent.create({ data: { orderId, status: "DELIVERED", type: "order_delivered", actorId: userId, payload: { receivedBy: pod.name.trim(), photo: Boolean(pod.photoUrl) } } }),
+    ]);
+  }
+
+  /** Cash or M-Pesa collected by the rider on a COD order: recorded as a payment, with the M-Pesa reference. */
+  async recordCodCollection(orderId: string, userId: string, input: { amountMinorUnits: bigint; mpesaRef?: string | null }): Promise<void> {
+    await this.assertWarehouse(userId);
+    const order = await this.fulfilmentOrder(orderId);
+    if (order.paymentMethod !== "COD") throw new OrderError("STATE", "This order is not cash on delivery.");
+    if (order.status !== "DISPATCHED" && order.status !== "DELIVERED") throw new OrderError("STATE", "Record the collection once the order is out for delivery or delivered.");
+    if (input.amountMinorUnits <= 0n) throw new OrderError("STATE", "Enter the amount collected.");
+    if (!amountMatches(input.amountMinorUnits, order.totalMinorUnits)) throw new OrderError("STATE", `The order total is ${money.formatKes(order.totalMinorUnits)}; ${money.formatKes(input.amountMinorUnits)} does not match. Call the office if the customer paid a different amount.`);
+    const existing = await this.prisma.payment.findFirst({ where: { orderId, provider: "COD", status: "SUCCEEDED" } });
+    if (existing) throw new OrderError("STATE", "Collection is already recorded for this order.");
+    await this.prisma.$transaction([
+      this.prisma.payment.create({ data: { orderId, provider: "COD", providerRef: input.mpesaRef?.trim() || null, amountMinorUnits: input.amountMinorUnits, status: "SUCCEEDED", idempotencyKey: `cod:${orderId}`, rawCallback: { recordedBy: userId } } }),
+      this.prisma.fulfilment.upsert({ where: { orderId }, create: { orderId, codCollectedMinorUnits: input.amountMinorUnits, codMpesaRef: input.mpesaRef?.trim() || null }, update: { codCollectedMinorUnits: input.amountMinorUnits, codMpesaRef: input.mpesaRef?.trim() || null } }),
+      this.prisma.orderEvent.create({ data: { orderId, status: order.status, type: "cod_collected", actorId: userId, payload: { amountMinorUnits: input.amountMinorUnits.toString(), mpesaRef: input.mpesaRef?.trim() || null } } }),
+    ]);
+  }
+
+  /** Release reservations of unpaid orders past their expiry (cron). */
   /** Daily cron sweep. Availability checks release lazily too, so stock is never held past its window. */
   async releaseExpiredReservations(): Promise<number> {
     return releaseExpiredReservations(this.prisma, { now: this.now() });

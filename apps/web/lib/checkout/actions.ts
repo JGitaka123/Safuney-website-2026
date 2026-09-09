@@ -10,6 +10,7 @@ import { CART_COOKIE } from "@/lib/cart/service";
 import { orderService, paymentRegistry, publicBaseUrl } from "@/lib/orders/context";
 import { viewer } from "@/lib/auth/session";
 import { creditPosition } from "@/lib/b2b/credit";
+import { AddressService } from "@/lib/account/addresses";
 import { OrderError } from "@/lib/orders/service";
 import { notifyOrderPlaced } from "@/lib/notify";
 import { db } from "@safuney/db";
@@ -36,6 +37,8 @@ const deliverySchema = z.discriminatedUnion("method", [
     landmark: z.string().trim().max(200).optional().or(z.literal("")),
     deliveryNotes: z.string().trim().max(500).optional().or(z.literal("")),
     slot: z.string().max(80).optional(),
+    recipientName: z.string().trim().max(120).optional().or(z.literal("")),
+    recipientPhone: z.string().trim().max(20).optional().or(z.literal("")),
   }),
 ]);
 
@@ -56,9 +59,14 @@ export type PlaceOrderResponse =
 export interface CheckoutContext {
   methods: Array<{ method: "MPESA" | "CARD" | "INVOICE" | "COD"; available: boolean; reason?: string }>;
   /** Signed-in customer details for prefilling and the organisation the order is placed for. */
-  viewer: { name: string | null; email: string | null; phone: string | null; organisation: { id: string; name: string; role: "OWNER" | "BUYER" | "APPROVER"; approvalThresholdLabel: string | null;
-      /** Minor units as a decimal string; bigint does not cross to the client. */
-      approvalThresholdMinorUnits: string | null; creditAvailableLabel: string | null } | null } | null;
+  viewer: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    organisation: { id: string; name: string; role: "OWNER" | "BUYER" | "APPROVER"; approvalThresholdLabel: string | null; /** Minor units as a decimal string; bigint does not cross to the client. */ approvalThresholdMinorUnits: string | null; creditAvailableLabel: string | null } | null;
+    /** Saved delivery addresses (default first) to pick from at the delivery step. */
+    addresses: Array<{ id: string; label: string | null; recipientName: string; phone: string; county: string; town: string; line1: string | null; landmark: string | null; deliveryNotes: string | null; isDefault: boolean }>;
+  } | null;
   deliveryConfigured: boolean;
   zones: Array<{ slug: string; name: string; counties: string[]; slots: string[]; leadTimeDays: number }>;
   minimumMinorUnits: string;
@@ -104,6 +112,7 @@ export async function getCheckoutContext(): Promise<CheckoutContext> {
           name: who.name,
           email: who.email,
           phone: who.phone,
+          addresses: await new AddressService(db()).listFor(who.id).then((list) => list.map((a) => ({ id: a.id, label: a.label, recipientName: a.recipientName, phone: a.phone, county: a.county, town: a.town, line1: a.line1, landmark: a.landmark, deliveryNotes: a.deliveryNotes, isDefault: a.isDefault }))),
           organisation: org ? { id: org.id, name: org.name, role: org.role, approvalThresholdLabel: org.approvalThresholdMinorUnits !== null ? money.formatKes(org.approvalThresholdMinorUnits) : null, approvalThresholdMinorUnits: org.approvalThresholdMinorUnits?.toString() ?? null, creditAvailableLabel: org.credit.approved ? money.formatKes(org.credit.availableMinorUnits) : null } : null,
         }
       : null,
@@ -152,7 +161,7 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
       customerId: org?.id,
       placedByRole: org?.role,
       contact: { name: d.contact.name, email: d.contact.email, phone: d.contact.phone, organisation: d.contact.organisation || undefined },
-      delivery: d.delivery.method === "PICKUP" ? { method: "PICKUP", slot: d.delivery.slot } : { method: "DELIVERY", county: d.delivery.county, town: d.delivery.town, line1: d.delivery.line1 || undefined, landmark: d.delivery.landmark || undefined, deliveryNotes: d.delivery.deliveryNotes || undefined, slot: d.delivery.slot },
+      delivery: d.delivery.method === "PICKUP" ? { method: "PICKUP", slot: d.delivery.slot } : { method: "DELIVERY", county: d.delivery.county, town: d.delivery.town, line1: d.delivery.line1 || undefined, landmark: d.delivery.landmark || undefined, deliveryNotes: d.delivery.deliveryNotes || undefined, slot: d.delivery.slot, recipientName: d.delivery.recipientName || undefined, recipientPhone: d.delivery.recipientPhone || undefined },
       paymentMethod: d.paymentMethod,
       poNumber: d.poNumber || undefined,
       notes: d.notes || undefined,

@@ -52,6 +52,22 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
   const [phone, setPhone] = useState(context.viewer?.phone?.replace(/^\+254/, "0") ?? "");
   const [organisation, setOrganisation] = useState(context.viewer?.organisation?.name ?? "");
   const org = context.viewer?.organisation ?? null;
+  const savedAddresses = context.viewer?.addresses ?? [];
+  const [savedAddressId, setSavedAddressId] = useState<string>(savedAddresses.find((a) => a.isDefault)?.id ?? savedAddresses[0]?.id ?? "");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const applySavedAddress = (id: string) => {
+    setSavedAddressId(id);
+    const a = savedAddresses.find((x) => x.id === id);
+    if (!a) return;
+    setTown(a.town);
+    setLine1(a.line1 ?? "");
+    setLandmark(a.landmark ?? "");
+    setDeliveryNotes(a.deliveryNotes ?? "");
+    setRecipientName(a.recipientName);
+    setRecipientPhone(a.phone);
+    void handleCountyChange(a.county);
+  };
   // A buyer's order at or above the organisation's threshold waits for an approver (see OrderService).
   const needsApproval =
     org?.role === "BUYER" && org.approvalThresholdMinorUnits !== null && org.approvalThresholdMinorUnits !== undefined && BigInt(cart.totalMinorUnits) >= BigInt(org.approvalThresholdMinorUnits);
@@ -145,8 +161,10 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
       // Pre-fill mpesa phone with contact phone
       setMpesaPhone(phone);
     }
-    // Pre-quote Nairobi delivery if not yet quoted
-    if (deliveryMethod === "DELIVERY" && county && !quotedFeeLabel && !deliveryError) {
+    // A saved default address fills the form; otherwise pre-quote the default county.
+    if (deliveryMethod === "DELIVERY" && savedAddressId && !town) {
+      applySavedAddress(savedAddressId);
+    } else if (deliveryMethod === "DELIVERY" && county && !quotedFeeLabel && !deliveryError) {
       void handleCountyChange(county);
     }
     setCurrentStep(1);
@@ -224,6 +242,8 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
               landmark: landmark.trim() || undefined,
               deliveryNotes: deliveryNotes.trim() || undefined,
               slot: deliverySlot || undefined,
+              recipientName: recipientName.trim() || undefined,
+              recipientPhone: recipientPhone.trim() || undefined,
             },
       paymentMethod,
       poNumber: poNumber.trim() || undefined,
@@ -429,6 +449,21 @@ export function CheckoutWizard({ cart, context, mockMode = false }: CheckoutWiza
                   </div>
                 </label>
               </div>
+
+              {deliveryMethod === "DELIVERY" && savedAddresses.length > 0 ? (
+                <div className="mt-6">
+                  <Select label="Saved address" value={savedAddressId} onChange={(e) => applySavedAddress(e.target.value)} helper="Pick one to fill the fields below, then adjust anything for this order.">
+                    {savedAddresses.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.label ? `${a.label}: ` : ""}
+                        {a.town}, {a.county}
+                        {a.isDefault ? " (default)" : ""}
+                      </option>
+                    ))}
+                    <option value="">Somewhere else</option>
+                  </Select>
+                </div>
+              ) : null}
 
               {deliveryMethod === "DELIVERY" && (
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
