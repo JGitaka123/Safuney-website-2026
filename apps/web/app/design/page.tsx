@@ -575,7 +575,7 @@ export default function DesignSystemPage() {
         <Section id="forms" title="Forms" intro="Label above the field, always visible. Helper text before the mistake. 48 px tall, surface fill, 1 px stainless border, 2 px radius. Focus is a 2 px accent border under the global 3 px outline; error is a 2 px ink border with the message wired through aria-describedby.">
           <div className="grid gap-8 md:grid-cols-2">
             <Specimen title="Default, with focus on load" note="This field takes focus when the page opens so the ring can be checked.">
-              <Input label="Your name" autoFocus autoComplete="name" />
+              <Input label="Your name" autoComplete="name" />
             </Specimen>
             <Specimen title="With helper text">
               <Input label="Organisation" helper="The name on the invoice, for example Westlands Kitchen Stores." autoComplete="organization" />

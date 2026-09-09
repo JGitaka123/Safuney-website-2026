@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { preload } from "react-dom";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
-import { plexMono, plexSans } from "./fonts";
 import { site } from "@/config/site";
 import { config } from "@/lib/env";
 import { SiteHeader } from "@/components/site/header";
@@ -26,8 +26,10 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Body weight; with font-display: optional the preload decides whether the first paint is Plex or the fallback.
+  preload("/fonts/plex-sans-400-core.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous", fetchPriority: "high" });
   return (
-    <html lang="en-KE" className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html lang="en-KE">
       <body className="flex min-h-dvh flex-col">
         <a
           href="#main"

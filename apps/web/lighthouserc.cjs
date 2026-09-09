@@ -1,11 +1,11 @@
 /**
  * Lighthouse CI — non-negotiable #7: >= 95 on Performance, Accessibility, Best Practices and SEO on
  * mobile for the key pages. Runs against a local production build in CI (and against a Vercel preview
- * when LHCI_URL is set). The "is-crawlable" audit is skipped until domain cut-over because the interim
+ * when SITE_URL is set). The "is-crawlable" audit is skipped until domain cut-over because the interim
  * site is deliberately noindex (ADR 0002).
  */
-const base = process.env.LHCI_URL || "http://127.0.0.1:3000";
-const pages = (process.env.LHCI_PAGES || "/,/products,/contact").split(",");
+const base = process.env.SITE_URL || "http://127.0.0.1:3000";
+const pages = (process.env.SITE_PAGES || "/,/products,/contact").split(",");
 
 module.exports = {
   ci: {
@@ -18,7 +18,7 @@ module.exports = {
         skipAudits: ["is-crawlable"],
         chromeFlags: "--no-sandbox --headless=new",
       },
-      ...(process.env.LHCI_URL ? {} : { startServerCommand: "pnpm exec next start -p 3000", startServerReadyPattern: "Ready", startServerReadyTimeout: 60000 }),
+      ...(process.env.SITE_URL ? {} : { startServerCommand: "pnpm exec next start -p 3000", startServerReadyPattern: "Ready", startServerReadyTimeout: 60000 }),
     },
     assert: {
       assertions: {

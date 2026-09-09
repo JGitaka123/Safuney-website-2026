@@ -13,12 +13,12 @@ export default async function HomePage() {
       <section aria-labelledby="hero-heading" className="border-b border-line bg-surface">
         <div className="mx-auto grid max-w-page gap-8 px-5 py-12 md:grid-cols-12 md:px-6 md:py-20">
           <div className="md:col-span-7">
-            <h1 id="hero-heading" className="max-w-[18ch] text-display">
+            <h1 id="hero-heading" className="max-w-[34rem] text-display">
               Professional cleaning chemicals, supplied with the know-how to use them correctly.
             </h1>
           </div>
           <div className="flex flex-col gap-6 md:col-span-5 md:pt-2">
-            <p className="max-w-[48ch] text-body text-ink-muted">
+            <p className="max-w-[30rem] text-body text-ink-muted">
               Concentrates, disinfectants, laundry and hand hygiene for kitchens, wards, washrooms and laundries in Kenya,
               with dilution ratios, contact times and safety data on every product.
             </p>
@@ -96,7 +96,7 @@ export default async function HomePage() {
               ["1:10", "Heavy soil", "10 min"],
             ].map(([ratio, use, time]) => (
               <tr key={ratio} className="border-t border-line">
-                <td className="px-4 py-3 font-mono text-mono">{ratio}</td>
+                <td className="tnum px-4 py-3 font-medium">{ratio}</td>
                 <td className="px-4 py-3">{use}</td>
                 <td className="tnum px-4 py-3">{time}</td>
               </tr>

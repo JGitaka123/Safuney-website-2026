@@ -10,5 +10,7 @@ export default defineConfig({
   },
   datasource: {
     url: process.env["DATABASE_URL"] ?? "postgresql://postgres:postgres@127.0.0.1:5432/safuney_dev",
+    // Only used by `migrate diff --from-migrations` (CI migrate check) and `migrate dev`. Never production.
+    shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"] ?? "postgresql://postgres:postgres@127.0.0.1:5432/safuney_shadow",
   },
 });

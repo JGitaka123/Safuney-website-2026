@@ -16,6 +16,7 @@ env:
   NEXT_TELEMETRY_DISABLED: "1"
   # CI database (GitHub-hosted Postgres service). Production uses Neon via Vercel env vars.
   DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/safuney_ci
+  SHADOW_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/safuney_shadow
 
 jobs:
   checks:
@@ -49,6 +50,8 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
+      - name: Create shadow database for the migrate check
+        run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -c 'CREATE DATABASE safuney_shadow;'
       - name: Prisma migrate check (migrations describe the schema)
         run: pnpm migrate:check
       - name: Migrate CI database

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./font-critical.css";
 
 /* Component sources outside apps/web (Tailwind v4 scans only the importing package by default). */
 @source "../../../packages/ui/src";
@@ -31,9 +32,11 @@
   --color-warning-ink: #7a5b00;
   --color-warning-wash: #fff5cc;
 
-  /* Fonts are provided by next/font/local as CSS variables on <html>. */
-  --font-sans: var(--font-plex-sans), "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* Self-hosted IBM Plex (ADR 0005); @font-face rules are below. */
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans Fallback", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* Two weights only (400 body, 600 emphasis). `font-medium` resolves to 600 so no 500 face is downloaded. */
+  --font-weight-medium: 600;
 
   /* Type scale (plan §3.2). Sizes interpolate between 360 px and 1280 px. */
   --text-display: clamp(2rem, 1.2rem + 3.5vw, 3.25rem);
@@ -64,7 +67,7 @@
   --text-label--font-weight: 600;
   --text-button: 1rem;
   --text-button--line-height: 1.5;
-  --text-button--font-weight: 500;
+  --text-button--font-weight: 600;
   --text-price: clamp(1.125rem, 1.08rem + 0.2vw, 1.25rem);
   --text-price--line-height: 1.3;
   --text-price--font-weight: 600;
@@ -89,6 +92,54 @@
   --container-reading: 1040px;
 
   --ease-sheet: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/*
+ * IBM Plex, self-hosted from /public/fonts (built by scripts/sync-fonts.mjs, ADR 0005).
+ * Sans 600 core is inlined in font-critical.css. The body weight (400) uses font-display: optional —
+ * if it is not ready at first paint the metric-matched Arial fallback is used for that page view and
+ * nothing shifts; the cached font is used from the next navigation on. 400 core is preloaded
+ * (layout.tsx) so most visits get Plex body text on the first paint. "ext" faces cover the rarer
+ * Latin characters and are fetched only when a page uses one.
+ */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url("/fonts/plex-sans-400-core.woff2") format("woff2");
+  unicode-range: U+0020-007E, U+00A0-00FF, U+2013-2014, U+2018-201A, U+201C-201E, U+2026, U+20AC, U+2122, U+2212, U+2215;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url("/fonts/plex-sans-400-ext.woff2") format("woff2");
+  unicode-range: U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-2012, U+2015-2017, U+201B, U+201F-2025, U+2027-206F, U+2191, U+2193, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: optional;
+  src: url("/fonts/plex-sans-600-ext.woff2") format("woff2");
+  unicode-range: U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-2012, U+2015-2017, U+201B, U+201F-2025, U+2027-206F, U+2191, U+2193, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans Fallback";
+  src: local("Arial");
+  ascent-override: 101.35%;
+  descent-override: 27.19%;
+  line-gap-override: 0%;
+  size-adjust: 101.13%;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: optional;
+  src: url("/fonts/plex-mono-400.woff2") format("woff2");
 }
 
 html {

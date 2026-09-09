@@ -8,8 +8,8 @@ export function AlertMarkIcon({ size = 20, className, ...rest }: IconProps) {
   return (
     <svg aria-hidden width={size} height={size} viewBox="0 0 20 20" className={cn("shrink-0", className)} {...rest}>
       <circle cx="10" cy="10" r="10" fill="currentColor" />
-      <path d="M10 4.5v7" stroke="#fff" strokeWidth="2.25" strokeLinecap="round" />
-      <circle cx="10" cy="14.75" r="1.25" fill="#fff" />
+      <path d="M10 4.5v7" className="stroke-white" strokeWidth="2.25" strokeLinecap="round" />
+      <circle cx="10" cy="14.75" r="1.25" className="fill-white" />
     </svg>
   );
 }
