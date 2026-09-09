@@ -123,7 +123,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @safuney/db generate
-      - name: Build (no database: pages render from static config, as a cold visitor sees them)
+      - name: Build without a database (pages render from static config, as a cold visitor sees them)
         run: pnpm --filter @safuney/web build
         env:
           DATABASE_URL: ""
