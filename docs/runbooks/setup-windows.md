@@ -222,8 +222,31 @@ and `admin@safuney.test` with `DEMO_STAFF_PASSWORD` (default `safuney-demo-2026`
 
 `SALES` prices quotes (`/sales`), `FINANCE` decides credit (`/sales/credit`), `WAREHOUSE` runs the
 board (`/warehouse`), `ADMIN` can do all of it. The demo seed creates one of each (`sales@`,
-`finance@`, `warehouse@`, `admin@safuney.test`). Production staff accounts are created in the admin
-console (Phase 6) and must enrol an authenticator app.
+`finance@`, `warehouse@`, `admin@safuney.test`). Production staff accounts are created at
+`/admin/staff` by an administrator: pick the role, set a first password, and have the person add the
+authenticator code to their app **there and then** — it is shown once and cannot be shown again. Roles
+carry permissions rather than page lists (`apps/web/lib/admin/permissions.ts`, ADR 0009), so a person
+sees only the sections their desk needs.
+
+Nobody can change their own role or switch off their own account, and the last active administrator
+cannot be demoted — that is how a site ends up with no way back in. If it ever happens anyway, promote
+someone directly in the database: `UPDATE "User" SET role = 'ADMIN', "isActive" = true WHERE email =
+'…';`
+
+### The admin console
+
+`/admin` — overview, catalogue, orders, customers, content, leads, audit log, settings, staff. Two
+things to do before launch:
+
+1. **Correct the catalogue.** `/admin/catalogue` → *Export CSV*, fix names, packs and prices in a
+   spreadsheet, then *Import CSV*. You see a row-by-row diff of exactly what would change before
+   anything is written, and any bad row rejects the whole file (ADR 0010). Then publish each product
+   with the *Needs review — publish* button; nothing unreviewed is visible to customers.
+2. **Settings** (`/admin/settings`): the company KRA PIN and VAT number, which every tax invoice
+   carries, and whether prices show including or excluding VAT.
+
+Every change made in the console is recorded at `/admin/audit` with who made it and what it was
+before.
 
 ### Cron jobs (Vercel)
 
