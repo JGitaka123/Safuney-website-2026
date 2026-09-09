@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreditService, CreditError, type CreditProfile } from "@/lib/credit/service";
+import { CreditService, type CreditProfile } from "@/lib/credit/service";
 import type { PrismaClient } from "@safuney/db";
 
 describe("CreditService unit logic", () => {

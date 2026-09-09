@@ -1,4 +1,4 @@
-import { type Prisma, type PrismaClient, type QuoteStatus } from "@safuney/db";
+import { type Prisma, type PrismaClient } from "@safuney/db";
 import { QUOTE_NUMBER_PREFIX } from "@safuney/config";
 
 export interface QuoteItemInput {

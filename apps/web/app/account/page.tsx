@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentSession } from "@/lib/auth/session";
 import { creditService } from "@/lib/credit";
-import { db, isDatabaseConfigured } from "@safuney/db";
+import { db, isDatabaseConfigured, type Order } from "@safuney/db";
 import { logoutAction } from "../login/actions";
 import { approveOrderAction, rejectOrderAction } from "./actions";
 
@@ -27,13 +27,13 @@ export default async function AccountPage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-6 text-button text-white hover:bg-accent-deep"
+              className="inline-flex h-11 items-center justify-center rounded-chip bg-accent px-6 text-body font-semibold text-surface transition-colors hover:bg-accent-deep"
             >
-              Sign in to account
+              Sign in
             </Link>
             <Link
               href="/account/credit-application"
-              className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-6 text-button text-ink hover:bg-ground-deep"
+              className="inline-flex h-11 items-center justify-center rounded-chip border border-line bg-surface px-6 text-body font-medium text-ink transition-colors hover:border-stainless hover:bg-ground"
             >
               Apply for credit
             </Link>
@@ -45,8 +45,8 @@ export default async function AccountPage() {
 
   // Load live credit profile if customer is set
   let creditProfile = null;
-  let recentOrders: Array<any> = [];
-  let pendingApprovals: Array<any> = [];
+  let recentOrders: Order[] = [];
+  let pendingApprovals: Order[] = [];
 
   if (session.customer && isDatabaseConfigured()) {
     try {

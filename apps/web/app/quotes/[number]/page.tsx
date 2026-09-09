@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { isDatabaseConfigured } from "@safuney/db";
 import { quoteService } from "@/lib/quotes";
 import { site } from "@/config/site";

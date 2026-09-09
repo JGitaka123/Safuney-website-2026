@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
-import { db, isDatabaseConfigured, type Customer, type CustomerMember, type MemberRole, type User, type UserRole } from "@safuney/db";
+import { db, isDatabaseConfigured, type MemberRole, type UserRole } from "@safuney/db";
 
 export const SESSION_COOKIE = "sfn_session";
 export const SESSION_TTL_DAYS = 30;

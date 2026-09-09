@@ -217,7 +217,7 @@ export function QuoteForm({ initialProduct, initialPack }: QuoteFormProps) {
             className="mt-1 size-5 shrink-0 rounded-chip border-stainless accent-accent"
           />
           <label htmlFor={id("trialRequested")} className="text-small text-ink">
-            <strong>Request free 14-day on-site hygiene trial</strong>: Loaned dispenser or warewash/laundry dosing installed at Safuney's cost with trial product and comparative cost-in-use audit.
+            <strong>Request free 14-day on-site hygiene trial</strong>: Loaned dispenser or warewash/laundry dosing installed at Safuney&apos;s cost with trial product and comparative cost-in-use audit.
           </label>
         </div>
 
