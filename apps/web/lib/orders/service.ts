@@ -419,13 +419,31 @@ export class OrderService {
         // The reservation becomes an outbound movement. Sorted by variant so this takes locks in the
         // same order as placeOrder and the expiry sweep; releases only what this order actually held.
         const paidLines = order.items.filter((i): i is typeof i & { variantId: string } => Boolean(i.variantId)).sort((a, b) => a.variantId.localeCompare(b.variantId));
+        const short: Array<{ sku: string; ordered: number; taken: number }> = [];
         for (const item of paidLines) {
           const v = await tx.productVariant.findUnique({ where: { id: item.variantId }, select: { stockReserved: true, stockOnHand: true } });
           if (!v) continue;
           const release = Math.min(item.reservedQty, v.stockReserved);
+          // Clamped so stock can never go negative (non-negotiable #3). The clamp can bite when an
+          // order's 30-minute hold expired and someone else bought the packs before this payment
+          // landed: the customer has paid for more than we can ship.
           const out = Math.min(item.qty, v.stockOnHand);
           await tx.productVariant.update({ where: { id: item.variantId }, data: { stockReserved: { decrement: release }, stockOnHand: { decrement: out } } });
           await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "OUT", qty: -out, reason: "order_paid", reference: order.number } });
+          if (out < item.qty) short.push({ sku: item.sku, ordered: item.qty, taken: out });
+        }
+        // Say so, rather than letting the warehouse find out at the pick face. The order stays PAID —
+        // the money did arrive — but somebody has to decide whether to part-ship, back-order or refund,
+        // and they can only do that if they are told.
+        if (short.length > 0) {
+          await tx.orderEvent.create({
+            data: {
+              orderId: order.id,
+              status: "PAID",
+              type: "stock_shortfall",
+              payload: { lines: short.map((l) => ({ sku: l.sku, ordered: l.ordered, taken: l.taken, short: l.ordered - l.taken })) },
+            },
+          });
         }
         // The hold is spent; nothing may release it again.
         await tx.orderItem.updateMany({ where: { orderId: order.id }, data: { reservedQty: 0 } });

@@ -1,18 +1,32 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { ButtonLink } from "@safuney/ui";
 import { site } from "@/config/site";
+
+export const metadata: Metadata = { title: "Page not found", robots: { index: false, follow: false } };
 
 export default function NotFound() {
   return (
-    <main className="mx-auto max-w-2xl px-5 py-24 sm:px-8">
-      <p className="text-sm font-medium text-steel">404</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">That page does not exist</h1>
-      <p className="mt-4 text-ink-muted">
-        The new {site.shortName} site is still being built, so the address may have changed. Go back to the
-        home page, or call {site.contact.phone.display} if you need something now.
-      </p>
-      <Link href="/" className="mt-8 inline-block rounded-md bg-steel px-4 py-2 font-medium text-white hover:bg-steel-deep">
-        Go to home page
-      </Link>
-    </main>
+    <div className="mx-auto max-w-page px-5 py-16 md:px-6 md:py-24">
+      <div className="max-w-reading">
+        <p className="text-label text-ink-muted">404</p>
+        <h1 className="mt-2 text-h1">That page does not exist</h1>
+        <p className="mt-4 text-body-lg text-ink-muted">
+          The address may have changed, or the product may have moved. Nothing is wrong with your connection.
+        </p>
+        <p className="mt-4 text-body text-ink">
+          If you need something now, call{" "}
+          <a href={`tel:${site.contact.phone.e164}`} className="text-accent underline">
+            {site.contact.phone.display}
+          </a>{" "}
+          and a person will find it for you.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <ButtonLink href="/">Go to the home page</ButtonLink>
+          <ButtonLink href="/products" variant="secondary">
+            Browse products
+          </ButtonLink>
+        </div>
+      </div>
+    </div>
   );
 }
