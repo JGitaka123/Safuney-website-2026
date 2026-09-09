@@ -8,6 +8,8 @@ import { config } from "@/lib/env";
 import { isIndexable } from "@/lib/seo/indexing";
 import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
+import { PwaRegister } from "@/components/site/pwa-register";
+import { flagEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = {
   metadataBase: new URL(config.siteUrl),
@@ -40,7 +42,8 @@ export const viewport: Viewport = {
   themeColor: "#10202b",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const pwa = await flagEnabled("pwa.enabled");
   // Heading and body weights; with font-display: optional the preloads decide whether the first paint is
   // Plex or the metric-matched fallback (ADR 0005). Neither face is inlined, so the stylesheet stays small.
   preload("/fonts/plex-sans-600-core.woff2", { as: "font", type: "font/woff2", crossOrigin: "anonymous", fetchPriority: "high" });
@@ -59,6 +62,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {children}
         </main>
         <SiteFooter />
+        <PwaRegister enabled={pwa} />
         <Analytics />
         <SpeedInsights />
       </body>

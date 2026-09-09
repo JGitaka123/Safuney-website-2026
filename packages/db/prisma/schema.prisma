@@ -52,6 +52,7 @@ model User {
   auditLogs         AuditLog[]
   orderEvents       OrderEvent[]
   quotesAuthored    Quote[]          @relation("QuotePricedBy")
+  repVisits         RepVisit[]       @relation("RepVisits")
   approvedCustomers Customer[]       @relation("CustomerApprovedBy")
   carts             Cart[]
   leadsAssigned     Lead[]
@@ -144,6 +145,7 @@ model Customer {
   quotes              Quote[]
   invoices            Invoice[]
   savedLists          SavedList[]
+  repVisits           RepVisit[]
   wishlists           Wishlist[]
   subscriptions       Subscription[]
   carts               Cart[]
@@ -1001,6 +1003,29 @@ model FeatureFlag {
   enabled     Boolean  @default(false)
   description String?
   updatedAt   DateTime @updatedAt
+}
+
+/// A sales rep's record of a customer visit. GPS is optional and only ever recorded with the rep's
+/// explicit consent on the device; a visit with no coordinates is a complete visit, not a partial one.
+model RepVisit {
+  id         String   @id @default(cuid())
+  repId      String
+  customerId String
+  note       String
+  /// Decimal degrees, captured from the browser only when the rep taps "add my location".
+  latitude   Float?
+  longitude  Float?
+  /// Metres of uncertainty the browser reported; a fix worse than a few hundred metres is not a visit record.
+  accuracyM  Int?
+  outcome    String?
+  visitedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  rep      User     @relation("RepVisits", fields: [repId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, visitedAt])
+  @@index([repId, visitedAt])
 }
 
 model AuditLog {

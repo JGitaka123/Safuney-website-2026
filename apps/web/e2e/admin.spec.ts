@@ -1,46 +1,10 @@
-import { mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
+import { staffSessionPath } from "./session";
 
-const STAFF_PASSWORD = process.env["DEMO_STAFF_PASSWORD"] ?? "safuney-demo-2026";
-// Keyed by worker: two projects run in separate worker processes at the same time and would
-// otherwise write the same file. A serial describe keeps its beforeAll and its tests in one worker,
-// so the file written there is the one its tests read.
-const stateDir = join(tmpdir(), `safuney-admin-${process.env["TEST_WORKER_INDEX"] ?? "0"}`);
-mkdirSync(stateDir, { recursive: true });
-
-function sessionPath(role: string): string {
-  return join(stateDir, `${role}.json`);
-}
-
-/**
- * Signs in once per role and keeps the session.
- *
- * Staff sign-in is rate limited to five attempts per address per ten minutes, which is the right
- * limit and not one to relax for tests. It is also how the console is really used: you sign in once
- * and stay signed in, rather than re-authenticating for every page.
- */
-async function sessionFor(browser: Browser, email: string, baseURL: string | undefined): Promise<string> {
-  const path = sessionPath(email.split("@")[0]!);
-  // `browser.newContext()` does not inherit the config's baseURL, and inside a describe that sets
-  // `storageState` it would otherwise try to read the very file this call is about to write.
-  const context = await browser.newContext({ baseURL, storageState: undefined });
-  const page = await context.newPage();
-  await page.goto("/sign-in/staff?next=%2Fadmin");
-  await page.getByLabel("Work email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(STAFF_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL((u) => u.pathname === "/admin");
-  await context.storageState({ path });
-  await context.close();
-  return path;
-}
-
-// Each role signs in once per worker. Serial keeps a role's tests in one worker, so the sign-in
-// happens once rather than once per test — staff sign-in allows five attempts per address per ten
-// minutes, which is the right limit and not one to relax for tests.
+// Sessions come from the `setup` project, which signs each role in once for the whole run: staff
+// sign-in allows five attempts per address per ten minutes, and several specs need the same roles.
+// Serial ordering is still wanted here — one test changes a price and puts it back.
 test.describe.configure({ mode: "serial" });
 
 test.describe("admin console", () => {
@@ -50,10 +14,7 @@ test.describe("admin console", () => {
   });
 
   test.describe("as an administrator", () => {
-    test.use({ storageState: sessionPath("admin") });
-    test.beforeAll(async ({ browser }, info) => {
-      await sessionFor(browser, "admin@safuney.test", info.project.use.baseURL);
-    });
+    test.use({ storageState: staffSessionPath("admin") });
 
     test("the overview shows the numbers and stays inside the viewport", async ({ page }) => {
       await page.goto("/admin");
@@ -131,10 +92,7 @@ test.describe("admin console", () => {
   });
 
   test.describe("as the warehouse", () => {
-    test.use({ storageState: sessionPath("warehouse") });
-    test.beforeAll(async ({ browser }, info) => {
-      await sessionFor(browser, "warehouse@safuney.test", info.project.use.baseURL);
-    });
+    test.use({ storageState: staffSessionPath("warehouse") });
 
     test("sees its own sections and is refused the rest, link or no link", async ({ page }) => {
       await page.goto("/admin");
@@ -152,10 +110,7 @@ test.describe("admin console", () => {
   });
 
   test.describe("as the sales desk", () => {
-    test.use({ storageState: sessionPath("sales") });
-    test.beforeAll(async ({ browser }, info) => {
-      await sessionFor(browser, "sales@safuney.test", info.project.use.baseURL);
-    });
+    test.use({ storageState: staffSessionPath("sales") });
 
     test("can read the catalogue but not change it", async ({ page }) => {
       await page.goto("/admin/catalogue");
@@ -176,10 +131,7 @@ test.describe("admin console", () => {
   });
 
   test.describe("as finance", () => {
-    test.use({ storageState: sessionPath("finance") });
-    test.beforeAll(async ({ browser }, info) => {
-      await sessionFor(browser, "finance@safuney.test", info.project.use.baseURL);
-    });
+    test.use({ storageState: staffSessionPath("finance") });
 
     test("reads orders and the audit log, and cannot touch the catalogue or staff", async ({ page }) => {
       await page.goto("/admin/orders");

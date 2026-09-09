@@ -18,6 +18,7 @@ const NAV: Array<{ href: string; label: string; permission: Permission }> = [
   { href: "/admin/audit", label: "Audit log", permission: "audit.view" },
   { href: "/admin/settings", label: "Settings", permission: "content.write" },
   { href: "/admin/staff", label: "Staff", permission: "staff.write" },
+  { href: "/admin/flags", label: "Features", permission: "staff.write" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

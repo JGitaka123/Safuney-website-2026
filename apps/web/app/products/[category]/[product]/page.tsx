@@ -15,6 +15,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { DilutionCalculator } from "@/components/catalogue/dilution-calculator";
 import { ProductGridCard } from "@/components/catalogue/product-grid-card";
 import { PurchasePanel, type PurchaseVariant } from "@/components/catalogue/purchase-panel";
+import { AvailabilityNote } from "@/components/catalogue/availability-note";
 
 type Params = Promise<{ category: string; product: string }>;
 
@@ -157,6 +158,8 @@ export default async function ProductPage({ params }: { params: Params }) {
             {product.hazardClass !== "NONE" ? <HazardBadge hazard={product.hazardClass as HazardClass} /> : null}
           </div>
           <PurchasePanel productName={product.name} variants={variants} mode={mode} vatRateBps={vatRateBps} shopEnabled={shopEnabled} />
+          {/* Server-rendered from live stock: the first pack is the one selected on arrival. */}
+          {variants[0] ? <AvailabilityNote variantId={variants[0].id} /> : null}
         </div>
       </div>
 
