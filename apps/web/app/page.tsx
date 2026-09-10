@@ -7,6 +7,8 @@ import { getSetting } from "@/lib/settings";
 import { localBusinessJsonLd, jsonLdString, organizationJsonLd } from "@/lib/seo/jsonld";
 import { ZoneBar } from "@/components/site/zone-bar";
 import { TrustStrip } from "@/components/site/trust-strip";
+import { TrustBar } from "@/components/site/trust-bar";
+import { HeroPacks } from "@/components/site/hero-packs";
 import { INDUSTRIES } from "@/lib/content/solutions";
 
 export const metadata: Metadata = {
@@ -22,28 +24,41 @@ export default async function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(business ? [organizationJsonLd(), business] : [organizationJsonLd()]) }} />
-      {/* Hero: headline on ground (plan §4.3). The photograph slot above it is filled once the PO's shoot lands (photography.md). */}
+      {/* Hero (plan §4.3, rebuilt in Phase 10). The right half held a photograph slot that never
+          filled; it now carries the same drawn packs the catalogue uses, so the fold is made of the
+          product rather than of empty space. */}
       <section aria-labelledby="hero-heading" className="border-b border-line bg-surface">
-        <div className="mx-auto grid max-w-page gap-8 px-5 py-12 md:grid-cols-12 md:px-6 md:py-20">
-          <div className="md:col-span-7">
-            <h1 id="hero-heading" className="max-w-[34rem] text-display">
+        <div className="mx-auto grid max-w-page items-center gap-10 px-5 py-12 md:grid-cols-12 md:px-6 md:py-16">
+          <div className="md:col-span-6 lg:col-span-6">
+            <p className="text-label uppercase tracking-wide text-accent">Cleaning and hygiene supply · Nairobi</p>
+            <h1 id="hero-heading" className="mt-3 max-w-[18ch] text-display">
               Professional cleaning chemicals, supplied with the know-how to use them correctly.
             </h1>
-          </div>
-          <div className="flex flex-col gap-6 md:col-span-5 md:pt-2">
-            <p className="max-w-[30rem] text-body text-ink-muted">
-              Concentrates, disinfectants, laundry and hand hygiene for kitchens, wards, washrooms and laundries in Kenya,
-              with dilution ratios, contact times and safety data on every product.
+            <p className="mt-5 max-w-[46ch] text-body-lg text-ink-muted">
+              Concentrates, disinfectants, laundry and hand hygiene for kitchens, wards, washrooms and
+              laundries — every product with its dilution ratio, contact time and safety data.
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/products">Browse products</ButtonLink>
               <ButtonLink href="/quote" variant="secondary">
                 Request a quote
               </ButtonLink>
             </div>
+            <p className="mt-5 text-small text-ink-muted">
+              Ordering for a site or a group?{" "}
+              <Link href="/account/credit" className="text-accent underline underline-offset-[3px] hover:decoration-2">
+                Open a credit account
+              </Link>{" "}
+              for agreed pricing and purchase orders.
+            </p>
+          </div>
+          <div className="md:col-span-6 lg:col-span-6">
+            <HeroPacks />
           </div>
         </div>
       </section>
+
+      <TrustBar />
 
       <section aria-labelledby="zones-heading" className="mx-auto max-w-page px-5 py-16 md:px-6 md:py-24">
         <h2 id="zones-heading" className="text-h2">

@@ -84,7 +84,15 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
         zone: ZONE_BY_CATEGORY[slug] ?? ApplicationZone.NONE,
         sortOrder: sort++,
       },
-      update: { name: r["category_name"]!, zone: ZONE_BY_CATEGORY[slug] ?? ApplicationZone.NONE },
+      // Description is updated too, not only name and zone. Leaving it out meant a corrected seed
+      // never reached a database that had already been seeded — which is how the Phase 0 discovery
+      // notes survived in the category descriptions long after the CSV was fixed. Nothing in the
+      // admin console edits a category description, so there is no operator edit to clobber here.
+      update: {
+        name: r["category_name"]!,
+        description: r["short_description"] || null,
+        zone: ZONE_BY_CATEGORY[slug] ?? ApplicationZone.NONE,
+      },
     });
     categoryIds.set(slug, cat.id);
   }

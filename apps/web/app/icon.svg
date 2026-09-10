@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Safuney">
-  <rect width="64" height="64" rx="12" fill="#0b5e73"/>
-  <path d="M42 22c-2-3-6-5-10-5-6 0-10 3-10 8 0 4 3 6 9 7l4 1c4 1 6 2 6 5 0 3-3 5-8 5-4 0-8-2-10-5" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Safuney">
+  <rect width="32" height="32" rx="6" fill="#0b5e73"/>
+  <g transform="translate(4.6 4.6) scale(0.7125)" color="#ffffff">
+    <path d="M16 2.5c5.2 6.4 9.5 11.2 9.5 16.2a9.5 9.5 0 0 1-19 0c0-5 4.3-9.8 9.5-16.2z" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linejoin="round"/>
+    <path d="M6.9 18.7a9.5 9.5 0 0 0 18.2 0z" fill="#ffffff"/>
+  </g>
 </svg>

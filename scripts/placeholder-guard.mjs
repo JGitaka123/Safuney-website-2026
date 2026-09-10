@@ -15,9 +15,28 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const BUILT_DIR = join(ROOT, "apps/web/.next/server/app");
-const SOURCE_DIRS = ["apps/web/app", "apps/web/config", "apps/web/content", "apps/web/messages"].map((d) =>
-  join(ROOT, d),
-);
+/*
+ * Copy that reaches a customer. `packages/db/src` and the discovery seed are here because the
+ * catalogue seed IS copy — its `short_description` column becomes the category description a customer
+ * reads — and that is exactly where the Phase 0 discovery notes hid for eight phases.
+ */
+const SOURCE_DIRS = [
+  "apps/web/app",
+  "apps/web/config",
+  "apps/web/content",
+  "apps/web/messages",
+  "apps/web/lib/content",
+  "apps/web/lib/i18n",
+  "packages/db/src",
+].map((d) => join(ROOT, d));
+
+/*
+ * Individual files that are copy even though their folder is not. The catalogue seed's
+ * `short_description` column becomes the category description a customer reads; the rest of
+ * `docs/discovery/` is a report about the OLD site that legitimately quotes its placeholder text, and
+ * scanning the whole folder makes the guard cry wolf about its own evidence.
+ */
+const SOURCE_FILES = ["docs/discovery/catalogue-seed.csv"].map((f) => join(ROOT, f));
 
 /** Phrases that must never ship. Matched case-insensitively. */
 const BANNED_PHRASES = [
@@ -30,6 +49,18 @@ const BANNED_PHRASES = [
   "insert text here",
   "coming soon",
   "sample text",
+  /*
+   * Discovery metadata. The Phase 0 catalogue seed carried notes written for me — "Observed category:
+   * products.php?a=...", "no products observed on current site" — in the `short_description` column,
+   * and every one of them shipped as customer-facing category copy from Phase 2 until Phase 10.
+   * Nothing flagged it, because none of it looks like lorem ipsum. It looks like prose.
+   */
+  "observed category",
+  "no products observed",
+  "not observed on current site",
+  "category from brief",
+  "category only —",
+  "products.php?",
 ];
 
 /** Tokens that must not ship in built output (allowed in source comments). */
@@ -87,11 +118,16 @@ function checkI18nLeaks(file, html) {
   }
 }
 
-// 1. Source copy
+// 1. Source copy. `.csv` is in the list because the catalogue seed is copy: its `short_description`
+// column becomes the category description a customer reads, and that is exactly where the Phase 0
+// discovery notes hid for eight phases.
 for (const dir of SOURCE_DIRS) {
-  for (const file of walk(dir, [".ts", ".tsx", ".md", ".mdx", ".json"])) {
+  for (const file of walk(dir, [".ts", ".tsx", ".md", ".mdx", ".json", ".csv"])) {
     checkPhrases(file, readFileSync(file, "utf8"));
   }
+}
+for (const file of SOURCE_FILES) {
+  if (existsSync(file)) checkPhrases(file, readFileSync(file, "utf8"));
 }
 
 // 2. Built output

@@ -22,6 +22,7 @@ export { PackChip, type PackChipProps } from "./pack-chip";
 export { PackSelector, type PackSelectorProps, type PackVariant } from "./pack-selector";
 export { QuantityStepper, type QuantityStepperProps } from "./quantity";
 export { ProductCard, type ProductCardProps } from "./product-card";
+export { PackShot, packKindFor, type PackShotProps, type PackKind } from "./pack-shot";
 export { Table, THead, TBody, Tr, Th, Td, type TableProps, type ThProps, type TdProps } from "./table";
 export { DilutionTable, type DilutionTableProps, type DilutionRow } from "./dilution-table";
 export { ProgressSteps, type ProgressStepsProps } from "./progress-steps";

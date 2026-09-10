@@ -14,6 +14,16 @@ export const site = {
     phone: { display: "+254 796 808 822", e164: "+254796808822", poConfirmed: false },
     /** WhatsApp number defaults to the phone line until the PO confirms a separate one (question 2). */
     whatsapp: { e164: "254796808822", poConfirmed: false },
+    /**
+     * A separate line for technical advice — dilution, compatibility, what to use on what.
+     *
+     * The best supplier sites in this trade publish a different number for the technical desk than for
+     * sales, because it tells a buyer there is a real technical department rather than a call centre.
+     * We do not have one yet, and printing the sales number twice under two labels would fake exactly
+     * the signal it is meant to send. So the header renders this only when it is set AND different,
+     * and shows the sales line alone until then.
+     */
+    technical: { display: "", e164: "", poConfirmed: false },
     email: { address: "info@safuney.com", poConfirmed: false },
     address: {
       lines: ["Park View Heights, Mombasa Road", "Mezzanine 3, Office A", "Nairobi, Kenya"],
@@ -41,6 +51,18 @@ export const site = {
       { href: "/privacy", label: "Privacy" },
       { href: "/terms", label: "Terms of sale" },
     ],
+  },
+  /**
+   * The delivery promise, shown in the header.
+   *
+   * Trade buyers compare on this and it has to be a commitment with numbers in it, not "fast
+   * delivery". These are placeholders until the PO confirms the real terms, which is why
+   * `poConfirmed` is false and why the header falls back to a claim we can already stand behind.
+   */
+  delivery: {
+    promise: "Nairobi next working day · countrywide 2–3 days",
+    freeAbove: "",
+    poConfirmed: false,
   },
   /** Product areas named on the current site, with the colour-coded zones each serves (plan §4.1). */
   productAreas: [
