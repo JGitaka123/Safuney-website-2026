@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ProductCard, type HazardClass, type ZoneKey } from "@safuney/ui";
+import { PackShot, ProductCard, type HazardClass, type ZoneKey } from "@safuney/ui";
 import type { ProductCardData } from "@/lib/catalogue/queries";
 import { fromPrice, type PriceDisplayMode } from "@/lib/pricing";
 
@@ -9,6 +9,8 @@ export function ProductGridCard({ product, mode, categorySlug, headingLevel = 3 
   const price = fromPrice(product.variants, mode);
   const href = `/products/${categorySlug}/${product.slug}`;
   const image = product.images[0];
+  // The smallest pack decides the drawing, because that is the one a first-time buyer pictures.
+  const lead = product.variants[0];
   return (
     <ProductCard
       name={product.name}
@@ -21,6 +23,14 @@ export function ProductGridCard({ product, mode, categorySlug, headingLevel = 3 
       image={
         image ? (
           <Image src={image.url} alt={image.alt} width={image.width ?? 600} height={image.height ?? 600} className="h-full w-full object-cover" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" />
+        ) : lead ? (
+          // No photograph yet: draw the pack from what the variant actually is (see PackShot).
+          <PackShot
+            packLabel={lead.packLabel}
+            unit={lead.unit as "L" | "ML" | "KG" | "G" | "PCS"}
+            size={Number(lead.packSizeValue)}
+            zones={product.zone === "NONE" ? [] : [product.zone as ZoneKey]}
+          />
         ) : undefined
       }
       action={

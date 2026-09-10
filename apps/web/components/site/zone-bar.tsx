@@ -14,10 +14,12 @@ export function ZoneBar({ counts, animate }: ZoneBarProps) {
       {ZONES.map((zone, i) => {
         const count = counts?.[zone.key];
         return (
-          <li key={zone.key}>
+          // h-full on both the item and the link so a longer zone description does not make one card
+          // taller than its neighbours — which it did for "Kitchen and food prep" at 1280 px.
+          <li key={zone.key} className="h-full">
             <Link
               href={`/products?zone=${zone.slug}`}
-              className="group flex min-h-16 items-stretch gap-4 border border-line bg-surface hover:border-stainless lg:min-h-0 lg:flex-col lg:gap-0"
+              className="group flex h-full min-h-16 items-stretch gap-4 border border-line bg-surface hover:border-stainless lg:min-h-0 lg:flex-col lg:gap-0"
             >
               <span aria-hidden className="w-2 shrink-0 overflow-hidden lg:h-3 lg:w-full">
                 <span
@@ -25,13 +27,15 @@ export function ZoneBar({ counts, animate }: ZoneBarProps) {
                   style={animate ? { animationDelay: `${120 + i * 80}ms` } : undefined}
                 />
               </span>
-              <span className="flex flex-1 items-center justify-between gap-3 py-3 pr-4 lg:px-4 lg:py-4">
-                <span>
+              <span className="flex flex-1 items-center justify-between gap-3 py-3 pr-4 lg:flex-col lg:items-start lg:px-4 lg:py-4">
+                <span className="lg:flex-1">
                   <span className="block text-h4 text-ink">{zone.label}</span>
                   <span className="block text-small text-ink-muted">{zone.meaning}</span>
                 </span>
                 {typeof count === "number" && count > 0 ? (
-                  <span className="tnum shrink-0 text-small text-ink-muted">{count} products</span>
+                  // On the wide layout the count sits on its own line at the foot of the card, so it
+                  // lines up across all four instead of floating beside text of varying length.
+                  <span className="tnum shrink-0 text-small text-ink-muted lg:mt-3">{count} products</span>
                 ) : null}
                 <svg aria-hidden className="shrink-0 text-stainless lg:hidden" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 3l5 5-5 5" />

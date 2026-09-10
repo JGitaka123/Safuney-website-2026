@@ -34,8 +34,20 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { category, product: slug } = await params;
   const product = services.database() ? await getProduct(category, slug) : null;
   if (!product) return { title: "Product" };
+  /*
+   * SKU and category in the title, after the product name.
+   *
+   * Trade buyers search by code — they have a delivery note or a last order in front of them, not a
+   * product name — and the deep-catalogue suppliers all put the code and the breadcrumb chain in the
+   * title tag for exactly that reason. The PO's own `seoTitle` still wins when they have written one.
+   */
+  // Only a real product code goes in — short, like a code. The harvested placeholder SKUs are the
+  // full product name in capitals, and putting one here pushes the title past what a search result
+  // shows. When the PO imports their own codes this fills itself in.
+  const code = product.variants.map((v) => v.sku).find((sku) => sku && sku.length <= 16);
+  const derived = [product.name, code, product.category.name].filter(Boolean).join(" | ");
   return {
-    title: product.seoTitle ?? product.name,
+    title: product.seoTitle ?? derived,
     description: product.seoDescription ?? product.shortDescription,
     alternates: { canonical: `/products/${category}/${slug}` },
     // `images` is set only when there are real photographs: an empty array here would override the

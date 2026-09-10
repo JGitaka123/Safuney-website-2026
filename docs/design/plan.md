@@ -786,9 +786,12 @@ Photography follows `docs/design/photography.md`. Design rules that depend on it
   full bleed, uncropped by text.
 - No illustration, no icons larger than 24 px, no abstract blobs. The only decorative graphic on the site
   is the zone band.
-- Until the PO's photographs exist, product tiles show a flat `ground-deep` square with the product name
-  set in `h4` — not a stock image and not a placeholder icon. The placeholder guard in CI does not flag
-  this because the text is the real product name.
+- Until the PO's photographs exist, product tiles show a **drawn pack** derived from the variant's unit
+  and pack size (`PackShot`, ADR 0015) — not a stock image and not a placeholder icon. This supersedes
+  the original rule, which showed a flat `ground-deep` square with the product name: a grid of grey
+  squares read as an unfinished site rather than a restrained one. The "no illustration" rule above
+  still holds for everything else; what makes the pack an exception is that every line of it is drawn
+  from catalogue data rather than decided by a designer.
 
 ---
 
