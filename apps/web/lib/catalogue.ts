@@ -3,7 +3,7 @@ import { db } from "@safuney/db";
 import type { ZoneKey } from "@safuney/ui";
 import { site, type ProductArea } from "@/config/site";
 import { cardSelect, catalogueSource, VISIBLE_PRODUCT, type ProductCardData } from "./catalogue/queries";
-import { snapshotCardsBySlug, snapshotCategoryCounts, snapshotImage, snapshotTopNames, snapshotZoneCounts } from "./catalogue/static";
+import { snapshotCardsBySlug, snapshotCategoryCounts, snapshotImage, snapshotTopItems, snapshotTopNames, snapshotZoneCounts } from "./catalogue/static";
 
 export interface CategorySummary {
   slug: string;
@@ -16,6 +16,8 @@ export interface CategorySummary {
   image: { url: string; width: number; height: number; alt: string } | null;
   /** The first few product names in the range, for tiles: buyers scan for names, not descriptions. */
   topProducts: string[];
+  /** The same products with their slugs and pack sizes, for the "shop by range" cards. */
+  topItems: Array<{ slug: string; name: string; packs: string }>;
 }
 
 /**
@@ -54,6 +56,7 @@ export const getCategories = cache(async (): Promise<CategorySummary[]> => {
     productCount: counts[a.slug] ?? 0,
     image: rangeImage(a.slug),
     topProducts: snapshotTopNames(a.slug),
+    topItems: snapshotTopItems(a.slug),
   }));
   if ((await catalogueSource()) === "snapshot") return fromSnapshot;
   try {

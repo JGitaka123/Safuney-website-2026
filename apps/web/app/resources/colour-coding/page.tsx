@@ -8,7 +8,8 @@ import { breadcrumbJsonLd, faqJsonLd, jsonLdString } from "@/lib/seo/jsonld";
 export const metadata: Metadata = {
   title: "Colour-coding guide",
   description: "The four cleaning zones — washrooms, general areas, kitchen and food prep, clinical and isolation — what each covers, and how to run the system.",
-  alternates: { canonical: "/resources/colour-coding", languages: { en: "/resources/colour-coding", sw: "/sw/resources/colour-coding" } },
+  // No hreflang: there is no Swahili edition of this page yet (only /sw exists).
+  alternates: { canonical: "/resources/colour-coding" },
 };
 
 export const revalidate = 3600;

@@ -16,8 +16,13 @@ import { usePathname } from "next/navigation";
 export function LanguageSwitcher({ tone = "light" }: { tone?: "light" | "dark" }) {
   const pathname = usePathname() ?? "/";
   const onSwahili = pathname === "/sw" || pathname.startsWith("/sw/");
+  // Only the home page has a Swahili edition so far (app/sw/page.tsx). Pointing "Kiswahili" at
+  // /sw/<this page> sent every other page to a 404, so it goes to the Swahili home unless the page has
+  // its own translation; add the path here when one ships.
+  const swahiliPages = new Set(["/sw"]);
   const english = onSwahili ? pathname.slice(3) || "/" : pathname;
-  const swahili = onSwahili ? pathname : `/sw${pathname === "/" ? "" : pathname}`;
+  const candidate = `/sw${pathname === "/" ? "" : pathname}`;
+  const swahili = onSwahili ? pathname : swahiliPages.has(candidate) ? candidate : "/sw";
   // 44 px tall hit areas (plan §9): these sit at the foot of the page, right above the phone contact bar.
   const target = "inline-flex min-h-11 items-center px-1";
   const current = `${target} ${tone === "dark" ? "font-medium text-white" : "font-medium text-ink"}`;

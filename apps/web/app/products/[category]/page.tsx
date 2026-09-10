@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState, cn, zoneMeta } from "@safuney/ui";
 import { site } from "@/config/site";
-import { rangeImage } from "@/lib/catalogue";
 import { activeFilterCount, filtersToSearchParams, parseFilters } from "@/lib/catalogue/filters";
 import { getCategoryPage } from "@/lib/catalogue/queries";
 import { quoteHref, telHref, whatsappHref } from "@/lib/contact";
@@ -15,21 +13,14 @@ import { Pagination } from "@/components/catalogue/pagination";
 import { ProductGridCard } from "@/components/catalogue/product-grid-card";
 import { SortSelect } from "@/components/catalogue/sort-select";
 import { btn } from "@/components/marketing/buttons";
-import { Crumbs } from "@/components/marketing/crumbs";
-import { CtaBand } from "@/components/marketing/cta-band";
 import { Icon } from "@/components/marketing/icons";
-
-import cleaningKit from "@/public/brand/cleaning-kit.webp";
-import dishwasher from "@/public/brand/dishwasher.webp";
-import laundryRoom from "@/public/brand/laundry-room.webp";
+import { rangeMeta } from "@/components/marketing/range-meta";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
 
 type Params = Promise<{ category: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
 export const revalidate = 300;
-
-/** The catalogue's own general photographs, for the ranges they show. Other ranges show their lead pack. */
-const RANGE_PHOTO: Record<string, StaticImageData> = { laundry: laundryRoom, warewashing: dishwasher, housekeeping: cleaningKit };
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { category } = await params;
@@ -41,6 +32,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
+/**
+ * A range page, laid out on Alliance Chemical's collection page: a light header with the breadcrumb,
+ * the name and one line; a row of tabs across the ranges; filters on the left; the grid on the right.
+ * The first row of cards loads its pictures eagerly — on a phone the first card is the largest thing
+ * on screen, and a lazy one is what pushed LCP past the 2 s budget.
+ */
 export default async function CategoryPage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const { category: slug } = await params;
   const raw = await searchParams;
@@ -56,69 +53,55 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const query = Object.fromEntries(filtersToSearchParams(filters));
   const count = activeFilterCount(filters);
   const zone = zoneMeta(filters.zone);
-  const image = rangeImage(slug);
-  const photo = RANGE_PHOTO[slug];
-  const zones = area?.zones ?? [];
   const enquiry = `Hello Safuney, please send me prices for your ${name} range.`;
 
   return (
     <>
-      <section aria-labelledby="category-heading" className="on-dark bg-hero">
-        <div className="mx-auto grid max-w-page items-center gap-8 px-5 py-10 md:grid-cols-12 md:px-6 md:py-12">
-          <div className="md:col-span-8">
-            <Crumbs items={[{ href: "/products", label: "Products" }, { label: name }]} />
-            <h1 id="category-heading" className="mt-4 text-h1 text-white">
-              {name}
-            </h1>
-            {description ? <p className="mt-3 max-w-[60ch] text-body-lg text-white/75">{description}</p> : null}
-            {zones.length > 0 ? (
-              <ul className="mt-4 flex flex-wrap gap-2" aria-label="Where it is used">
-                {zones.map((z) => {
-                  const meta = zoneMeta(z);
-                  return meta ? (
-                    <li key={z} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-caption text-white/85">
-                      <span aria-hidden className={cn("size-2 rounded-full", meta.swatch)} />
-                      {meta.label}
-                    </li>
-                  ) : null;
-                })}
-              </ul>
-            ) : null}
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href={quoteHref({ category: slug })} className={btn.cta}>
-                Get prices for this range
-                <Icon name="arrowRight" className="size-5" />
+      <section aria-labelledby="category-heading" className="border-b border-line bg-ground-deep/60">
+        <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-10">
+          <Breadcrumbs items={[{ href: "/products", label: "Products" }, { label: name }]} />
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-5">
+            <div className="max-w-[62ch]">
+              <h1 id="category-heading" className="text-h1">
+                {name}
+              </h1>
+              {description ? <p className="mt-2 text-body-lg text-ink-muted">{description}</p> : null}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href={quoteHref({ category: slug })} className={`${btn.brand} ${btn.sm}`}>
+                Request a quote
               </Link>
-              <a href={whatsappHref(enquiry)} target="_blank" rel="noopener noreferrer" className={btn.ghost}>
-                <Icon name="whatsapp" className="size-5 text-whatsapp" />
-                Ask on WhatsApp
+              <a href={whatsappHref(enquiry)} target="_blank" rel="noopener noreferrer" className={`${btn.outline} ${btn.sm}`}>
+                <Icon name="whatsapp" className="size-4" />
+                Order on WhatsApp
               </a>
             </div>
           </div>
-          {photo ? (
-            <div aria-hidden className="hidden md:col-span-4 md:block">
-              <div className="bg-stage overflow-hidden rounded-[20px] shadow-lift">
-                <Image src={photo} alt="" sizes="360px" className="h-auto w-full" />
-              </div>
-            </div>
-          ) : image ? (
-            <div aria-hidden className="hidden md:col-span-4 md:block">
-              <div className="bg-stage mx-auto grid aspect-square max-w-[17rem] place-items-center rounded-[20px] shadow-lift">
-                <Image
-                  src={image.url}
-                  alt=""
-                  width={image.width}
-                  height={image.height}
-                  sizes="220px"
-                  className="h-[80%] w-auto object-contain drop-shadow-[0_12px_16px_rgba(16,32,43,0.2)]"
-                />
-              </div>
-            </div>
-          ) : null}
         </div>
+        <nav aria-label="Ranges" className="border-t border-line bg-surface">
+          <ul className="mx-auto flex max-w-page gap-7 overflow-x-auto px-5 md:px-6">
+            {site.productAreas.map((a) => {
+              const current = a.slug === slug;
+              return (
+                <li key={a.slug} className="shrink-0">
+                  <Link
+                    href={`/products/${a.slug}`}
+                    aria-current={current ? "page" : undefined}
+                    className={cn(
+                      "inline-flex min-h-12 items-center whitespace-nowrap border-b-2 text-small font-semibold uppercase tracking-wide",
+                      current ? "border-accent text-accent" : "border-transparent text-ink-muted hover:text-ink",
+                    )}
+                  >
+                    {rangeMeta(a.slug).short}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </section>
 
-      <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-12">
+      <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-10">
         {!page ? (
           <EmptyState
             headingLevel={2}
@@ -136,6 +119,12 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         ) : (
           <div className="grid gap-8 lg:grid-cols-[16rem_1fr]">
             <aside aria-label="Filters" className="hidden lg:block">
+              <p className="mb-4 flex items-center gap-2 border-b border-line pb-3 text-small font-semibold uppercase tracking-wide text-ink">
+                <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+                Filters
+              </p>
               <Facets base={base} filters={filters} facets={page.facets} idPrefix="side" />
             </aside>
 
@@ -169,27 +158,35 @@ export default async function CategoryPage({ params, searchParams }: { params: P
                   />
                 </div>
               ) : (
-                <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-5 xl:grid-cols-4">
-                  {page.products.map((p) => (
+                <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 md:gap-5">
+                  {page.products.map((p, i) => (
                     <li key={p.id}>
-                      <ProductGridCard product={p} mode={mode} categorySlug={slug} />
+                      <ProductGridCard product={p} mode={mode} categorySlug={slug} priority={i < 3} />
                     </li>
                   ))}
                 </ul>
               )}
               <Pagination base={base} query={query} page={page.page} pageCount={page.pageCount} />
+
+              <div className="mt-10 flex flex-col gap-4 rounded-card border border-line bg-surface p-6 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-h4 text-ink">Buying {name.toLowerCase()} for a whole site?</p>
+                  <p className="mt-1 text-small text-ink-muted">Send the quantities. We price it within one working day.</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link href={quoteHref({ category: slug })} className={`${btn.cta} ${btn.sm}`}>
+                    Request a quote
+                  </Link>
+                  <a href={telHref} className={`${btn.secondary} ${btn.sm}`}>
+                    <Icon name="phone" className="size-4" />
+                    {site.contact.phone.display}
+                  </a>
+                </div>
+              </div>
             </section>
           </div>
         )}
       </div>
-
-      <CtaBand
-        id="category-cta"
-        title={`Buying ${name.toLowerCase()} for a whole site?`}
-        body="Send the quantities. We price it in one working day."
-        quoteHref={quoteHref({ category: slug })}
-        whatsappText={enquiry}
-      />
     </>
   );
 }

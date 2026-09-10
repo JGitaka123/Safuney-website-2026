@@ -113,6 +113,21 @@ export function snapshotImage(slug: string): SnapshotProduct["image"] {
   return PRODUCTS.get(slug)?.image ?? null;
 }
 
+/** The first products in a range with their sizes, for the "shop by range" cards. */
+export function snapshotTopItems(categorySlug: string, count = 3): Array<{ slug: string; name: string; packs: string }> {
+  return SNAPSHOT.products
+    .filter((p) => p.categorySlug === categorySlug)
+    .slice(0, count)
+    .map((p) => ({
+      slug: p.slug,
+      name: p.name,
+      packs: p.variants
+        .map((v) => v.packLabel)
+        .filter((l) => /\d/.test(l) && l.length <= 12)
+        .join(" · "),
+    }));
+}
+
 /** The first product names in a range, in catalogue order: what a buyer scans a range tile for. */
 export function snapshotTopNames(categorySlug: string, count = 3): string[] {
   return SNAPSHOT.products
@@ -198,10 +213,39 @@ export function snapshotProduct(categorySlug: string, productSlug: string): Prod
   };
 }
 
+/** Levenshtein distance, capped: gives up (returns max + 1) as soon as the distance cannot stay within max. */
+function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const v = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+      cur.push(v);
+      if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length]!;
+}
+
+/**
+ * A query word close enough to a word in the text: one slip in a short word, two in a long one, so
+ * "sanitzer" finds "sanitiser" and "degreser" finds "degreaser" — what the database search does with
+ * trigram similarity. Words under four letters must match exactly, or everything matches everything.
+ */
+function fuzzyHit(word: string, textWords: readonly string[]): boolean {
+  if (word.length < 4) return false;
+  const max = word.length >= 7 ? 2 : 1;
+  return textWords.some((t) => t.length >= 3 && editDistance(word, t, max) <= max);
+}
+
 /**
  * A small, forgiving product search for when there is no database to run the real one: whole-name
  * matches first, then names containing the query, then every query word found somewhere in the name,
- * description or code.
+ * description or code — exactly, or within a slip of the spelling.
  */
 export function snapshotSearch(q: string, limit: number): Array<{ card: ProductCardData; score: number }> {
   const needle = q.toLowerCase().trim();
@@ -210,12 +254,17 @@ export function snapshotSearch(q: string, limit: number): Array<{ card: ProductC
   for (const p of SNAPSHOT.products) {
     const name = p.name.toLowerCase();
     const rest = `${p.shortDescription} ${p.brand ?? ""} ${p.variants.map((v) => v.sku).join(" ")} ${CATEGORIES.get(p.categorySlug)?.name ?? ""}`.toLowerCase();
+    const textWords = `${name} ${rest}`.split(/[^a-z0-9]+/).filter(Boolean);
     let score = 0;
     if (name === needle) score += 10;
     if (name.includes(needle)) score += 3;
     if (rest.includes(needle)) score += 1;
-    const hits = words.filter((w) => name.includes(w) || rest.includes(w)).length;
-    if (words.length > 0 && hits === words.length) score += 1 + words.filter((w) => name.includes(w)).length * 0.5;
+    const exact = words.filter((w) => name.includes(w) || rest.includes(w));
+    const fuzzy = words.filter((w) => !exact.includes(w) && fuzzyHit(w, textWords));
+    if (words.length > 0 && exact.length + fuzzy.length === words.length) {
+      // A spelling slip counts, but ranks below the same match spelt right.
+      score += 1 + words.filter((w) => name.includes(w)).length * 0.5 - fuzzy.length * 0.25;
+    }
     if (score > 0) scored.push({ p, score });
   }
   return scored

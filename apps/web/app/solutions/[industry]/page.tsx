@@ -25,7 +25,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: `${industry.name} cleaning and hygiene`,
     description: industry.summary,
-    alternates: { canonical: `/solutions/${industry.slug}`, languages: { en: `/solutions/${industry.slug}`, sw: `/sw/solutions/${industry.slug}` } },
+    // No hreflang: there is no Swahili edition of this page yet (only /sw exists).
+    alternates: { canonical: `/solutions/${industry.slug}` },
     openGraph: { title: `${industry.name} cleaning and hygiene`, description: industry.summary },
   };
 }

@@ -3,42 +3,33 @@ import { telHref, whatsappHref } from "@/lib/contact";
 import { Icon } from "@/components/marketing/icons";
 
 /**
- * The thin bar above the header: the three things a trade buyer wants settled before looking at a
- * single product, and the two ways to reach a person.
- *
- * Only claims the company already stands behind appear here. The delivery promise with day counts in
- * config/site.ts is still awaiting the PO (`poConfirmed: false`), so until then the bar says where we
- * deliver, not how fast.
+ * The announcement line above the header (Alliance Chemical's "Call … or email … · Most stocked orders
+ * ship in 1–2 business days"): how to reach a person, and the one service promise the company already
+ * stands behind. The day-count delivery promise stays out until `delivery.poConfirmed`.
  */
 export function UtilityBar() {
-  const { contact, delivery, company } = site;
-  const claims = [
-    company.etims ? "eTIMS-compliant supplier" : null,
-    delivery.poConfirmed ? delivery.promise : "Delivery across Kenya",
-    "Quotes within 1 working day",
-  ].filter((c): c is string => Boolean(c));
-
+  const { contact, delivery } = site;
   return (
-    <div className="on-dark hidden bg-night text-white/80 md:block">
-      <div className="mx-auto flex h-9 max-w-page items-center justify-between gap-6 px-6 text-caption">
-        <ul className="flex min-w-0 items-center gap-5">
-          {claims.map((c) => (
-            <li key={c} className="flex items-center gap-1.5 truncate">
-              <Icon name="check" className="size-3.5 shrink-0 text-brand-lime" />
-              {c}
-            </li>
-          ))}
-        </ul>
-        <div className="flex shrink-0 items-center gap-5">
-          <a href={telHref} className="inline-flex items-center gap-1.5 font-medium text-white hover:underline">
-            <Icon name="phone" className="size-3.5" />
+    <div className="on-dark bg-night text-white/85">
+      <div className="mx-auto flex min-h-9 max-w-page items-center justify-center gap-x-4 gap-y-1 px-5 py-1.5 text-caption md:justify-between md:px-6">
+        <p className="text-center">
+          Call{" "}
+          <a href={telHref} className="font-medium text-white underline underline-offset-2">
             {contact.phone.display}
           </a>
-          <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-medium text-white hover:underline">
-            <Icon name="whatsapp" className="size-3.5 text-whatsapp" />
-            WhatsApp
-          </a>
-        </div>
+          <span className="hidden sm:inline">
+            {" "}
+            or email{" "}
+            <a href={`mailto:${contact.email.address}`} className="font-medium text-white underline underline-offset-2">
+              {contact.email.address}
+            </a>
+          </span>
+          <span className="hidden lg:inline"> · Priced within one working day · {delivery.poConfirmed ? delivery.promise : "Delivery across Kenya"}</span>
+        </p>
+        <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className="hidden items-center gap-1.5 font-medium text-white hover:underline md:inline-flex">
+          <Icon name="whatsapp" className="size-3.5 text-whatsapp" />
+          WhatsApp {contact.phone.display}
+        </a>
       </div>
     </div>
   );

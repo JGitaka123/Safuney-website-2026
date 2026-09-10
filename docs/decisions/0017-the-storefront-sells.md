@@ -86,3 +86,33 @@ grid with name, sizes and price; Five Star's tiles carry a title and nothing els
 - Safuney's own general photographs, lifted from the catalogue PDF (the five-pack line-up, a commercial
   laundry, a warewashing machine, a cleaning kit), are in `public/brand/`. Photographs from the
   benchmark sites are not used: they are those companies' copyright and brand.
+
+## Third pass: laid out on alliancechemical.com
+The directors asked for the site to be as close as possible to Alliance Chemical. Layout, section
+order, navigation and component anatomy now follow it one for one; the words, photographs, logo and
+palette stay Safuney's (their violet becomes Safuney blue, their yellow button Safuney green), because
+copying another company's text, images or trade dress would be an infringement and would read as a
+knock-off.
+
+- **Header:** announcement line; blue masthead with the white lock-up, a large rounded search and
+  account/cart; a white nav row with "+" menus (Products, Solutions, Resources, Company) and Request
+  Quote / Order on WhatsApp / SDS buttons.
+- **Home:** hero with eyebrow, headline, two buttons and a row of text links; a six-fact strip; three
+  buying paths (the first highlighted); shop by range (a dark panel with search and popular products,
+  beside coded range cards listing products and pack sizes), more ranges and technical resources; a
+  product carousel; industries with "we also serve"; "more than a catalogue" photo cards; a dark
+  procurement section beside the "who you are buying from" card; FAQ with a "still have questions" card;
+  guides.
+- **Range page:** light header with breadcrumb and quote buttons, a tab row across the ranges, filters
+  on the left, cards with a coloured attribute line, "Available sizes", price and a full-width
+  "Get a price" button.
+- **Product page:** gallery, name and size tiles (with a dashed "Bulk — get a quote" tile) and a
+  "need a different product?" list, a sticky buy box; then related ranges, quick facts, a quick answer,
+  technical documents, who uses it, dilution, pack sizes and delivery.
+- **Footer:** charcoal, with quick links, products, where we deliver, site terms, contact and the ways to
+  pay.
+- The newsletter pop-up on the benchmark is not reproduced: it interrupts the visit and there is no
+  newsletter behind it.
+
+A full-site crawl on the way (every page, desktop and phone, with axe) found the Kiswahili link and the
+hreflang tags pointing at Swahili pages that do not exist; only `/sw` exists, so both now point there.

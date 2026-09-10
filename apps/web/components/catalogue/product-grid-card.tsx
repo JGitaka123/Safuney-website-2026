@@ -1,18 +1,33 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PackShot, ProductCard, type HazardClass, type ZoneKey } from "@safuney/ui";
+import { PackShot, ProductCard, zoneMeta, type HazardClass, type ZoneKey } from "@safuney/ui";
 import type { ProductCardData } from "@/lib/catalogue/queries";
 import { quoteHref } from "@/lib/contact";
 import { fromPrice, type PriceDisplayMode } from "@/lib/pricing";
 
+/** Alliance Chemical's "Select options" button: full width, blue outline, capitals, a cart mark. */
 const actionClass =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:border-ink hover:bg-ground";
+  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-button border-2 border-accent bg-surface px-4 text-small font-semibold uppercase tracking-wide text-accent hover:bg-accent-wash";
 
-/**
- * Server wrapper that turns a catalogue row into the design-system ProductCard. In a grid the card is
- * picture, name, packs and price — no description, the way the benchmark shops do it; the product
- * page carries the words.
- */
+function CartMark() {
+  return (
+    <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.5L21.5 8H6.2" />
+      <circle cx="10" cy="20" r="1.2" />
+      <circle cx="17" cy="20" r="1.2" />
+    </svg>
+  );
+}
+
+/** "Available sizes: 5 L–20 L", "Available size: 4 kg", or nothing when the catalogue gives no size. */
+export function sizesLine(labels: readonly string[]): string | undefined {
+  const sized = labels.filter((l) => /\d/.test(l));
+  if (sized.length === 0) return "Pack size on request";
+  if (sized.length === 1) return `Available size: ${sized[0]}`;
+  return `Available sizes: ${sized[0]}–${sized[sized.length - 1]}`;
+}
+
+/** Server wrapper that turns a catalogue row into the design-system ProductCard. */
 export function ProductGridCard({
   product,
   mode,
@@ -20,6 +35,7 @@ export function ProductGridCard({
   headingLevel = 3,
   showCategory = false,
   showDescription = false,
+  priority = false,
 }: {
   product: ProductCardData;
   mode: PriceDisplayMode;
@@ -29,6 +45,8 @@ export function ProductGridCard({
   showCategory?: boolean;
   /** One line of use under the name. Off in grids. */
   showDescription?: boolean;
+  /** Load the picture eagerly: only for the first row of a listing, where it is the largest thing on screen. */
+  priority?: boolean;
 }) {
   const price = fromPrice(product.variants, mode);
   const href = `/products/${categorySlug}/${product.slug}`;
@@ -36,6 +54,7 @@ export function ProductGridCard({
   // The smallest pack decides the drawing, because that is the one a first-time buyer pictures.
   const lead = product.variants[0];
   const zones = product.zone === "NONE" ? [] : [product.zone as ZoneKey];
+  const attribute = zoneMeta(product.zone)?.label ?? product.category.name;
   return (
     <ProductCard
       name={product.name}
@@ -44,8 +63,8 @@ export function ProductGridCard({
       eyebrow={showCategory ? product.category.name : undefined}
       description={showDescription ? product.shortDescription : undefined}
       zones={zones}
-      // "each" and "Pack size on request" describe the absence of a size; they are not chips.
-      packs={product.variants.map((v) => v.packLabel).filter((label) => /\d/.test(label))}
+      attribute={attribute}
+      sizes={sizesLine(product.variants.map((v) => v.packLabel))}
       priceLabel={price ? price.label.replace(/^From /, "") : undefined}
       priceNote={price ? undefined : "Price on request"}
       hazard={product.hazardClass as HazardClass}
@@ -57,7 +76,8 @@ export function ProductGridCard({
             src={image.url}
             alt={image.alt}
             fill
-            className="object-contain p-5 pb-6 drop-shadow-[0_10px_14px_rgba(16,32,43,0.16)] transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transform-none"
+            priority={priority}
+            className="object-contain p-5 pb-6 transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:transform-none"
             sizes="(min-width: 1280px) 240px, (min-width: 768px) 30vw, 45vw"
           />
         ) : lead ? (
@@ -68,10 +88,12 @@ export function ProductGridCard({
       action={
         price ? (
           <Link href={href} className={actionClass}>
-            {product.variants.length > 1 ? "Choose pack size" : "View product"}
+            <CartMark />
+            {product.variants.length > 1 ? "Select options" : "View product"}
           </Link>
         ) : (
           <Link href={quoteHref({ product: product.name })} className={actionClass} aria-label={`Get a price for ${product.name}`}>
+            <CartMark />
             Get a price
           </Link>
         )

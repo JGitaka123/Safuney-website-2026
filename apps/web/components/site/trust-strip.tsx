@@ -9,14 +9,17 @@ export interface TrustFacts {
 }
 
 /**
- * The row of facts a business buyer checks before ordering from a supplier they have not used.
+ * The facts a business buyer checks before ordering from a supplier they have not used.
  *
  * Every item is something we can actually stand behind. The tax identifiers appear only once the PO
  * has entered them in the admin console — a supplier that shows a blank KRA PIN reads worse than one
  * that shows none, and an invented one is a liability. Payment marks are words rather than logos: we
  * have no licence to reproduce the M-Pesa or Paystack marks, and a wrong logo is worse than none.
+ *
+ * `variant="card"` is the white card that sits in the dark procurement section of the home page (where
+ * Alliance Chemical shows customer reviews); `"band"` is the full-width strip.
  */
-export function TrustStrip({ facts }: { facts: TrustFacts }) {
+export function TrustStrip({ facts, variant = "band" }: { facts: TrustFacts; variant?: "band" | "card" }) {
   const { contact } = site;
   const items: Array<{ icon: IconName; label: string; value: React.ReactNode }> = [
     {
@@ -84,26 +87,41 @@ export function TrustStrip({ facts }: { facts: TrustFacts }) {
     });
   }
 
+  // The icon sits inside the <dt>: a <dl> group may hold only <dt> and <dd>.
+  const list = (className: string) => (
+    <dl className={className}>
+      {items.map((item) => (
+        <div key={item.label} className="relative min-h-11 pl-15">
+          <dt className="text-label text-ink-muted">
+            <span aria-hidden className="absolute left-0 top-0 grid size-11 place-items-center rounded-full bg-accent-wash text-accent">
+              <Icon name={item.icon} className="size-5" />
+            </span>
+            {item.label}
+          </dt>
+          <dd className="mt-1 text-body text-ink">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+
+  if (variant === "card") {
+    return (
+      <section aria-labelledby="trust-heading" className="rounded-[20px] bg-surface p-6 text-ink shadow-lift md:p-8">
+        <h2 id="trust-heading" className="text-h3">
+          Who you are buying from
+        </h2>
+        {list("mt-6 grid gap-5")}
+      </section>
+    );
+  }
+
   return (
     <section aria-labelledby="trust-heading" className="border-t border-line bg-surface">
       <div className="mx-auto max-w-page px-5 py-14 md:px-6 md:py-16">
         <h2 id="trust-heading" className="text-h2">
           Who you are buying from
         </h2>
-        <dl className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {/* The icon sits inside the <dt>: a <dl> group may hold only <dt> and <dd>. */}
-          {items.map((item) => (
-            <div key={item.label} className="relative min-h-11 pl-15">
-              <dt className="text-label text-ink-muted">
-                <span aria-hidden className="absolute left-0 top-0 grid size-11 place-items-center rounded-full bg-accent-wash text-accent">
-                  <Icon name={item.icon} className="size-5" />
-                </span>
-                {item.label}
-              </dt>
-              <dd className="mt-1 text-body text-ink">{item.value}</dd>
-            </div>
-          ))}
-        </dl>
+        {list("mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4")}
       </div>
     </section>
   );

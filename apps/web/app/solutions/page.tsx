@@ -11,7 +11,8 @@ import { INDUSTRY_ICON } from "@/components/marketing/industry-icons";
 export const metadata: Metadata = {
   title: "Solutions by industry",
   description: "Cleaning and hygiene programmes for hospitality, healthcare, foodservice, education, food and beverage processing, industrial sites and facilities management in Kenya.",
-  alternates: { canonical: "/solutions", languages: { en: "/solutions", sw: "/sw/solutions" } },
+  // No hreflang: there is no Swahili edition of this page yet (only /sw exists).
+  alternates: { canonical: "/solutions" },
 };
 
 export default function SolutionsPage() {

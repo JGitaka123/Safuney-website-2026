@@ -8,9 +8,11 @@ import { telHref, whatsappHref } from "@/lib/contact";
 import { btn } from "@/components/marketing/buttons";
 import { Icon } from "@/components/marketing/icons";
 
-export function MobileNav() {
+/** The phone menu. `tone="dark"` for the trigger on the blue masthead. */
+export function MobileNav({ tone = "light" }: { tone?: "light" | "dark" }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const colours = tone === "dark" ? "text-white hover:bg-white/10" : "text-ink hover:bg-ground-deep";
   return (
     <div className="md:hidden">
       <Sheet
@@ -19,11 +21,7 @@ export function MobileNav() {
         title="Menu"
         description="Site navigation"
         trigger={
-          <button
-            type="button"
-            className="inline-flex size-11 items-center justify-center rounded-button text-ink hover:bg-ground-deep"
-            aria-label="Open menu"
-          >
+          <button type="button" className={`inline-flex size-11 items-center justify-center rounded-button ${colours}`} aria-label="Open menu">
             <svg aria-hidden width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M3 6h16M3 11h16M3 16h16" />
             </svg>
@@ -63,7 +61,7 @@ export function MobileNav() {
           </ul>
           <div className="mt-auto flex flex-col gap-3 border-t border-line p-5">
             <Link href="/quote" onClick={close} className={btn.cta}>
-              Get a quote
+              Request a quote
               <Icon name="arrowRight" className="size-5" />
             </Link>
             <div className="grid grid-cols-2 gap-3">

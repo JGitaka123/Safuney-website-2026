@@ -9,8 +9,12 @@ export interface ProductCardProps {
   name: string;
   href: string;
   zones?: readonly ZoneKey[];
-  /** Pack sizes as written on the label, e.g. ["5 L", "20 L"]. */
+  /** Pack sizes as written on the label, e.g. ["5 L", "20 L"]. Shown as chips only when `sizes` is not given. */
   packs?: readonly string[];
+  /** One line of available sizes, e.g. "Available sizes: 5 L–20 L". Replaces the chips. */
+  sizes?: string;
+  /** A short coloured line under the name, e.g. the zone the product serves. */
+  attribute?: string;
   /** Lowest pack price, preformatted, e.g. "KES 1,250.00". Prefixed "From" only when there is more than one pack. */
   priceLabel?: string;
   /** Shown where the price would be when the pack is quoted rather than priced online. */
@@ -30,22 +34,17 @@ export interface ProductCardProps {
 }
 
 /**
- * Listing card (plan §4.6, restyled in ADR 0017): the pack on a white stage with the zone band along its
- * foot, then the name, one line of use, pack sizes and the price or "Price on request". The name link
- * covers the whole card; the action button sits above it and stays separately clickable.
+ * Listing card, in the anatomy of Alliance Chemical's collection grid (ADR 0017): the pack on white,
+ * then the name, a coloured attribute line, the available sizes, the price or "Price on request", and
+ * one full-width action. The name link covers the whole card; the action sits above it and stays
+ * separately clickable.
  */
-export function ProductCard({ name, href, zones = [], packs = [], priceLabel, priceNote, hazard = "NONE", description, eyebrow, image, action, headingLevel = 3, className }: ProductCardProps) {
+export function ProductCard({ name, href, zones = [], packs = [], sizes, attribute, priceLabel, priceNote, hazard = "NONE", description, eyebrow, image, action, headingLevel = 3, className }: ProductCardProps) {
   const Heading = `h${headingLevel}` as const;
   const multiPack = packs.length > 1;
   return (
-    <article
-      className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition duration-200",
-        "hover:-translate-y-0.5 hover:border-stainless hover:shadow-lift motion-reduce:transform-none",
-        className,
-      )}
-    >
-      <div className="bg-stage relative aspect-square overflow-hidden">
+    <article className={cn("group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface transition-shadow duration-200 hover:border-stainless hover:shadow-lift", className)}>
+      <div className="relative aspect-square overflow-hidden bg-surface">
         {image ?? (
           <div aria-hidden className="grid h-full w-full place-items-center bg-ground-deep p-4">
             <span className="line-clamp-5 text-center text-h4 text-ink [overflow-wrap:anywhere]">{name}</span>
@@ -53,15 +52,17 @@ export function ProductCard({ name, href, zones = [], packs = [], priceLabel, pr
         )}
         <ZoneBand zones={zones} className="absolute inset-x-0 bottom-0" />
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
+      <div className="flex flex-1 flex-col gap-1.5 border-t border-line p-4">
         {eyebrow ? <p className="text-caption text-ink-muted">{eyebrow}</p> : null}
-        <Heading className="text-h4 text-ink">
+        <Heading className="text-body font-medium text-ink">
           <a href={href} className="after:absolute after:inset-0 after:content-[''] hover:underline hover:underline-offset-[3px] focus-visible:underline">
             {name}
           </a>
         </Heading>
+        {attribute ? <p className="text-small font-medium text-accent">{attribute}</p> : null}
+        {sizes ? <p className="text-caption text-ink-muted">{sizes}</p> : null}
         {description ? <p className="line-clamp-2 text-small text-ink-muted">{description}</p> : null}
-        {packs.length > 0 ? (
+        {!sizes && packs.length > 0 ? (
           <ul className="flex flex-wrap gap-1.5" aria-label="Pack sizes">
             {packs.map((p) => (
               <li key={p}>
@@ -71,19 +72,19 @@ export function ProductCard({ name, href, zones = [], packs = [], priceLabel, pr
           </ul>
         ) : null}
         {priceLabel ? (
-          <p className="text-price text-ink tabular-nums">
+          <p className="mt-1 text-h4 text-ink tabular-nums">
             {multiPack ? <span className="text-small font-normal text-ink-muted">From </span> : null}
             {priceLabel}
           </p>
         ) : priceNote ? (
-          <p className="text-small font-medium text-ink">{priceNote}</p>
+          <p className="mt-1 text-h4 text-ink">{priceNote}</p>
         ) : null}
         {hazard !== "NONE" ? (
           <div>
             <HazardBadge hazard={hazard} />
           </div>
         ) : null}
-        {action ? <div className="relative z-10 mt-auto pt-2">{action}</div> : null}
+        {action ? <div className="relative z-10 mt-auto pt-3">{action}</div> : null}
       </div>
     </article>
   );

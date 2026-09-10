@@ -120,6 +120,9 @@
   /* The hero and footer ground: a deeper steel than ink so ink-coloured controls still read on it. */
   --color-night: #0a1822;
   --color-night-soft: #132636;
+  /* The footer's charcoal and the warm band behind the industries (Alliance Chemical's layout, Safuney's palette). */
+  --color-charcoal: #1d2126;
+  --color-sand: #f6f5f1;
 
   --text-hero: clamp(2.25rem, 1.25rem + 4.2vw, 3.75rem);
   --text-hero--line-height: 1.06;

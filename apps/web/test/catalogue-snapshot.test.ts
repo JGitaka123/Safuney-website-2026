@@ -82,6 +82,14 @@ describe("catalogue snapshot (ADR 0017)", () => {
     expect(snapshotSearch("zzzz", 5)).toEqual([]);
   });
 
+  it("finds a product through a slip in the spelling, as the database search does", () => {
+    expect(snapshotSearch("sanitzer", 8).map((r) => r.card.slug)).toContain("sanitouch");
+    expect(snapshotSearch("degreser", 8).map((r) => r.card.slug)).toContain("saf-degreaser");
+    // Nonsense still finds nothing, and a correct spelling still ranks first.
+    expect(snapshotSearch("zzqxv", 8)).toEqual([]);
+    expect(snapshotSearch("quartsan", 8)[0]?.card.slug).toBe("saf-quartsan");
+  });
+
   it("is what the site reads when no database is configured", async () => {
     const saved = process.env["DATABASE_URL"];
     delete process.env["DATABASE_URL"];

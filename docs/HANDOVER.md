@@ -2,8 +2,9 @@
 
 **Date:** 2026-09-10 · Nine phases, plus a brand pass and the real catalogue.
 
-**Latest change:** the storefront was rebuilt to sell — a picture-and-numbers home page, a free site
-survey offer, WhatsApp and a quote button always in reach, and short copy throughout. The 76-product
+**Latest change:** the storefront was rebuilt to sell, laid out on alliancechemical.com (the directors'
+benchmark) with Safuney's own words, photographs and colours: the same header, home-page sections, range
+page and product page anatomy, WhatsApp and a quote button always in reach, and short copy throughout. The 76-product
 catalogue now shows on production even without a database (a snapshot compiled from the catalogue
 files), and enquiry forms hand the request to WhatsApp instead of failing when there is nowhere to send
 it. See [`decisions/0017-the-storefront-sells.md`](./decisions/0017-the-storefront-sells.md). The site's

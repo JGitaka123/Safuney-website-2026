@@ -48,7 +48,7 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="hidden md:col-span-5 md:block">
-            <Image src={cleaningKit} alt="" sizes="(min-width: 768px) 460px, 0px" className="h-auto w-full rounded-[20px] shadow-lift" priority />
+            <Image src={cleaningKit} alt="" sizes="(min-width: 768px) 460px, 100vw" className="h-auto w-full rounded-[20px] shadow-lift" />
           </div>
         </div>
       </section>
