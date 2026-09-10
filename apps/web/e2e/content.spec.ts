@@ -38,7 +38,7 @@ test.describe("content and SEO", () => {
   });
 
   test("a product's share card is generated from the product itself", async ({ page, request }) => {
-    await page.goto("/products/disinfection/qac-surface-food-contact-sanitiser");
+    await page.goto("/products/disinfection/saf-quartsan");
     const og = await page.locator('meta[property="og:image"]').first().getAttribute("content");
     expect(og).toBeTruthy();
     const image = await request.get(og!);

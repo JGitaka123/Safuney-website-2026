@@ -11,7 +11,7 @@ const MIN_CHARS = 2;
 const MAX_CHARS = 100;
 
 /** Where a query with nothing matching sends people (plan §6.5 suggests the closest category). */
-const FALLBACK_CATEGORY = { href: "/products/foodservice", name: "Foodservice and kitchen hygiene" };
+const FALLBACK_CATEGORY = { href: "/products/warewashing", name: "Warewashing and kitchen hygiene" };
 
 type Item =
   | { kind: "product"; id: string; href: string; name: string; meta: string; price: string | null }

@@ -1,12 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
-const PRODUCT = "/products/disinfection/qac-surface-food-contact-sanitiser";
+const PRODUCT = "/products/disinfection/saf-quartsan";
 const STAFF_PASSWORD = process.env["DEMO_STAFF_PASSWORD"] ?? "safuney-demo-2026";
 
 async function placeCodOrder(page: Page): Promise<{ number: string; url: string }> {
   await page.goto(PRODUCT);
-  await page.getByRole("radio", { name: /1 L/ }).check();
+  await page.getByRole("radio", { name: /5 L/ }).check();
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByText(/Added 1 ×/)).toBeVisible();
   await page.goto("/checkout");
@@ -45,7 +45,7 @@ test.describe("warehouse", () => {
     await expectNoA11yViolations(page);
     await page.getByRole("link", { name: new RegExp(order.number) }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(order.number);
-    await expect(page.getByRole("cell", { name: "QAC-SURFACE-FOOD-CONTACT-SANITISER-1L" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "SAF-QUARTSAN-5L" })).toBeVisible();
     await expectNoA11yViolations(page);
 
     // Each action re-renders the page into its next state.

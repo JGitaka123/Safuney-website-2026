@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 84" role="img" aria-label="Safuney">
+  <title>Safuney</title>
+  <!--
+    The Safuney mark, redrawn as vector from the logo in PRODUCT CATALOGUE JULY 2024 (page 1).
+    The catalogue only carries it as a 317x118 bitmap, which is soft above ~90 px and useless at
+    512 px for an installed app icon. Geometry and colours (green #86d636, blue #3e8eff) are traced
+    from that bitmap; see docs/decisions/0016-the-real-brand.md.
+  -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 11.5 L24 11.5 C12 11.5 3.4 20.5 3.4 33 C3.4 45.5 12 54.5 24 54.5 L55 54.5" stroke="#86d636" stroke-width="7.6"/>
+    <path d="M29 32.5 L57 32.5 C69 32.5 78 40.5 78 50.5 L78 57 C78 68 70 76 58 76 L24 76" stroke="#3e8eff" stroke-width="7.4"/>
+    <circle cx="15.5" cy="75.6" r="5.9" stroke="#3e8eff" stroke-width="4.6"/>
+  </g>
+  <path d="M37 10.6 C45 0.4 67 -1.6 79 10.6 C67 22.8 45 20.8 37 10.6 Z" fill="#86d636"/>
+  <path d="M46.5 6.2 C54 7.4 61.5 9 68.5 10.6 C61.5 12.2 54 13.8 46.5 15 C50.5 12.6 50.5 8.6 46.5 6.2 Z" fill="#ffffff"/>
+</svg>

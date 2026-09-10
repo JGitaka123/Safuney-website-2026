@@ -7,6 +7,12 @@
 /*
  * Design tokens — single source of truth is docs/design/plan.md (§2 palette, §3 type, §7 spacing/radius/shadow).
  * Do not add colours here that are not in the plan.
+ *
+ * The blues and greens are Safuney's own, sampled from PRODUCT CATALOGUE JULY 2024: the cover sets
+ * "Safuney Limited" in #408bef and "Product Catalogue" in #41ad49, and the logo mark is drawn in
+ * #3e8eff and #86d636. Neither display colour is legible as body text or as a button ground
+ * (3.41:1 and 2.88:1 on white), so the interactive colour is the same hue taken down to 7.69:1.
+ * See docs/decisions/0016-the-real-brand.md.
  */
 @theme {
   /* Core */
@@ -17,9 +23,17 @@
   --color-ink-muted: #4a5c68;
   --color-line: #cbd5db;
   --color-stainless: #6f7d87;
-  --color-accent: #0b5e73;
-  --color-accent-deep: #07485a;
-  --color-accent-wash: #e4eff2;
+  /* Interactive: links, buttons, focus. 7.69:1 on white, 7.15:1 on ground. */
+  --color-accent: #0e50a8;
+  --color-accent-deep: #0b4592;
+  --color-accent-wash: #e8f0fd;
+
+  /* Brand display colours (logo lock-up, display type, rules and graphics — never small text) */
+  --color-brand-blue: #408bef;
+  --color-brand-green: #41ad49;
+  --color-brand-lime: #86d636;
+  /* The green as text: #41ad49 is 2.88:1, this is 6.77:1 */
+  --color-brand-green-ink: #27682c;
 
   /* Zone set (functional only: bands, badges, filters, guide) */
   --color-zone-red: #b8132a;

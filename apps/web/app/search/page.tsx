@@ -103,7 +103,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             body={
               <>
                 Check the spelling, or browse{" "}
-                <Link href={closest?.href ?? "/products/foodservice"} className="text-accent underline underline-offset-[3px]">
+                <Link href={closest?.href ?? "/products/warewashing"} className="text-accent underline underline-offset-[3px]">
                   {closest?.name ?? "Foodservice and kitchen hygiene"}
                 </Link>
                 . We can usually source what is not listed.

@@ -5,7 +5,7 @@
  * site is deliberately noindex (ADR 0002).
  */
 const base = process.env.SITE_URL || "http://127.0.0.1:3000";
-const pages = (process.env.SITE_PAGES || "/,/products,/products/disinfection,/products/disinfection/qac-surface-food-contact-sanitiser,/cart,/checkout,/contact,/sign-in,/quote").split(",");
+const pages = (process.env.SITE_PAGES || "/,/products,/products/disinfection,/products/disinfection/saf-quartsan,/cart,/checkout,/contact,/sign-in,/quote").split(",");
 
 module.exports = {
   ci: {

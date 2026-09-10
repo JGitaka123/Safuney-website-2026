@@ -1,14 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
-const PRODUCT = "/products/disinfection/qac-surface-food-contact-sanitiser";
+const PRODUCT = "/products/disinfection/saf-quartsan";
 
 /** Runs against PAYMENTS_MODE=mock (CI and previews): the test controls stand in for the provider callback. */
 async function addToCart(page: Page) {
   await page.goto(PRODUCT);
-  await page.getByRole("radio", { name: /1 L/ }).check();
+  await page.getByRole("radio", { name: /5 L/ }).check();
   await page.getByRole("button", { name: "Add to cart" }).click();
-  await expect(page.getByText(/Added 1 × QAC-based sanitiser/)).toBeVisible();
+  await expect(page.getByText(/Added 1 × SAF QUARTSAN/)).toBeVisible();
 }
 
 async function fillContact(page: Page) {

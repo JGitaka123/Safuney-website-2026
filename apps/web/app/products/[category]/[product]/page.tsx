@@ -52,10 +52,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     alternates: { canonical: `/products/${category}/${slug}` },
     // `images` is set only when there are real photographs: an empty array here would override the
     // generated share card from opengraph-image.tsx and leave the link with no image at all.
+    // No `images` here on purpose: setting it would override the generated share card in
+    // opengraph-image.tsx with the bare 480 px cut-out, which platforms either reject as too small or
+    // composite onto a background of their own choosing. The card carries the same photograph at the
+    // 1200 x 630 they ask for.
     openGraph: {
       title: product.name,
       description: product.shortDescription,
-      ...(product.images.length > 0 ? { images: product.images.map((i) => i.url) } : {}),
     },
   };
 }
@@ -86,6 +89,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       priceHeadline: v.priceMinorUnits > 0n ? price.headline : "Price on request",
       vatLine: v.priceMinorUnits > 0n ? price.vatLine : "",
       exVatMinor: price.exVatMinor,
+      poa: v.priceMinorUnits <= 0n,
       stock,
       available: v.stockOnHand - v.stockReserved,
       madeToOrder: v.isMadeToOrder,
@@ -139,9 +143,21 @@ export default async function ProductPage({ params }: { params: Params }) {
       <div className="mt-4 grid gap-8 lg:grid-cols-12 lg:gap-12">
         <div className="min-w-0 lg:col-span-6">
           <figure className="border border-line bg-surface">
-            <div className="aspect-square overflow-hidden">
+            <div className="grid aspect-square place-items-center overflow-hidden p-6">
               {image ? (
-                <Image src={image.url} alt={image.alt} width={image.width ?? 1200} height={image.height ?? 1200} priority className="h-full w-full object-contain" sizes="(min-width: 1024px) 50vw, 100vw" />
+                // Never scaled past the file's own pixels. The pack shots are resampled once, at
+                // extraction (ADR 0016); letting the browser stretch them again on top of that is
+                // what turns a real photograph into a blurred one.
+                <Image
+                  src={image.url}
+                  alt={image.alt}
+                  width={image.width ?? 480}
+                  height={image.height ?? 480}
+                  priority
+                  className="object-contain"
+                  style={{ width: "100%", height: "auto", maxWidth: `${image.width ?? 480}px`, maxHeight: "100%" }}
+                  sizes="(min-width: 1024px) 480px, 100vw"
+                />
               ) : (
                 <div aria-hidden className="grid h-full w-full place-items-center bg-ground-deep p-8">
                   <span className="text-center text-h2 text-ink">{product.name}</span>

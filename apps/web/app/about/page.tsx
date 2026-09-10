@@ -34,9 +34,10 @@ export default function AboutPage() {
           Nairobi.
         </p>
         <p>
-          The range covers foodservice and kitchen hygiene, disinfection and sanitisation, laundry, housekeeping and
-          janitorial, healthcare and medical equipment, laboratory, specialty products and personal hygiene. It keeps
-          growing as customers bring us new cleaning problems.
+          The range covers warewashing and kitchen hygiene, disinfection and sanitisation, speciality products,
+          personal hygiene, housekeeping and public areas, food, beverage and process hygiene, laundry, the Bactro
+          biological range, and cleaning equipment and consumables. It keeps growing as customers bring us new cleaning
+          problems.
         </p>
 
         <h2>Clinical confidence, in practice</h2>

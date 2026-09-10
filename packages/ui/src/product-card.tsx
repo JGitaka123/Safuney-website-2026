@@ -13,6 +13,8 @@ export interface ProductCardProps {
   packs?: readonly string[];
   /** Lowest pack price, preformatted, e.g. "KES 1,250.00". Prefixed "From" only when there is more than one pack. */
   priceLabel?: string;
+  /** Shown where the price would be when the pack is quoted rather than priced online. */
+  priceNote?: string;
   hazard?: HazardClass;
   /** Photo slot. Without it the tile is a flat ground-deep square carrying the product name (plan §8). */
   image?: ReactNode;
@@ -28,7 +30,7 @@ export interface ProductCardProps {
  * under the photo inside the frame; text below on bare ground with no border. Hover darkens the frame to
  * stainless — nothing lifts, nothing casts a shadow. The title link is the whole card's hit area.
  */
-export function ProductCard({ name, href, zones = [], packs = [], priceLabel, hazard = "NONE", image, action, headingLevel = 3, className }: ProductCardProps) {
+export function ProductCard({ name, href, zones = [], packs = [], priceLabel, priceNote, hazard = "NONE", image, action, headingLevel = 3, className }: ProductCardProps) {
   const Heading = `h${headingLevel}` as const;
   const multiPack = packs.length > 1;
   return (
@@ -63,6 +65,8 @@ export function ProductCard({ name, href, zones = [], packs = [], priceLabel, ha
             {multiPack ? <span className="text-small font-normal text-ink-muted">From </span> : null}
             {priceLabel}
           </p>
+        ) : priceNote ? (
+          <p className="text-small text-ink-muted">{priceNote}</p>
         ) : null}
         {hazard !== "NONE" ? (
           <div>

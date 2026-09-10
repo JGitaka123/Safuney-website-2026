@@ -69,12 +69,24 @@ export interface CartSummary {
 
 export class CartError extends Error {
   constructor(
-    public code: "NOT_FOUND" | "QTY" | "STOCK" | "UNAVAILABLE",
+    public code: "NOT_FOUND" | "QTY" | "STOCK" | "UNAVAILABLE" | "POA",
     message: string,
   ) {
     super(message);
   }
 }
+
+/**
+ * A list price of zero is not free — it is "price on application". Safuney's catalogue does not
+ * publish prices, so a pack that has not been priced yet is listed, searchable and photographed but
+ * quoted rather than sold online. Blocking it here rather than in the UI is the point: this is the
+ * same server that recomputes every total, so a crafted POST cannot buy a 20 L drum for nothing.
+ */
+export function isPriceOnApplication(priceMinorUnits: bigint): boolean {
+  return priceMinorUnits <= 0n;
+}
+
+export const POA_MESSAGE = "That pack is quoted rather than priced online. Ask us for a quote and we will come back with a price.";
 
 export function newToken(): string {
   return randomBytes(24).toString("base64url");
@@ -101,7 +113,9 @@ export function summarise(cart: CartRecord, customPriceMap?: Map<string, bigint>
       lineVat: money.vatOn(lineExVat, v.vatRateBps),
       available: v.stockOnHand - v.stockReserved,
       madeToOrder: v.isMadeToOrder,
-      unavailable: !v.isActive || !p.isActive || p.needsPoReview,
+      // A line whose pack lost its price (or never had one) stops counting towards the total rather
+      // than quietly contributing zero.
+      unavailable: !v.isActive || !p.isActive || p.needsPoReview || isPriceOnApplication(unit),
     };
   });
   const subtotal = money.sum(lines.filter((l) => !l.unavailable).map((l) => l.lineExVat));
@@ -159,9 +173,10 @@ export class CartService {
     await releaseExpiredReservations(this.prisma, { variantIds: [variantId] });
     const v = await this.prisma.productVariant.findUnique({
       where: { id: variantId },
-      select: { isActive: true, stockOnHand: true, stockReserved: true, isMadeToOrder: true, packLabel: true, product: { select: { name: true, isActive: true, needsPoReview: true } } },
+      select: { isActive: true, priceMinorUnits: true, stockOnHand: true, stockReserved: true, isMadeToOrder: true, packLabel: true, product: { select: { name: true, isActive: true, needsPoReview: true } } },
     });
     if (!v || !v.isActive || !v.product.isActive || v.product.needsPoReview) throw new CartError("UNAVAILABLE", "That product is not available to order online.");
+    if (isPriceOnApplication(v.priceMinorUnits)) throw new CartError("POA", POA_MESSAGE);
     const available = v.stockOnHand - v.stockReserved;
     if (!v.isMadeToOrder && qty > available) {
       throw new CartError("STOCK", available > 0 ? `Only ${available} × ${v.product.name} ${v.packLabel} available right now.` : `${v.product.name} ${v.packLabel} is out of stock. Ask us when it is back.`);

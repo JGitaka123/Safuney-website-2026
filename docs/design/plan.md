@@ -24,7 +24,7 @@ What that means in practice:
 | --- | --- |
 | Clean because it was done correctly | Every product page leads with dilution, contact time and zone before it leads with adjectives. |
 | The colour system is real | Red / blue / green / yellow are reserved for zones. They are never used for "sale", "new", success or error. |
-| One disciplined accent | A single teal for everything interactive. If it is teal you can press it. |
+| One disciplined accent | A single blue for everything interactive. If it is that blue you can press it. |
 | Stainless, not chrome | Neutrals are cool and matte. No gradients, no glossy highlights, no glassmorphism. |
 | Label, not brochure | Information is laid out like a product label or a dosing chart: dense, aligned, tabular numbers, mono for codes. |
 
@@ -41,16 +41,37 @@ What that means in practice:
 | `ink` | Steel ink | `#10202B` | Body text, headings, primary button fill, icons. Blue-black, like wet steel. | on white **16.62:1** |
 | `ink-muted` | Wet steel | `#4A5C68` | Secondary text, captions, labels, placeholders. | on white **6.95:1**, on ground **6.46:1** |
 | `line` | Rinse | `#CBD5DB` | 1 px hairlines, table rules, card borders. Decorative only — never carries meaning on its own. | vs white 1.49:1 (non-text, decorative) |
-| `accent` | Dilution teal | `#0B5E73` | The one accent: links, primary actions, focus rings, selected states, progress. The colour of a concentrate in a clear dosing bottle. | on white **7.34:1**; white on teal **7.34:1** |
+| `accent` | Safuney blue | `#0E50A8` | The one accent: links, primary actions, focus rings, selected states, progress. The brand blue taken down until it is legible as text and as a button ground. | on white **7.69:1**; white on it **7.69:1** |
 
 Derived states (not new colours — tints and shades of the six above):
 
 | Token | Hex | Use | Contrast |
 | --- | --- | --- | --- |
-| `accent-deep` | `#07485A` | Hover/active for teal buttons and links. | on white 10.08:1 |
-| `accent-wash` | `#E4EFF2` | Selected filter chip background, table row highlight, "in cart" state. Always paired with `accent` or `ink` text. | ink on wash 14.19:1 |
+| `accent-deep` | `#0B4592` | Hover/active for accent buttons and links. | on white 9.21:1 |
+| `accent-wash` | `#E8F0FD` | Selected filter chip background, table row highlight, "in cart" state. Always paired with `accent` or `ink` text. | ink on wash 14.49:1 |
 | `stainless` | `#6F7D87` | Input borders, disabled text, non-decorative icons — anything that must meet the 3:1 UI-component rule. | on white **4.23:1** |
 | `ground-deep` | `#E6ECF0` | Footer, checkout summary panel, table header row. | ink on it 13.95:1 |
+
+### 2.1a Brand colours
+
+Safuney's own colours, sampled from `PRODUCT CATALOGUE JULY 2024`: the cover sets "Safuney Limited" in
+`#408BEF` and "Product Catalogue" in `#41AD49`, and the logo mark is drawn in `#3E8EFF` and `#86D636`.
+
+Neither display colour can carry text. `brand-blue` is 3.41:1 on white and `brand-green` 2.88:1 — both
+below the 4.5:1 body-text threshold, and `brand-lime` (1.80:1) is below even the 3:1 non-text rule
+against white. So they are **display colours only**, and the interactive colour is the same blue hue
+taken down to 7.69:1.
+
+| Token | Hex | Use | Contrast |
+| --- | --- | --- | --- |
+| `brand-blue` | `#408BEF` | Display type 24 px+/bold 19 px+, the rule under a page title, graphics. Never small text, never a button ground with text on it. | on white 3.41:1 — large text and non-text only |
+| `brand-green` | `#41AD49` | The green half of the identity: section rules, the band under the masthead, chart and diagram fills. | on white 2.88:1 — non-text only |
+| `brand-lime` | `#86D636` | The logo mark's green. Used in the mark and nowhere else. | on white 1.80:1 — inside the mark only, always beside `brand-blue` |
+| `brand-green-ink` | `#27682C` | When the brand green has to be text (a green heading in a two-colour lock-up). | on white 6.77:1 |
+
+The logo lock-up ships as `public/brand/safuney-logo.png` (the catalogue artwork, trimmed) and the mark
+as `public/brand/safuney-mark.svg` (redrawn as vector so it survives a 512 px app icon).
+See `docs/decisions/0016-the-real-brand.md`.
 
 ### 2.2 Zone colours (functional set)
 
@@ -84,7 +105,7 @@ palette, not through red/green:
 | State | Treatment |
 | --- | --- |
 | Error | Text and 2 px border in `ink`; a filled ink circle with a white "!" icon at the start of the message. The message says what went wrong and how to fix it (§7). |
-| Success | Teal (`accent`) text with a tick icon. "Added to cart — view cart" is teal, not green. |
+| Success | `accent` text with a tick icon. "Added to cart — view cart" is accent blue, not green. |
 | Warning / attention | `#7A5B00` text on `#FFF5CC` panel (5.77:1) — this is the *yellow-zone ink*, deliberately, because the only warnings on this site are hazard notices (corrosive, oxidiser) and those belong in the same visual register as clinical caution. |
 
 ### 2.4 Explicitly rejected
@@ -799,7 +820,7 @@ Photography follows `docs/design/photography.md`. Design rules that depend on it
 
 - **WCAG 2.1 AA** throughout; text contrast ≥ 4.5:1, UI components and zone bands ≥ 3:1 against
   their background (all pairs in §2 verified; yellow is fill-only).
-- **Visible focus:** 3 px `accent` outline, 2 px offset, on every focusable element. On `ink` or teal
+- **Visible focus:** 3 px `accent` outline, 2 px offset, on every focusable element. On `ink` or accent
   surfaces the outline is white. Focus is never removed, only restyled.
 - **360 px first.** Every layout in §4 is designed at 360 first and widened. No horizontal scroll at 320.
 - Touch targets ≥ 44 × 44 px, 8 px minimum between targets.
@@ -820,13 +841,13 @@ An honest pass over this plan against the list of defaults, and what changed bec
 
 | Tell | Present in first draft? | Verdict and change |
 | --- | --- | --- |
-| Cream background + serif + terracotta accent | No. | Ground is a cool white, type is a grotesk, accent is teal. Nothing to change. |
-| Near-black + acid green | Partly. `ink` `#10202B` is near-black, and green is in the zone set. | Green is functional only: it is never the accent, never "success", never a button. Success now uses `accent` teal (§2.3). Ink is blue-black rather than neutral black so the pairing reads as steel, not as a terminal. |
+| Cream background + serif + terracotta accent | No. | Ground is a cool white, type is a grotesk, accent is Safuney blue. Nothing to change. |
+| Near-black + acid green | Partly. `ink` `#10202B` is near-black, and green is in the zone set. | Green is functional only: it is never the accent, never "success", never a button. Success now uses `accent` blue (§2.3). The brand green (§2.1a) is a display colour — logo, rules, display type — and never a state. Ink is blue-black rather than neutral black so the pairing reads as steel, not as a terminal. |
 | SaaS card grid, identical radii, grey shadows | Yes, in the first pass of §4.5 — I had drawn 8 px rounded cards with a soft shadow on hover. | Cards are now radius 0 with a 1 px frame around the photo only, a zone band, text on bare ground, and no shadow at any state (§4.6, §7.2, §7.3). The one shadow on the site is ink-tinted and reserved for floating surfaces. Category list on the home page became a two-column ledger, not cards. |
 | ALL-CAPS eyebrow labels over every heading | Yes — the home hero had "Cleaning chemicals · Kenya" as an eyebrow, and each home section had one. | Removed every eyebrow. Sections have a sentence-case h2 and nothing above it. Badges are sentence case. There is no uppercase text on the site other than acronyms (QAC, SDS, KES, VAT). |
 | Middle-dot meta strings ("5 L · 4 per case · Corrosive") | Yes, in the product card and footer legal line. | Meta is now separate elements: pack sizes as chips, hazard as a badge, footer links as a list with 24 px gaps. Where two facts must share a line they are separated by a comma or an en dash. |
 | Arrows appended to every link | Yes — "Browse products →", "Read the guide →". | Removed. Links are underlined; buttons say the outcome. The only chevron on the site is the ">" in the mobile zone rows, which is a disclosure affordance on a full-width row, not a decoration on a link. |
-| A single accent-coloured word in a headline | Considered ("…use them **correctly**." in teal). | Rejected. Headlines are one colour. Emphasis, where needed, is weight 600 on the whole sentence. |
+| A single accent-coloured word in a headline | Considered ("…use them **correctly**." in accent). | Rejected. Headlines are one colour. Emphasis, where needed, is weight 600 on the whole sentence. |
 | Stock-photo people in lab coats | Not in the plan, but the risk sits in the photography brief. | `photography.md` forbids it explicitly and specifies what replaces it: real products, real surfaces, hands in gloves doing actual work, no faces, no pointing. |
 | Gradient hero with a big number | No. | The hero is a photograph with the headline below it. Statistics ("500+ products") do not appear anywhere; counts appear only where they are live data (products per zone). |
 | Rounded "pill" buttons everywhere | Yes, inherited from the holding page's `rounded-full` industry chips. | Buttons are 4 px; the only full-round elements are the cart count and the WhatsApp button (§7.2). Industry list on the home page is plain text, comma-separated. |

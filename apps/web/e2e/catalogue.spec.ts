@@ -3,7 +3,7 @@ import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
 /** Requires the demo seed (SEED_DEMO=1): reviewed products with prices and stock. */
 const CATEGORY = "/products/disinfection";
-const PRODUCT = "/products/disinfection/qac-surface-food-contact-sanitiser";
+const PRODUCT = "/products/disinfection/saf-quartsan";
 
 test.describe("catalogue", () => {
   test("category page lists products, filters by URL and passes axe", async ({ page, isMobile }) => {
@@ -40,7 +40,7 @@ test.describe("catalogue", () => {
   test("product page shows packs, live price with VAT line, dilution calculator and JSON-LD", async ({ page }) => {
     const res = await page.goto(PRODUCT);
     expect(res?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("QAC-based sanitiser for surface and food-contact areas");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("SAF QUARTSAN");
     // Pack selector: choosing 20 L updates the price.
     await page.getByRole("radio", { name: /20 L/ }).check();
     await expect(page.getByText("KES 5,200.00").first()).toBeVisible();
@@ -60,7 +60,7 @@ test.describe("catalogue", () => {
     await page.goto(PRODUCT);
     await page.getByRole("radio", { name: /5 L/ }).check();
     await page.getByRole("button", { name: "Add to cart" }).click();
-    await expect(page.getByText(/Added 1 × QAC-based sanitiser/)).toBeVisible();
+    await expect(page.getByText(/Added 1 × SAF QUARTSAN/)).toBeVisible();
     await page.goto("/cart");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your cart");
     await expect(page.getByText("KES 1,450.00").first()).toBeVisible();
@@ -73,7 +73,7 @@ test.describe("catalogue", () => {
   });
 
   test("cannot add more than the stock on hand", async ({ page }) => {
-    await page.goto("/products/specialty/crockery-cutlery-destainer");
+    await page.goto("/products/specialty/safshine");
     // Demo stock for 15 kg is 6; the stepper caps at available stock.
     const input = page.getByRole("spinbutton", { name: /Quantity/ });
     await input.fill("99");

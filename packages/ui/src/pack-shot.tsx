@@ -68,7 +68,7 @@ function accentFor(zones: readonly ZoneKey[]): { fill: string; deep: string } {
     case "YELLOW":
       return { fill: "#f2c200", deep: "#c49e00" };
     default:
-      return { fill: "#0b5e73", deep: "#07485a" };
+      return { fill: "#0e50a8", deep: "#0b4592" };
   }
 }
 

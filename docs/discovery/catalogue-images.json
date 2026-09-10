@@ -1,0 +1,534 @@
+{
+  "bactro-bath-and-tile-tablets": {
+    "url": "/products/bactro-bath-and-tile-tablets.webp",
+    "width": 309,
+    "height": 480,
+    "alt": "BACTRO BATH & TILE TABLETS pack",
+    "source": "p12-n132"
+  },
+  "bactro-bio-block-urinal": {
+    "url": "/products/bactro-bio-block-urinal.webp",
+    "width": 278,
+    "height": 480,
+    "alt": "BACTRO BIO BLOCK URINAL pack",
+    "source": "p12-n136"
+  },
+  "bactro-clean-tablets": {
+    "url": "/products/bactro-clean-tablets.webp",
+    "width": 320,
+    "height": 480,
+    "alt": "BACTRO CLEAN TABLETS pack",
+    "source": "p12-n124"
+  },
+  "bactro-extreme-liquid": {
+    "url": "/products/bactro-extreme-liquid.webp",
+    "width": 231,
+    "height": 480,
+    "alt": "BACTRO EXTREME LIQUID pack",
+    "source": "p12-n122"
+  },
+  "bactro-textile": {
+    "url": "/products/bactro-textile.webp",
+    "width": 227,
+    "height": 480,
+    "alt": "BACTRO TEXTILE pack",
+    "source": "p12-n126"
+  },
+  "bactro-trap-tablets": {
+    "url": "/products/bactro-trap-tablets.webp",
+    "width": 275,
+    "height": 480,
+    "alt": "BACTRO-TRAP TABLETS pack",
+    "source": "p12-n128"
+  },
+  "bactro-zyme-tablets": {
+    "url": "/products/bactro-zyme-tablets.webp",
+    "width": 350,
+    "height": 480,
+    "alt": "BACTRO ZYME TABLETS pack",
+    "source": "p12-n134"
+  },
+  "brooms": {
+    "url": "/products/brooms.webp",
+    "width": 363,
+    "height": 480,
+    "alt": "Hard and soft brooms pack",
+    "source": "p14-n170"
+  },
+  "caustic-pearls-and-flakes": {
+    "url": "/products/caustic-pearls-and-flakes.webp",
+    "width": 276,
+    "height": 480,
+    "alt": "CAUSTIC PEARLS & FLAKES pack",
+    "source": "p09-n082"
+  },
+  "cobweb-remover": {
+    "url": "/products/cobweb-remover.webp",
+    "width": 347,
+    "height": 480,
+    "alt": "Cobweb remover pack",
+    "source": "p14-n176"
+  },
+  "dipshine": {
+    "url": "/products/dipshine.webp",
+    "width": 335,
+    "height": 480,
+    "alt": "DIPSHINE pack",
+    "source": "p09-n078"
+  },
+  "double-mobile-wringer-bucket": {
+    "url": "/products/double-mobile-wringer-bucket.webp",
+    "width": 334,
+    "height": 480,
+    "alt": "Double mobile wringer bucket pack",
+    "source": "p13-n146"
+  },
+  "drain-kleen": {
+    "url": "/products/drain-kleen.webp",
+    "width": 400,
+    "height": 480,
+    "alt": "DRAIN KLEEN pack",
+    "source": "p06-n036"
+  },
+  "dust-pans": {
+    "url": "/products/dust-pans.webp",
+    "width": 480,
+    "height": 380,
+    "alt": "Dust pans pack",
+    "source": "p14-n175"
+  },
+  "dusting-cloths": {
+    "url": "/products/dusting-cloths.webp",
+    "width": 480,
+    "height": 437,
+    "alt": "Dusting cloths pack",
+    "source": "p14-n169"
+  },
+  "fabron-spotter-b": {
+    "url": "/products/fabron-spotter-b.webp",
+    "width": 228,
+    "height": 480,
+    "alt": "FABRON SPOTTER B pack",
+    "source": "p11-n114"
+  },
+  "floor-squeegee": {
+    "url": "/products/floor-squeegee.webp",
+    "width": 320,
+    "height": 480,
+    "alt": "Floor squeegee pack",
+    "source": "p14-n164"
+  },
+  "floor-sweepers": {
+    "url": "/products/floor-sweepers.webp",
+    "width": 480,
+    "height": 467,
+    "alt": "Floor sweepers pack",
+    "source": "p14-n162"
+  },
+  "gradeshine": {
+    "url": "/products/gradeshine.webp",
+    "width": 378,
+    "height": 480,
+    "alt": "GRADESHINE pack",
+    "source": "p08-n065"
+  },
+  "grease-buster": {
+    "url": "/products/grease-buster.webp",
+    "width": 393,
+    "height": 480,
+    "alt": "GREASE BUSTER pack",
+    "source": "p05-n024"
+  },
+  "heavy-duty-gloves": {
+    "url": "/products/heavy-duty-gloves.webp",
+    "width": 313,
+    "height": 480,
+    "alt": "Heavy duty gloves pack",
+    "source": "p13-n158"
+  },
+  "hydrogen-peroxide": {
+    "url": "/products/hydrogen-peroxide.webp",
+    "width": 206,
+    "height": 480,
+    "alt": "HYDROGEN PEROXIDE 35% AND 50% pack",
+    "source": "p09-n080"
+  },
+  "industrial-floor-scrubbing-machine": {
+    "url": "/products/industrial-floor-scrubbing-machine.webp",
+    "width": 209,
+    "height": 480,
+    "alt": "Industrial floor scrubbing machine pack",
+    "source": "p13-n138"
+  },
+  "industrial-vacuum-cleaner": {
+    "url": "/products/industrial-vacuum-cleaner.webp",
+    "width": 480,
+    "height": 404,
+    "alt": "Industrial vacuum cleaner pack",
+    "source": "p13-n140"
+  },
+  "janitor-trolley": {
+    "url": "/products/janitor-trolley.webp",
+    "width": 480,
+    "height": 454,
+    "alt": "Janitor trolley housekeeping cart pack",
+    "source": "p13-n142"
+  },
+  "limeklin": {
+    "url": "/products/limeklin.webp",
+    "width": 330,
+    "height": 480,
+    "alt": "LIMEKLIN pack",
+    "source": "p05-n032"
+  },
+  "multi-pol-furniture-polish": {
+    "url": "/products/multi-pol-furniture-polish.webp",
+    "width": 239,
+    "height": 480,
+    "alt": "MULTI-POL FURNITURE POLISH pack",
+    "source": "p08-n059"
+  },
+  "multifold-paper-towels": {
+    "url": "/products/multifold-paper-towels.webp",
+    "width": 480,
+    "height": 467,
+    "alt": "Multifold paper towels pack",
+    "source": "p13-n157"
+  },
+  "nitrile-gloves": {
+    "url": "/products/nitrile-gloves.webp",
+    "width": 350,
+    "height": 480,
+    "alt": "Nitrile gloves pack",
+    "source": "p13-n152"
+  },
+  "paper-dispenser": {
+    "url": "/products/paper-dispenser.webp",
+    "width": 480,
+    "height": 392,
+    "alt": "Paper dispenser pack",
+    "source": "p13-n153"
+  },
+  "prima-reshine": {
+    "url": "/products/prima-reshine.webp",
+    "width": 252,
+    "height": 480,
+    "alt": "PRIMA RESHINE pack",
+    "source": "p08-n067"
+  },
+  "qwik-go": {
+    "url": "/products/qwik-go.webp",
+    "width": 178,
+    "height": 480,
+    "alt": "QWIK GO pack",
+    "source": "p11-n110"
+  },
+  "round-mops": {
+    "url": "/products/round-mops.webp",
+    "width": 368,
+    "height": 480,
+    "alt": "Round mops pack",
+    "source": "p14-n165"
+  },
+  "saf-air-freshener": {
+    "url": "/products/saf-air-freshener.webp",
+    "width": 340,
+    "height": 480,
+    "alt": "SAF AIR FRESHENERS pack",
+    "source": "p08-n069"
+  },
+  "saf-autoklin": {
+    "url": "/products/saf-autoklin.webp",
+    "width": 327,
+    "height": 480,
+    "alt": "SAF AUTOKLIN pack",
+    "source": "p04-n012"
+  },
+  "saf-autorinse": {
+    "url": "/products/saf-autorinse.webp",
+    "width": 328,
+    "height": 480,
+    "alt": "SAF AUTORINSE pack",
+    "source": "p04-n004"
+  },
+  "saf-bactosan": {
+    "url": "/products/saf-bactosan.webp",
+    "width": 347,
+    "height": 480,
+    "alt": "SAF BACTOSAN pack",
+    "source": "p05-n022"
+  },
+  "saf-carpet-shampoo": {
+    "url": "/products/saf-carpet-shampoo.webp",
+    "width": 354,
+    "height": 480,
+    "alt": "SAF CARPET SHAMPOO pack",
+    "source": "p08-n063"
+  },
+  "saf-degreaser": {
+    "url": "/products/saf-degreaser.webp",
+    "width": 337,
+    "height": 480,
+    "alt": "SAF DEGREASER pack",
+    "source": "p08-n061"
+  },
+  "saf-guard-hd": {
+    "url": "/products/saf-guard-hd.webp",
+    "width": 322,
+    "height": 480,
+    "alt": "SAF-GUARD HD pack",
+    "source": "p04-n010"
+  },
+  "saf-multiklin": {
+    "url": "/products/saf-multiklin.webp",
+    "width": 347,
+    "height": 480,
+    "alt": "SAF-MULTIKLIN pack",
+    "source": "p08-n071"
+  },
+  "saf-multiklin-fragrance-free": {
+    "url": "/products/saf-multiklin-fragrance-free.webp",
+    "width": 336,
+    "height": 480,
+    "alt": "SAF MULTIKLIN (FRAGRANCE-FREE) pack",
+    "source": "p09-n085"
+  },
+  "saf-ozonit": {
+    "url": "/products/saf-ozonit.webp",
+    "width": 402,
+    "height": 480,
+    "alt": "SAF OZONIT pack",
+    "source": "p09-n076"
+  },
+  "saf-pot-and-pan": {
+    "url": "/products/saf-pot-and-pan.webp",
+    "width": 380,
+    "height": 480,
+    "alt": "SAF POT AND PAN pack",
+    "source": "p04-n014"
+  },
+  "saf-quartsan": {
+    "url": "/products/saf-quartsan.webp",
+    "width": 323,
+    "height": 480,
+    "alt": "SAF QUARTSAN pack",
+    "source": "p05-n016"
+  },
+  "saf-salad-wash": {
+    "url": "/products/saf-salad-wash.webp",
+    "width": 391,
+    "height": 480,
+    "alt": "SAF SALAD WASH pack",
+    "source": "p05-n028"
+  },
+  "saf-steriklin": {
+    "url": "/products/saf-steriklin.webp",
+    "width": 346,
+    "height": 480,
+    "alt": "SAF STERIKLIN pack",
+    "source": "p05-n030"
+  },
+  "saf-stone-stripper": {
+    "url": "/products/saf-stone-stripper.webp",
+    "width": 382,
+    "height": 480,
+    "alt": "SAF STONE STRIPPER pack",
+    "source": "p08-n057"
+  },
+  "saf-window-cleaner": {
+    "url": "/products/saf-window-cleaner.webp",
+    "width": 349,
+    "height": 480,
+    "alt": "SAF WINDOW CLEANER pack",
+    "source": "p07-n051"
+  },
+  "saflin-015-one-shot": {
+    "url": "/products/saflin-015-one-shot.webp",
+    "width": 390,
+    "height": 480,
+    "alt": "SAFLIN 015 ONE SHOT pack",
+    "source": "p10-n091"
+  },
+  "saflin-021-fully-built": {
+    "url": "/products/saflin-021-fully-built.webp",
+    "width": 399,
+    "height": 480,
+    "alt": "SAFLIN 021 FULLY BUILT pack",
+    "source": "p10-n093"
+  },
+  "saflin-040-chlorine-bleach": {
+    "url": "/products/saflin-040-chlorine-bleach.webp",
+    "width": 345,
+    "height": 480,
+    "alt": "SAFLIN 040 CHLORINE-BASED BLEACH pack",
+    "source": "p11-n104"
+  },
+  "saflin-emulsifier-080": {
+    "url": "/products/saflin-emulsifier-080.webp",
+    "width": 354,
+    "height": 480,
+    "alt": "SAFLIN EMULSIFIER 080 pack",
+    "source": "p10-n099"
+  },
+  "saflin-handwash": {
+    "url": "/products/saflin-handwash.webp",
+    "width": 411,
+    "height": 480,
+    "alt": "SAFLIN HANDWASH pack",
+    "source": "p10-n095"
+  },
+  "saflin-hs-063": {
+    "url": "/products/saflin-hs-063.webp",
+    "width": 360,
+    "height": 480,
+    "alt": "SAFLIN HS 063 pack",
+    "source": "p11-n101"
+  },
+  "saflin-ionizer": {
+    "url": "/products/saflin-ionizer.webp",
+    "width": 411,
+    "height": 480,
+    "alt": "SAFLIN IONIZER pack",
+    "source": "p11-n106"
+  },
+  "saflin-oxy-045": {
+    "url": "/products/saflin-oxy-045.webp",
+    "width": 350,
+    "height": 480,
+    "alt": "SAFLIN OXY 045 pack",
+    "source": "p10-n089"
+  },
+  "saflin-rust-away": {
+    "url": "/products/saflin-rust-away.webp",
+    "width": 350,
+    "height": 480,
+    "alt": "SAFLIN RUST AWAY pack",
+    "source": "p11-n118"
+  },
+  "saflin-softplus-070": {
+    "url": "/products/saflin-softplus-070.webp",
+    "width": 396,
+    "height": 480,
+    "alt": "SAFLIN SOFTPLUS 070 pack",
+    "source": "p10-n097"
+  },
+  "safshine": {
+    "url": "/products/safshine.webp",
+    "width": 397,
+    "height": 480,
+    "alt": "SAFSHINE pack",
+    "source": "p06-n034"
+  },
+  "saftex-acid": {
+    "url": "/products/saftex-acid.webp",
+    "width": 410,
+    "height": 480,
+    "alt": "SAFTEX ACID pack",
+    "source": "p09-n074"
+  },
+  "saftex-liquid": {
+    "url": "/products/saftex-liquid.webp",
+    "width": 402,
+    "height": 480,
+    "alt": "SAFTEX LIQUID pack",
+    "source": "p09-n083"
+  },
+  "safuney-m511": {
+    "url": "/products/safuney-m511.webp",
+    "width": 333,
+    "height": 480,
+    "alt": "SAFUNEY M511 pack",
+    "source": "p05-n020"
+  },
+  "safuney-shower-gel": {
+    "url": "/products/safuney-shower-gel.webp",
+    "width": 365,
+    "height": 480,
+    "alt": "SAFUNEY SHOWER GEL pack",
+    "source": "p06-n044"
+  },
+  "sanibac": {
+    "url": "/products/sanibac.webp",
+    "width": 328,
+    "height": 480,
+    "alt": "SANIBAC pack",
+    "source": "p06-n040"
+  },
+  "sanipur": {
+    "url": "/products/sanipur.webp",
+    "width": 360,
+    "height": 480,
+    "alt": "SANIPUR pack",
+    "source": "p06-n042"
+  },
+  "sanitouch": {
+    "url": "/products/sanitouch.webp",
+    "width": 347,
+    "height": 480,
+    "alt": "SANITOUCH pack",
+    "source": "p05-n026"
+  },
+  "single-mobile-wringer": {
+    "url": "/products/single-mobile-wringer.webp",
+    "width": 365,
+    "height": 480,
+    "alt": "Single mobile wringer pack",
+    "source": "p13-n148"
+  },
+  "single-round-mop-bucket": {
+    "url": "/products/single-round-mop-bucket.webp",
+    "width": 334,
+    "height": 480,
+    "alt": "Single round mop bucket pack",
+    "source": "p13-n150"
+  },
+  "spray-bottles": {
+    "url": "/products/spray-bottles.webp",
+    "width": 480,
+    "height": 309,
+    "alt": "Spray bottles pack",
+    "source": "p14-n171"
+  },
+  "tar-go-dry": {
+    "url": "/products/tar-go-dry.webp",
+    "width": 213,
+    "height": 480,
+    "alt": "TAR GO DRY pack",
+    "source": "p11-n112"
+  },
+  "telescopic-poles": {
+    "url": "/products/telescopic-poles.webp",
+    "width": 456,
+    "height": 480,
+    "alt": "Telescopic poles pack",
+    "source": "p14-n174"
+  },
+  "tiles-and-bathroom-cleaner": {
+    "url": "/products/tiles-and-bathroom-cleaner.webp",
+    "width": 337,
+    "height": 480,
+    "alt": "TILES & BATHROOM CLEANER pack",
+    "source": "p07-n053"
+  },
+  "towel-dispenser": {
+    "url": "/products/towel-dispenser.webp",
+    "width": 370,
+    "height": 480,
+    "alt": "Towel dispenser pack",
+    "source": "p13-n155"
+  },
+  "wringer-bucket-trolley": {
+    "url": "/products/wringer-bucket-trolley.webp",
+    "width": 432,
+    "height": 480,
+    "alt": "Wringer bucket trolley pack",
+    "source": "p13-n144"
+  },
+  "yellow-go": {
+    "url": "/products/yellow-go.webp",
+    "width": 191,
+    "height": 480,
+    "alt": "YELLOW GO pack",
+    "source": "p11-n108"
+  }
+}

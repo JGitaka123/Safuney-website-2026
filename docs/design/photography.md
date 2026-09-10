@@ -6,6 +6,12 @@ Design context is in `plan.md`; you do not need to read it to use this guide.
 The whole site is built on real photographs of real Safuney products on one consistent background. If
 the photos are consistent, the site looks like one company. If they are not, no amount of design fixes it.
 
+> **The site is not waiting on this.** Every product already carries the pack shot from
+> `PRODUCT CATALOGUE JULY 2024`, cut out of the PDF (ADR 0016). Those are real photographs of real
+> Safuney packs and they are good enough to launch on — but they come out of the document at about
+> 130 px across, which is why a product page shows them at a modest size rather than filling the frame.
+> Reshoot when you can and they drop straight in at full size; nothing in the code changes.
+
 ---
 
 ## 1. Before you start (do once)
@@ -166,7 +172,7 @@ home-hero-steel-01.jpg
 ```
 
 If a product has no SKU yet, use the `product_slug` from `docs/discovery/catalogue-seed.csv` in place of
-the SKU (for example `qac-surface-food-contact-sanitiser-5l-front-01.jpg`) and we will rename on import.
+the SKU (for example `saf-quartsan-5l-front-01.jpg`) and we will rename on import.
 
 Put everything in one folder per shooting day (`2026-09-14/`) and share the whole folder — Google Drive,
 WhatsApp "send as document" (not as a photo, which compresses it), or a USB stick. Do not send photos

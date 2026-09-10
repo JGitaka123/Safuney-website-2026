@@ -1,18 +1,32 @@
 /**
  * Company facts used across the site.
  *
- * Source: safuney.com (harvested via search-engine snippets on 2026-09-09 because the live site could
- * not be fetched from the build environment). Every value marked `poConfirmed: false` must be confirmed
- * by the product owner before domain cut-over. See docs/discovery/questions-for-po.md.
+ * Source: Safuney's own PRODUCT CATALOGUE JULY 2024, page 16 — the address block, the three phone
+ * lines, the email and the website are printed there by the company itself, which is why they are
+ * marked confirmed. Anything still `poConfirmed: false` is a commitment the catalogue does not make
+ * (a WhatsApp line, a technical desk, a delivery promise) and needs the PO's word before cut-over.
+ * See docs/discovery/questions-for-po.md.
  */
 export const site = {
   legalName: "Safuney Limited",
   shortName: "Safuney",
+  /** The company's own strapline, set beside the logo on every catalogue page. */
+  strapline: "Clean, safer, healthier",
+  /** How the catalogue cover describes the business, under the logo. */
+  descriptor: "Cleaning & Hygiene Solutions",
   tagline:
     "Professional cleaning and hygiene solutions and support services for institutional, hospitality, industrial and commercial customers.",
   contact: {
-    phone: { display: "+254 796 808 822", e164: "+254796808822", poConfirmed: false },
-    /** WhatsApp number defaults to the phone line until the PO confirms a separate one (question 2). */
+    phone: { display: "+254 796 808 822", e164: "+254796808822", poConfirmed: true },
+    /**
+     * The other two lines the catalogue prints. It does not say what each is for, so the site lists
+     * them as alternates rather than inventing a sales/accounts split they never claimed.
+     */
+    alternatePhones: [
+      { display: "+254 732 890 574", e164: "+254732890574" },
+      { display: "+254 722 890 574", e164: "+254722890574" },
+    ],
+    /** WhatsApp number defaults to the first phone line until the PO confirms a separate one (question 2). */
     whatsapp: { e164: "254796808822", poConfirmed: false },
     /**
      * A separate line for technical advice — dilution, compatibility, what to use on what.
@@ -24,11 +38,12 @@ export const site = {
      * and shows the sales line alone until then.
      */
     technical: { display: "", e164: "", poConfirmed: false },
-    email: { address: "info@safuney.com", poConfirmed: false },
+    email: { address: "info@safuney.com", poConfirmed: true },
     address: {
       lines: ["Park View Heights, Mombasa Road", "Mezzanine 3, Office A", "Nairobi, Kenya"],
+      /** The catalogue prints "P.O BOX 34079 - 0100"; 00100 is the Nairobi GPO code (PO question 12). */
       poBox: "P.O. Box 34079 - 00100, Nairobi",
-      poConfirmed: false,
+      poConfirmed: true,
     },
   },
   nav: {
@@ -64,54 +79,63 @@ export const site = {
     freeAbove: "",
     poConfirmed: false,
   },
-  /** Product areas named on the current site, with the colour-coded zones each serves (plan §4.1). */
+  /**
+   * The catalogue's own nine sections, in the catalogue's own order, with the colour-coded zone each
+   * mostly serves (plan §4.1). Slugs match docs/discovery/catalogue-seed.csv — change both together.
+   */
   productAreas: [
     {
-      slug: "foodservice",
-      name: "Foodservice and kitchen hygiene",
-      blurb: "Detergents, degreasers and disinfectants that keep commercial kitchens clean and safe for staff and customers.",
+      slug: "warewashing",
+      name: "Warewashing and kitchen hygiene",
+      blurb: "Auto-dosed dishwasher detergent and rinse aid, heavy-duty potwash, and a decarbonising soak for pots and pans.",
       zones: ["GREEN"],
     },
     {
       slug: "disinfection",
       name: "Disinfection and sanitisation",
-      blurb: "QAC surface and food-contact sanitisers, chlorine-based disinfectants and bleaching solutions, salad and fruit wash, alcohol hand sanitiser.",
+      blurb: "QAC and chlorine chemistry for surfaces and food contact, a powder wash for salads and fruit, and alcohol hand sanitiser.",
       zones: ["RED", "BLUE", "GREEN", "YELLOW"],
     },
     {
-      slug: "laundry",
-      name: "Laundry",
-      blurb: "Commercial laundry detergents and fabric conditioners made to deliver results in a single wash.",
-      zones: [],
-    },
-    {
-      slug: "housekeeping",
-      name: "Housekeeping and janitorial",
-      blurb: "General-purpose cleaners and disinfectants for floors, washrooms and public areas.",
-      zones: ["BLUE", "RED"],
-    },
-    {
-      slug: "healthcare",
-      name: "Healthcare and medical equipment",
-      blurb: "Critical cleaning for demanding human-health and veterinary applications.",
-      zones: ["YELLOW"],
-    },
-    {
-      slug: "laboratory",
-      name: "Laboratory",
-      blurb: "Precision cleaning of laboratory equipment, glassware and safety ware.",
-      zones: [],
-    },
-    {
       slug: "specialty",
-      name: "Specialty products",
-      blurb: "Descalers, oven, grill and hood cleaners, crockery destainers, enzyme-based drain and septic treatments.",
+      name: "Speciality products",
+      blurb: "Descaling, ovens and grills, crockery destaining, and a caustic drain and fat-trap opener.",
       zones: ["GREEN", "BLUE"],
     },
     {
       slug: "personal-hygiene",
       name: "Personal hygiene",
-      blurb: "Hand-hygiene products for washrooms, kitchens and clinical settings.",
+      blurb: "Germicidal handwash, perfumed or fragrance-free, and a shower gel. Dispenser-ready and used neat.",
+      zones: ["RED"],
+    },
+    {
+      slug: "housekeeping",
+      name: "Housekeeping, public areas and fitness centres",
+      blurb: "Glass, tiles and bathrooms, floor stripping and polishing, carpet shampoo, degreaser, air fresheners and furniture polish.",
+      zones: ["BLUE", "RED"],
+    },
+    {
+      slug: "process-hygiene",
+      name: "Food, beverage and process hygiene",
+      blurb: "Alkaline and acid CIP detergents, peracetic disinfection, a food-safe destainer and raw caustic.",
+      zones: ["GREEN"],
+    },
+    {
+      slug: "laundry",
+      name: "Laundry",
+      blurb: "One-shot and fully built detergent powders, boosters, bleaches, softener, sour, and the A. L. Wilson spotting range.",
+      zones: ["BLUE"],
+    },
+    {
+      slug: "bactro",
+      name: "Bactro biological range",
+      blurb: "Bacterial and enzyme cleaners, liquid and tablet, for washrooms, drains, grease traps and urinals.",
+      zones: ["RED"],
+    },
+    {
+      slug: "equipment",
+      name: "Cleaning equipment and consumables",
+      blurb: "Scrubbing machines, vacuums, janitor carts, wringer buckets, mops, brooms, squeegees, gloves and paper dispensers.",
       zones: [],
     },
   ],

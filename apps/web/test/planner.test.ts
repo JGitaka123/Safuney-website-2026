@@ -1,6 +1,7 @@
 /** The planner's arithmetic. These numbers become someone's monthly order, so they get checked. */
 import { describe, expect, it } from "vitest";
 import { FACILITY_TYPES, MAX_UNITS, plan } from "@/lib/planner/model";
+import { site } from "@/config/site";
 
 describe("facility hygiene planner", () => {
   it("knows every facility type it offers, and none it does not", () => {
@@ -75,7 +76,9 @@ describe("facility hygiene planner", () => {
 
   it("points every task at a category the shop actually has", () => {
     // A dead link from the planner is worse than no link: it is a promise the catalogue does not keep.
-    const known = new Set(["housekeeping", "disinfection", "laundry", "foodservice", "specialty", "healthcare", "laboratory", "personal-hygiene"]);
+    // Derived from the catalogue's own sections rather than restated here: a hand-written list is how
+    // this check went stale the last time the categories changed.
+    const known = new Set(site.productAreas.map((a) => a.slug));
     for (const f of FACILITY_TYPES) {
       for (const t of f.tasks) expect(known, `${f.slug}/${t.key}`).toContain(t.category);
     }

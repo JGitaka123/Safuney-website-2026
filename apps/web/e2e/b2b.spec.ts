@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
-const PRODUCT = "/products/disinfection/qac-surface-food-contact-sanitiser";
+const PRODUCT = "/products/disinfection/saf-quartsan";
 const STAFF_PASSWORD = process.env["DEMO_STAFF_PASSWORD"] ?? "safuney-demo-2026";
 
 /** A fresh Safaricom-style number per run so the journeys are repeatable against a persistent database. */
@@ -39,7 +39,7 @@ async function signOut(page: Page) {
 
 async function addToCart(page: Page, qty = 1) {
   await page.goto(PRODUCT);
-  await page.getByRole("radio", { name: /1 L/ }).check();
+  await page.getByRole("radio", { name: /5 L/ }).check();
   if (qty > 1) await page.getByRole("spinbutton", { name: /Quantity/ }).fill(String(qty));
   await page.getByRole("button", { name: "Add to cart" }).click();
   await expect(page.getByText(/Added \d+ ×/)).toBeVisible();
@@ -84,7 +84,7 @@ test.describe("organisation accounts", () => {
     await expect(page.getByText(buyerEmail, { exact: true })).toBeVisible();
     await signOut(page);
 
-    // Buyer: 2 × KES 380 + VAT = 881.60 < 1,000 goes straight through; 3 × = 1,322.40 waits.
+    // Buyer: the 5 L pack is KES 1,450 ex VAT, so 3 × 1,450 + 16% = 5,046.00, over the 1,000 threshold.
     await signInWithEmailCode(page, buyerEmail, "/account");
     await expect(page.getByText(`Test Hotel ${stamp}`)).toBeVisible();
     await addToCart(page, 3);
@@ -94,7 +94,7 @@ test.describe("organisation accounts", () => {
     await expect(page.getByText("Order waiting for approval")).toBeVisible();
     await expect(page.getByText(/Waiting for an approver in your organisation/)).toBeVisible();
     await page.goto("/account/approvals");
-    await expect(page.getByText(`Your order of KES 1,322.40 is waiting for an approver.`)).toBeVisible();
+    await expect(page.getByText(`Your order of KES 5,046.00 is waiting for an approver.`)).toBeVisible();
     await signOut(page);
 
     // Owner approves.
@@ -125,7 +125,7 @@ test.describe("organisation accounts", () => {
     await expect(page.getByRole("link", { name: /Cart, 2 items/ }).first()).toBeVisible();
 
     await page.goto("/account/deliveries");
-    await expect(page.getByText(/QAC-based sanitiser.*× 2/)).toBeVisible();
+    await expect(page.getByText(/SAF QUARTSAN.*× 2/)).toBeVisible();
     await page.getByLabel("How often").selectOption("28");
     await page.getByRole("button", { name: "Start the schedule" }).click();
     await expect(page.getByText(/Scheduled\. We email you three days before/)).toBeVisible();
@@ -147,7 +147,7 @@ test.describe("organisation accounts", () => {
     await page.getByLabel("Your name").fill("Quote Person");
     await page.getByLabel("Email address").fill(email);
     await page.getByLabel("Phone number").fill("0722000666");
-    await page.getByLabel("Line 1").fill("QAC sanitiser 1 L, pallet");
+    await page.getByLabel("Line 1").fill("SAF QUARTSAN 5 L, pallet");
     await page.getByLabel("Qty").first().fill("10");
     await page.getByRole("button", { name: "Send the request" }).click();
     await expect(page.getByText(/Request QUO-\d{8}-\d{4} received/)).toBeVisible();
@@ -163,7 +163,7 @@ test.describe("organisation accounts", () => {
     const row = page.getByRole("row").filter({ hasText: email });
     const quoteNumber = (await row.getByRole("link").first().textContent())!.trim();
     await row.getByRole("link").first().click();
-    await page.getByLabel("SKU", { exact: true }).fill("QAC-SURFACE-FOOD-CONTACT-SANITISER-1L");
+    await page.getByLabel("SKU", { exact: true }).fill("SAF-QUARTSAN-5L");
     await page.getByLabel("Unit price ex VAT (KES)").fill("350");
     await page.getByLabel("Note to the customer").fill("Pallet price, valid two weeks.");
     await page.getByRole("button", { name: "Send the quote" }).click();
@@ -171,7 +171,9 @@ test.describe("organisation accounts", () => {
     const quote = await page.request.get(`/api/test/quote-link?number=${quoteNumber}`);
     const { token } = (await quote.json()) as { token: string };
     await page.goto("/account");
-    await page.getByRole("button", { name: "Sign out" }).click();
+    // signOut waits for the redirect to land. Clicking and then navigating straight on raced it, and
+    // the browser aborted the second navigation.
+    await signOut(page);
 
     // Customer accepts.
     await page.goto(`/quotes/${quoteNumber}?token=${token}`);

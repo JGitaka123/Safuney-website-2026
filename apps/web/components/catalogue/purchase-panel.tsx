@@ -16,6 +16,8 @@ export interface PurchaseVariant {
   priceHeadline: string;
   vatLine: string;
   exVatMinor: string;
+  /** True when this pack has no list price: quoted, not sold online (see lib/cart/service.ts). */
+  poa: boolean;
   stock: { key: "in" | "low" | "mto" | "out"; label: string };
   available: number;
   madeToOrder: boolean;
@@ -35,14 +37,17 @@ interface Props {
  * Prices shown here are for display only; the server recomputes everything from the catalogue.
  */
 export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEnabled }: Props) {
-  const first = variants.find((v) => v.stock.key !== "out") ?? variants[0];
+  const first = variants.find((v) => v.poa || v.stock.key !== "out") ?? variants[0];
   const [selectedId, setSelectedId] = useState<string | null>(first?.id ?? null);
   const [qty, setQty] = useState(1);
   const [pending, start] = useTransition();
   const [toast, setToast] = useState<{ message: string; count?: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const selected = variants.find((v) => v.id === selectedId) ?? null;
-  const perUnit = selected ? unitPrice(BigInt(selected.exVatMinor), selected.packSizeValue, selected.unit, mode, vatRateBps) : null;
+  // A pack with no list price is quoted, not sold online (see lib/cart/service.ts). The server would
+  // refuse it anyway; showing Add to cart and then refusing would just waste the buyer's time.
+  const poa = selected?.poa ?? false;
+  const perUnit = selected && !poa ? unitPrice(BigInt(selected.exVatMinor), selected.packSizeValue, selected.unit, mode, vatRateBps) : null;
 
   function submit() {
     setError(null);
@@ -70,7 +75,15 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
           setSelectedId(id);
           setError(null);
         }}
-        variants={variants.map((v) => ({ id: v.id, label: v.label, priceLabel: v.priceHeadline, available: v.stock.key !== "out", stockNote: v.stock.key === "in" ? undefined : v.stock.label }))}
+        // A quoted pack is not an unavailable one: striking it through and captioning it "Out of
+        // stock" would report a stock level nobody has entered for a pack nobody has priced.
+        variants={variants.map((v) => ({
+          id: v.id,
+          label: v.label,
+          priceLabel: v.priceHeadline,
+          available: v.poa || v.stock.key !== "out",
+          stockNote: v.poa || v.stock.key === "in" ? undefined : v.stock.label,
+        }))}
       />
 
       {selected ? (
@@ -79,14 +92,24 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
             {selected.priceHeadline}
             <span className="sr-only"> Kenyan shillings</span>
           </p>
-          <p className="text-small text-ink-muted">{selected.vatLine}</p>
+          {selected.vatLine ? <p className="text-small text-ink-muted">{selected.vatLine}</p> : null}
           {perUnit ? <p className="text-caption text-ink-muted">{perUnit}</p> : null}
-          <p className={selected.stock.key === "out" ? "text-small text-ink" : "text-small text-accent"}>{selected.stock.label}</p>
+          {poa ? null : <p className={selected.stock.key === "out" ? "text-small text-ink" : "text-small text-accent"}>{selected.stock.label}</p>}
           <p className="text-caption text-ink-muted">SKU {selected.sku}</p>
         </div>
       ) : null}
 
-      {shopEnabled ? (
+      {poa ? (
+        <div className="flex flex-col gap-3">
+          <Link
+            href={`/quote?product=${encodeURIComponent(productName)}${selected ? `&pack=${encodeURIComponent(selected.label)}` : ""}`}
+            className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep"
+          >
+            Request a quote
+          </Link>
+          <p className="text-small text-ink-muted">This pack is quoted rather than priced online. Tell us the quantity and we come back with a price within one working day.</p>
+        </div>
+      ) : shopEnabled ? (
         <>
           <QuantityStepper label="Quantity" value={qty} onChange={setQty} min={1} max={selected && !selected.madeToOrder ? Math.max(1, selected.available) : 999} disabled={!selected || selected.stock.key === "out"} />
           {error ? (
