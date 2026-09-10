@@ -9,7 +9,8 @@ import { breadcrumbJsonLd, jsonLdString } from "@/lib/seo/jsonld";
 export const metadata: Metadata = {
   title: "Dilution charts",
   description: "What each Safuney concentrate makes per pack, at what ratio, with the contact time the figure assumes.",
-  alternates: { canonical: "/resources/dilution", languages: { en: "/resources/dilution", sw: "/sw/resources/dilution" } },
+  // No hreflang: there is no Swahili edition of this page yet (only /sw exists).
+  alternates: { canonical: "/resources/dilution" },
 };
 
 export const revalidate = 3600;

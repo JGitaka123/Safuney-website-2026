@@ -57,7 +57,8 @@ test("mobile menu opens, traps focus and closes with Escape", async ({ page, isM
   await page.getByRole("button", { name: "Open menu" }).click();
   const dialog = page.getByRole("dialog", { name: "Menu" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("link", { name: "Products" })).toBeVisible();
+  // Exact: the menu also lists the ranges, and one of them is "Speciality products".
+  await expect(dialog.getByRole("link", { name: "Products", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();

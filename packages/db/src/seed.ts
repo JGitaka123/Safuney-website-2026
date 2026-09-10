@@ -58,20 +58,24 @@ function splitCsvLine(line: string): string[] {
 }
 
 /**
- * Colour-coded zone per catalogue category (plan §2.2). A category carries one zone; products that
- * genuinely span zones (a general-purpose sanitiser) get theirs corrected in the admin console.
+ * Colour-coded zone per catalogue category (plan §2.2), and the structured dosing for the dilution
+ * calculator and the planner. Both live in docs/discovery/catalogue-meta.json rather than here because
+ * the web app's catalogue snapshot (scripts/catalogue-snapshot.mjs, ADR 0017) reads the same figures;
+ * one source means the seeded database and the snapshot cannot disagree.
+ *
+ * A category carries one zone; products that genuinely span zones (a general-purpose sanitiser) get
+ * theirs corrected in the admin console. Only ratios the catalogue actually states appear in the dosing:
+ * products dosed by mass (g per kg of linen, g per litre of water) are not ratios and would be wrong in
+ * a "1 part to N" calculator, so their figures stay in the prose `dilutionText` the CSV carries.
+ * `ratio: 0` means used neat.
  */
-const ZONE_BY_CATEGORY: Record<string, ApplicationZone> = {
-  warewashing: ApplicationZone.GREEN,
-  disinfection: ApplicationZone.GREEN,
-  "process-hygiene": ApplicationZone.GREEN,
-  housekeeping: ApplicationZone.BLUE,
-  laundry: ApplicationZone.BLUE,
-  "personal-hygiene": ApplicationZone.RED,
-  bactro: ApplicationZone.RED,
-  specialty: ApplicationZone.NONE,
-  equipment: ApplicationZone.NONE,
-};
+type Dosing = Array<{ use: string; ratio: number; contactTimeMinutes?: number; note?: string }>;
+type CatalogueMeta = { zonesByCategory: Record<string, keyof typeof ApplicationZone>; dilutionGuidance: Record<string, Dosing> };
+const META = JSON.parse(readFileSync(resolve(REPO_ROOT, "docs/discovery/catalogue-meta.json"), "utf8")) as CatalogueMeta;
+const ZONE_BY_CATEGORY: Record<string, ApplicationZone> = Object.fromEntries(
+  Object.entries(META.zonesByCategory).map(([slug, zone]) => [slug, ApplicationZone[zone]]),
+);
+const DILUTION_GUIDANCE: Record<string, Dosing> = META.dilutionGuidance;
 
 /** Pack-shot manifest written by scripts/extract-catalogue-images.mjs (ADR 0016). */
 type CatalogueImage = { url: string; width: number; height: number; alt: string; source: string };
@@ -82,44 +86,6 @@ function catalogueImages(): Record<string, CatalogueImage> {
     return {};
   }
 }
-
-/**
- * Structured dosing, for the dilution calculator and the planner.
- *
- * Only ratios the catalogue actually states appear here. Products dosed by mass (g per kg of linen,
- * g per litre of water) are not ratios and would be wrong in a "1 part to N" calculator, so their
- * figures stay in the prose `dilutionText` the CSV carries. `ratio: 0` means used neat.
- */
-const DILUTION_GUIDANCE: Record<string, Array<{ use: string; ratio: number; contactTimeMinutes?: number; note?: string }>> = {
-  "saf-autorinse": [{ use: "Machine rinse water", ratio: 500, note: "2 ml per litre of rinse water." }],
-  "saf-guard-hd": [
-    { use: "Pots and pans", ratio: 10 },
-    { use: "Glasses", ratio: 50 },
-  ],
-  "saf-quartsan": [{ use: "Surfaces and food-contact areas", ratio: 100, note: "10 ml in 1 litre of water, in spray bottles or sanitiser buckets." }],
-  "saf-bactosan": [{ use: "Cleaning, disinfection and deodorising", ratio: 50 }],
-  "grease-buster": [
-    { use: "Ovens, hoods and grills, neat", ratio: 0, note: "Spray, leave for a few seconds, then rub. Wear appropriate PPE." },
-    { use: "Ovens, hoods and grills, diluted", ratio: 10 },
-  ],
-  limeklin: [{ use: "Descaling", ratio: 0, note: "Use neat or dilute according to the extent of scaling." }],
-  "tiles-and-bathroom-cleaner": [{ use: "Floor tiles and bathrooms", ratio: 10, note: "1:10 or weaker depending on soilage levels and the extent of the stains." }],
-  "saf-stone-stripper": [{ use: "Stripping floor wax", ratio: 10, note: "1:10 or weaker depending on soilage." }],
-  "saf-multiklin": [
-    { use: "Heavy soil", ratio: 10 },
-    { use: "General cleaning", ratio: 100 },
-  ],
-  "saf-window-cleaner": [{ use: "Glass and windows", ratio: 0, note: "Used neat." }],
-  sanitouch: [{ use: "Sanitiser dispensers and sprayers", ratio: 0, note: "Use neat." }],
-  sanibac: [{ use: "Soap dispensers", ratio: 0, note: "Use neat." }],
-  sanipur: [{ use: "Soap dispensers", ratio: 0, note: "Use neat." }],
-  "safuney-shower-gel": [{ use: "Shower dispensers", ratio: 0, note: "Used neat." }],
-  "saf-ozonit": [
-    { use: "Cold sanitisation, light soil", ratio: 500, note: "0.2% solution." },
-    { use: "Cold sanitisation, heavy soil", ratio: 250, note: "0.4% solution." },
-  ],
-  "saftex-acid": [{ use: "Acid wash after caustic cleaning", ratio: 67, contactTimeMinutes: 30, note: "1.5% solution at 80 °C for 25 to 30 minutes." }],
-};
 
 function toHazard(h: string): HazardClass {
   const key = h.trim().toUpperCase();

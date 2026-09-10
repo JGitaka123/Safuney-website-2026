@@ -24,6 +24,11 @@ type Status = { state: "idle" } | { state: "loading" } | { state: "done"; result
 export interface SearchBoxProps {
   /** "popover": results float under the field (header). "inline": results flow in the page (sheet). */
   layout?: "popover" | "inline";
+  /**
+   * "default": the standard form field. "pill": the large rounded field with a round search button
+   * that sits in the blue masthead (Alliance Chemical's header search).
+   */
+  variant?: "default" | "pill";
   /** Show the label above the field; otherwise it is visually hidden and the field carries a search icon. */
   labelVisible?: boolean;
   autoFocus?: boolean;
@@ -31,6 +36,7 @@ export interface SearchBoxProps {
   onNavigate?: () => void;
   /** Accessible name of the search landmark; keep it unique per page. */
   landmarkLabel?: string;
+  placeholder?: string;
   className?: string;
 }
 
@@ -54,12 +60,13 @@ function toItems(r: SearchApiResponse): Item[] {
  * Enter opens the highlighted result or, with nothing highlighted, the full results page; Escape closes.
  * Stale responses are aborted so the list never shows results for an earlier query.
  */
-export function SearchBox({ layout = "popover", labelVisible = false, autoFocus, onNavigate, landmarkLabel = "Site search", className }: SearchBoxProps) {
+export function SearchBox({ layout = "popover", variant = "default", labelVisible = false, autoFocus, onNavigate, landmarkLabel = "Site search", placeholder = "Search", className }: SearchBoxProps) {
   const router = useRouter();
   const uid = useId();
   const inputId = `search-${uid}`;
   const listId = `${inputId}-list`;
   const optionId = (i: number) => `${inputId}-opt-${i}`;
+  const pill = variant === "pill";
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status>({ state: "idle" });
@@ -236,7 +243,17 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
         Search products, SKUs and documents
       </label>
       <div className="relative">
-        <svg aria-hidden width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+        <svg
+          aria-hidden
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className={cn("pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-muted", pill ? "left-4" : "left-3")}
+        >
           <circle cx="8.5" cy="8.5" r="5.5" />
           <path d="M13 13l4.5 4.5" />
         </svg>
@@ -260,9 +277,22 @@ export function SearchBox({ layout = "popover", labelVisible = false, autoFocus,
             if (searchable) setOpen(true);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Search"
-          className={cn(controlClass, "min-h-11 py-2 pl-10 pr-4 [&::-webkit-search-cancel-button]:appearance-none", layout === "popover" && "text-small")}
+          placeholder={placeholder}
+          className={
+            pill
+              ? "block min-h-12 w-full rounded-full border-0 bg-surface pl-12 pr-14 text-body text-ink shadow-[inset_0_0_0_1px_rgba(16,32,43,0.08)] placeholder:text-stainless [&::-webkit-search-cancel-button]:appearance-none"
+              : cn(controlClass, "min-h-11 py-2 pl-10 pr-4 [&::-webkit-search-cancel-button]:appearance-none", layout === "popover" && "text-small")
+          }
         />
+        {pill ? (
+          // Named "Search products", not "Search": the phone header's sheet trigger is the one called Search.
+          <button type="submit" aria-label="Search products" className="absolute right-1.5 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-accent text-white hover:bg-accent-deep">
+            <svg aria-hidden width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <circle cx="8.5" cy="8.5" r="5.5" />
+              <path d="M13 13l4.5 4.5" />
+            </svg>
+          </button>
+        ) : null}
         <span id={`${inputId}-hint`} className="sr-only">
           Type at least two characters. Results appear as you type; use the arrow keys to move through them and Enter to open one, or Enter with nothing selected to see every result.
         </span>

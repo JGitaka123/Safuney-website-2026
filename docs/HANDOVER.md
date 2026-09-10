@@ -2,10 +2,21 @@
 
 **Date:** 2026-09-10 · Nine phases, plus a brand pass and the real catalogue.
 
-**Latest change:** the site now runs on Safuney's own material — the logo, the two brand colours and
-the strapline from `PRODUCT CATALOGUE JULY 2024`, its nine sections, its 76 products with their pack
-sizes and dosing, and a photograph of nearly every one, lifted out of the PDF. See
-[`decisions/0016-the-real-brand.md`](./decisions/0016-the-real-brand.md).
+**Latest change:** the storefront was rebuilt to sell, laid out on alliancechemical.com (the directors'
+benchmark) with Safuney's own words, photographs and colours: the same header, home-page sections, range
+page and product page anatomy, WhatsApp and a quote button always in reach, and short copy throughout. The 76-product
+catalogue now shows on production even without a database (a snapshot compiled from the catalogue
+files), and enquiry forms hand the request to WhatsApp instead of failing when there is nowhere to send
+it. See [`decisions/0017-the-storefront-sells.md`](./decisions/0017-the-storefront-sells.md). The site's
+own material — logo, colours, strapline, range and photography — is from `PRODUCT CATALOGUE JULY 2024`
+([`decisions/0016-the-real-brand.md`](./decisions/0016-the-real-brand.md)).
+
+**Production today has no database and no email key** (only `NEXT_PUBLIC_SITE_URL` is set in Vercel).
+The catalogue and WhatsApp enquiries work regardless; online ordering, stored quotes and emailed leads
+start working once `DATABASE_URL` is set and seeded (`pnpm --filter @safuney/db seed`) and
+`RESEND_API_KEY` is added. Two commercial switches in `apps/web/config/site.ts` need a director's
+word: `offer` (the free site survey, on) and `clients` (customers named on the site, empty until they
+agree in writing).
 
 This is the one page to read. Everything else is linked from it.
 

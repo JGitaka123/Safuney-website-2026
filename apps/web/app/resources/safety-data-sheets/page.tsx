@@ -8,7 +8,8 @@ import { breadcrumbJsonLd, jsonLdString } from "@/lib/seo/jsonld";
 export const metadata: Metadata = {
   title: "Safety data sheets",
   description: "The current safety data sheet for every Safuney product, with its version history, for your site file.",
-  alternates: { canonical: "/resources/safety-data-sheets", languages: { en: "/resources/safety-data-sheets", sw: "/sw/resources/safety-data-sheets" } },
+  // No hreflang: there is no Swahili edition of this page yet (only /sw exists).
+  alternates: { canonical: "/resources/safety-data-sheets" },
 };
 
 export const revalidate = 3600;

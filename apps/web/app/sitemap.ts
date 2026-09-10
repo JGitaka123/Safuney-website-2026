@@ -32,7 +32,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${base}${s.path === "/" ? "" : s.path}`,
     priority: s.priority,
     changeFrequency: s.changeFrequency,
-    alternates: { languages: { en: `${base}${s.path === "/" ? "" : s.path}`, sw: `${base}/sw${s.path === "/" ? "" : s.path}` } },
+    // Only the home page has a Swahili edition (app/sw/page.tsx); an alternate for any other path is a 404.
+    ...(s.path === "/" ? { alternates: { languages: { en: base, sw: `${base}/sw` } } } : {}),
   }));
   if (!services.database()) return entries;
 

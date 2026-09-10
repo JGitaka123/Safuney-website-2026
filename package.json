@@ -15,14 +15,16 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "guard:placeholders": "node scripts/placeholder-guard.mjs",
-    "ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm guard:placeholders && pnpm guard:money && pnpm guard:i18n",
+    "ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm guard:placeholders && pnpm guard:money && pnpm guard:i18n && pnpm guard:catalogue",
     "migrate:check": "node scripts/migrate-check.mjs",
     "test:e2e": "pnpm --filter @safuney/web test:e2e",
     "lhci": "pnpm --filter @safuney/web lhci",
     "sync:fonts": "node scripts/sync-fonts.mjs",
     "guard:money": "node scripts/money-guard.mjs",
     "guard:i18n": "node scripts/i18n-guard.mjs",
-    "catalogue:images": "node scripts/extract-catalogue-images.mjs"
+    "catalogue:images": "node scripts/extract-catalogue-images.mjs",
+    "catalogue:snapshot": "node scripts/catalogue-snapshot.mjs",
+    "guard:catalogue": "node scripts/catalogue-snapshot.mjs --check"
   },
   "devDependencies": {
     "sharp": "0.35.4"

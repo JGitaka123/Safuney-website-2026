@@ -6,10 +6,13 @@ import { getPriceDisplayMode } from "@/lib/settings";
 import { ProductGridCard } from "@/components/catalogue/product-grid-card";
 import { SearchBox } from "@/components/search/search-box";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { btn } from "@/components/marketing/buttons";
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
 export const dynamic = "force-dynamic";
+
+const tile = "flex min-h-12 items-center rounded-card border border-line bg-surface px-4 shadow-card transition hover:border-stainless hover:shadow-lift";
 
 function rawQuery(params: Record<string, string | string[] | undefined>): string {
   const v = params["q"];
@@ -32,7 +35,7 @@ function Suggestions({ s }: { s: SearchSuggestions }) {
         <ul className="mt-3 flex flex-col gap-2">
           {s.zones.map((z) => (
             <li key={z.key}>
-              <Link href={z.href} className="flex min-h-11 items-center gap-3 border border-line bg-surface px-4 hover:border-stainless">
+              <Link href={z.href} className={`${tile} gap-3`}>
                 <ZoneBadge zone={z.key} />
               </Link>
             </li>
@@ -41,11 +44,11 @@ function Suggestions({ s }: { s: SearchSuggestions }) {
       </div>
       {s.categories.length > 0 ? (
         <div>
-          <h3 className="text-label text-ink-muted">Browse by category</h3>
+          <h3 className="text-label text-ink-muted">Browse by range</h3>
           <ul className="mt-3 flex flex-col gap-2">
             {s.categories.map((c) => (
               <li key={c.slug}>
-                <Link href={c.href} className="flex min-h-11 items-center border border-line bg-surface px-4 text-body text-ink hover:border-stainless">
+                <Link href={c.href} className={`${tile} text-body text-ink`}>
                   {c.name}
                 </Link>
               </li>
@@ -74,7 +77,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           <EmptyState
             headingLevel={2}
             heading={raw.length > 0 ? `Type at least ${MIN_QUERY_LENGTH} characters to search` : "What are you looking for?"}
-            body="Search by product name, SKU or document, or start with the zone you clean most."
+            body="Search by product name or code, or start with a zone or a range."
           >
             <Suggestions s={s} />
           </EmptyState>
@@ -103,17 +106,17 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             body={
               <>
                 Check the spelling, or browse{" "}
-                <Link href={closest?.href ?? "/products/warewashing"} className="text-accent underline underline-offset-[3px]">
-                  {closest?.name ?? "Foodservice and kitchen hygiene"}
+                <Link href={closest?.href ?? "/products"} className="text-accent underline underline-offset-[3px]">
+                  {closest?.name ?? "all products"}
                 </Link>
                 . We can usually source what is not listed.
               </>
             }
             actions={[
-              <Link key="quote" href={`/quote?q=${encodeURIComponent(q)}`} className="inline-flex min-h-11 items-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
+              <Link key="quote" href={`/quote?q=${encodeURIComponent(q)}`} className={btn.cta}>
                 Request a quote
               </Link>,
-              <Link key="products" href="/products" className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
+              <Link key="products" href="/products" className={btn.secondary}>
                 Browse all products
               </Link>,
             ]}
@@ -129,14 +132,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             </h2>
             {products.length === 0 ? (
               <p className="mt-4 max-w-[62ch] text-body text-ink-muted">
-                No products match &apos;{q}&apos;, but the categories and documents below might.{" "}
+                No products match &apos;{q}&apos;, but the ranges and documents below might.{" "}
                 <Link href={`/quote?q=${encodeURIComponent(q)}`} className="text-accent underline underline-offset-[3px]">
                   Ask us for a quote
                 </Link>{" "}
                 if you cannot find it.
               </p>
             ) : (
-              <ul className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
+              <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
                 {products.map((p) => (
                   <li key={p.id}>
                     <ProductGridCard product={p} mode={mode} categorySlug={p.categoryPath} />
@@ -149,12 +152,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           {categories.length > 0 ? (
             <section aria-labelledby="results-categories">
               <h2 id="results-categories" className="border-b border-line pb-3 text-h3">
-                <span className="tnum">{categories.length}</span> {categories.length === 1 ? "category" : "categories"}
+                <span className="tnum">{categories.length}</span> {categories.length === 1 ? "range" : "ranges"}
               </h2>
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {categories.map((c) => (
                   <li key={c.id}>
-                    <Link href={c.href} className="flex min-h-12 items-center justify-between gap-3 border border-line bg-surface px-4 hover:border-stainless">
+                    <Link href={c.href} className={`${tile} justify-between gap-3`}>
                       <span className="flex min-w-0 items-center gap-3">
                         <span className="text-body text-ink">{c.name}</span>
                         {c.zone ? <ZoneBadge zone={c.zone} /> : null}
@@ -177,10 +180,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {documents.map((d) => (
                   <li key={d.id}>
-                    <a href={d.href} className="flex min-h-12 flex-col justify-center border border-line bg-surface px-4 py-2 hover:border-stainless">
+                    <a href={d.href} className={`${tile} flex-col items-start justify-center py-2`}>
                       <span className="text-body text-ink">{d.title}</span>
                       <span className="text-caption text-ink-muted">
-                        {d.typeLabel} · version {d.version} · PDF
+                        {d.typeLabel}, version {d.version}, PDF
                       </span>
                     </a>
                   </li>

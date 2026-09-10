@@ -95,8 +95,9 @@
 
   /* Radius policy (plan §7.2): 0 material, 2 tool-small, 4 button, 12 transient, full only cart count / WhatsApp */
   --radius-none: 0;
-  --radius-chip: 2px;
-  --radius-button: 4px;
+  /* Softened in ADR 0017: 2 px and 4 px read as a form, not a shop. */
+  --radius-chip: 6px;
+  --radius-button: 8px;
   --radius-sheet: 12px;
 
   /* The one shadow (plan §7.3): floating surfaces only */
@@ -106,6 +107,67 @@
   --container-reading: 1040px;
 
   --ease-sheet: cubic-bezier(0.2, 0, 0, 1);
+
+  /*
+   * Storefront layer (ADR 0017). The brand green carries the one action we most want taken — get a
+   * price — so it is never used for anything else. Ink on it is 5.78:1 and ink on the hover is higher;
+   * white on it would be 2.88:1, so white is never used on it.
+   */
+  --color-cta: #41ad49;
+  --color-cta-hover: #5cc164;
+  /* WhatsApp's own green, only on click-to-chat controls, always with ink text (8.4:1). */
+  --color-whatsapp: #25d366;
+  /* The hero and footer ground: a deeper steel than ink so ink-coloured controls still read on it. */
+  --color-night: #0a1822;
+  --color-night-soft: #132636;
+  /* The footer's charcoal and the warm band behind the industries (Alliance Chemical's layout, Safuney's palette). */
+  --color-charcoal: #1d2126;
+  --color-sand: #f6f5f1;
+
+  --text-hero: clamp(2.25rem, 1.25rem + 4.2vw, 3.75rem);
+  --text-hero--line-height: 1.06;
+  --text-hero--letter-spacing: -0.02em;
+  --text-hero--font-weight: 600;
+  --text-body-lg: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+  --text-body-lg--line-height: 1.55;
+  --text-stat: clamp(2rem, 1.4rem + 2.2vw, 3rem);
+  --text-stat--line-height: 1.05;
+  --text-stat--letter-spacing: -0.02em;
+  --text-stat--font-weight: 600;
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-eyebrow--font-weight: 600;
+
+  --radius-card: 12px;
+  --shadow-card: 0 1px 2px rgba(16, 32, 43, 0.05), 0 4px 16px rgba(16, 32, 43, 0.06);
+  --shadow-lift: 0 2px 6px rgba(16, 32, 43, 0.08), 0 18px 40px rgba(16, 32, 43, 0.14);
+}
+
+/* The dark storefront ground: two soft glows in the brand blue and green over night steel (ADR 0017). */
+.bg-hero {
+  background-color: var(--color-night);
+  background-image:
+    radial-gradient(56rem 32rem at 88% -12%, rgba(64, 139, 239, 0.38), transparent 62%),
+    radial-gradient(40rem 26rem at -8% 112%, rgba(65, 173, 73, 0.24), transparent 60%);
+}
+/* The light stage the pack shots stand on. */
+.bg-stage {
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(28rem 18rem at 50% 18%, #eaf3fe, transparent 70%),
+    linear-gradient(180deg, #f7fafc 0%, #ffffff 58%, #eef3f7 100%);
+}
+
+/* FAQ disclosure: the native marker is replaced by the plus/minus drawn in the summary. */
+.faq summary {
+  list-style: none;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq details[open] .faq-sign {
+  transform: rotate(45deg);
 }
 
 /*
@@ -160,6 +222,12 @@
 html {
   color-scheme: light;
   background: var(--color-ground);
+}
+/* Anything scrolled to on a phone — an anchor, a focused field, a link — stops clear of the contact bar (ContactDock). */
+@media (max-width: 767.98px) {
+  html {
+    scroll-padding-bottom: 5.5rem;
+  }
 }
 
 body {
