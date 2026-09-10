@@ -46,14 +46,16 @@ export async function SiteHeader() {
         <div className="on-dark bg-accent">
           <div className="mx-auto flex h-16 max-w-page items-center gap-2 px-3 sm:px-5 md:h-[4.5rem] md:gap-8 md:px-6">
             <MobileNav tone="dark" />
-            <Link href="/" aria-label={`${site.legalName} home`} className="flex shrink-0 items-center gap-2.5 rounded-button">
-              <span aria-hidden className="grid size-10 place-items-center rounded-xl bg-surface p-1 md:size-11">
+            {/* The lock-up may shrink (min-w-0), and the strapline drops out under 400 px, so the masthead
+                fits a 320 px phone whatever fallback font the device substitutes for Plex. */}
+            <Link href="/" aria-label={`${site.legalName} home`} className="flex min-w-0 items-center gap-2.5 rounded-button">
+              <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface p-1 md:size-11">
                 <LogoMark className="size-8 md:size-9" />
               </span>
-              <span aria-hidden className="leading-none">
-                <span className="block text-h4 font-semibold tracking-tight text-white md:text-h3">Safuney</span>
+              <span aria-hidden className="min-w-0 leading-none">
+                <span className="block truncate text-h4 font-semibold tracking-tight text-white md:text-h3">Safuney</span>
                 {/* White at 85%, not the brand lime: lime on this blue is 4.27:1, under AA for small text. */}
-                <span className="mt-0.5 block text-[11px] italic text-white/85 md:text-caption">{site.strapline}</span>
+                <span className="mt-0.5 hidden truncate text-[11px] italic text-white/85 min-[400px]:block md:text-caption">{site.strapline}</span>
               </span>
             </Link>
 
