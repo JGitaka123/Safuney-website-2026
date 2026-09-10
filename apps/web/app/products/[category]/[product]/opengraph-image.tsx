@@ -97,10 +97,8 @@ export default async function Image({ params }: { params: Promise<{ category: st
                   </div>
                 ) : null}
               </div>
-              {shot ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={shot} alt="" width={230} height={300} style={{ objectFit: "contain" }} />
-              ) : null}
+              {/* Satori renders plain elements; next/image has no meaning inside an ImageResponse. */}
+              {shot ? <img src={shot} alt="" width={230} height={300} style={{ objectFit: "contain" }} /> : null}
             </div>
           </div>
 
