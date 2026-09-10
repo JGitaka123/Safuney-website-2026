@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
 /** Requires the demo seed (SEED_DEMO=1) and the shop.enabled flag on. */
-const QAC_5L = "Quantity of QAC-based sanitiser for surface and food-contact areas 5 L";
+const QAC_5L = "Quantity of SAF QUARTSAN 5 L";
 
 test.describe("order sheet", () => {
   test("lists every pack size in tables and fits a 360 px screen", async ({ page }) => {
@@ -19,8 +19,8 @@ test.describe("order sheet", () => {
   test("filters rows by name or SKU", async ({ page }) => {
     await page.goto("/order-sheet");
     const filter = page.getByLabel("Find a product or SKU on this sheet");
-    await filter.fill("oven");
-    await expect(page.getByRole("link", { name: "Oven / grill / hood cleaner" }).first()).toBeVisible();
+    await filter.fill("grease");
+    await expect(page.getByRole("link", { name: "GREASE BUSTER" }).first()).toBeVisible();
     await expect(page.getByRole("spinbutton", { name: QAC_5L })).toBeHidden();
     await filter.fill("zzqxv");
     await expect(page.getByText(/No products on this sheet match/)).toBeVisible();
@@ -37,13 +37,13 @@ test.describe("order sheet", () => {
     await add.click();
     const status = page.getByRole("status").filter({ hasText: "Added to cart" });
     await expect(status).toBeVisible();
-    await expect(status).toContainText("2 × QAC-based sanitiser for surface and food-contact areas 5 L");
+    await expect(status).toContainText("2 × SAF QUARTSAN 5 L");
     await expect(qty).toHaveValue("");
     await page.getByRole("link", { name: /View cart/ }).click();
     await expect(page).toHaveURL(/\/cart$/);
     await expect(page.getByRole("spinbutton", { name: QAC_5L })).toHaveValue("2");
     // Leave the cart as it was found.
-    await page.getByRole("button", { name: /^Remove QAC-based sanitiser/ }).click();
+    await page.getByRole("button", { name: /^Remove SAF QUARTSAN/ }).click();
     await expect(page.getByRole("heading", { name: "Your cart is empty" })).toBeVisible();
   });
 
@@ -57,8 +57,8 @@ test.describe("order sheet", () => {
 
   test("a line the server refuses is explained on its own row", async ({ page }) => {
     await page.goto("/order-sheet");
-    // Demo stock for the destainer 15 kg is 6, so 50 cannot be added; the 5 L sanitiser can.
-    const destainer = page.getByRole("spinbutton", { name: /Quantity of Destainer for crockery and cutlery/ }).first();
+    // Demo stock for SAFSHINE 15 kg is 6, so 50 cannot be added; the 5 L sanitiser can.
+    const destainer = page.getByRole("spinbutton", { name: /Quantity of SAFSHINE/ }).first();
     await destainer.fill("50");
     await page.getByRole("spinbutton", { name: QAC_5L }).fill("1");
     await page.getByRole("button", { name: "Add 2 lines to cart" }).click();
@@ -66,7 +66,7 @@ test.describe("order sheet", () => {
     await expect(page.getByRole("alert").filter({ hasText: "Not added" })).toContainText("not added");
     await expect(destainer).toHaveValue("50");
     await page.goto("/cart");
-    await page.getByRole("button", { name: /^Remove QAC-based sanitiser/ }).click();
+    await page.getByRole("button", { name: /^Remove SAF QUARTSAN/ }).click();
     await expect(page.getByRole("heading", { name: "Your cart is empty" })).toBeVisible();
   });
 });

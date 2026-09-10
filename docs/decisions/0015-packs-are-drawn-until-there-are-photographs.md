@@ -1,6 +1,11 @@
 # 0015 — Packs are drawn from catalogue data until there are photographs
 
-**Status:** accepted · **Date:** 2026-09-10 · **Supersedes part of** design plan §8 (Imagery)
+**Status:** accepted, narrowed by [ADR 0016](0016-the-real-brand.md) · **Date:** 2026-09-10 · **Supersedes part of** design plan §8 (Imagery)
+
+> **Narrowed 2026-09-10.** The PO's July 2024 catalogue turned out to carry a photograph of
+> nearly every product, and those are now what the tiles and the hero show. The drawn pack is
+> what remains for a product with no photograph — which is what this ADR always said it was.
+> Everything below still holds for that case.
 
 ## Decision
 Product tiles, the home hero and the share cards show a **drawn pack** rather than a flat square

@@ -2,7 +2,7 @@
   "name": "safuney-website-2026",
   "version": "0.0.0",
   "private": true,
-  "description": "Safuney Limited — website and online shop (monorepo)",
+  "description": "Safuney Limited \u2014 website and online shop (monorepo)",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=20.9.0"
@@ -13,7 +13,7 @@
     "start": "pnpm --filter @safuney/web start",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --workspace-concurrency=1 test",
     "guard:placeholders": "node scripts/placeholder-guard.mjs",
     "ci": "pnpm lint && pnpm typecheck && pnpm build && pnpm guard:placeholders && pnpm guard:money && pnpm guard:i18n",
     "migrate:check": "node scripts/migrate-check.mjs",
@@ -21,6 +21,10 @@
     "lhci": "pnpm --filter @safuney/web lhci",
     "sync:fonts": "node scripts/sync-fonts.mjs",
     "guard:money": "node scripts/money-guard.mjs",
-    "guard:i18n": "node scripts/i18n-guard.mjs"
+    "guard:i18n": "node scripts/i18n-guard.mjs",
+    "catalogue:images": "node scripts/extract-catalogue-images.mjs"
+  },
+  "devDependencies": {
+    "sharp": "0.35.4"
   }
 }

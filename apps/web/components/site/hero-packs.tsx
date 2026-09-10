@@ -1,32 +1,32 @@
-import { PackShot } from "@safuney/ui";
+import Image from "next/image";
+
+import multiklin from "@/public/products/saf-multiklin.webp";
+import sanibac from "@/public/products/sanibac.webp";
+import safshine from "@/public/products/safshine.webp";
 
 /**
- * The hero's right-hand side: a group of packs, standing as they would on a shelf.
+ * The hero's right-hand side: three packs off Safuney's own shelf.
  *
- * The old hero left half the fold empty because the design plan reserved it for a photograph that does
- * not exist. An empty half-fold is not restraint, it reads as an unfinished page — and it was the first
- * thing wrong with the site. This uses the same drawn packs as the product grid, so the hero is made of
- * the same material as the catalogue rather than a separate decorative flourish.
+ * These are the catalogue's own photographs, cut out of the July 2024 PDF (ADR 0016), not drawings
+ * and not stock imagery — a 20 L multi-purpose drum, a 5 L germicidal handwash and a 15 kg destainer
+ * pail, chosen because the three silhouettes and the three colours read as a range rather than as one
+ * product photographed three times.
  *
- * Sizes and zones are chosen to show the range at a glance: a green food-contact jerrican, a red
- * washroom drum, a blue general-areas bottle. The overlap and the varied baseline are what stop it
- * reading as three icons in a row.
+ * The group is capped at 32 rem so each image lands close to its own pixel size. The catalogue's
+ * bitmaps are around 130 px wide; blown up to fill a hero they go soft, and a soft photograph of a
+ * real pack looks worse than the drawing it replaced.
  */
 export function HeroPacks() {
   return (
-    // 16/9 rather than 4/3: each PackShot's viewBox reserves headroom above the cap and below the
-    // base, so a squarer container stacks that padding into visible dead space — most obvious on a
-    // phone, where it pushed the trust bar a screen further down.
-    <div aria-hidden className="relative isolate mx-auto aspect-[16/9] w-full max-w-xl">
-      {/* Transparent, and spaced so no pack's label falls behind the one in front of it. */}
-      <div className="absolute left-[2%] top-[-6%] w-[40%]">
-        <PackShot packLabel="20 L" unit="L" size={20} zones={["RED"]} transparent />
+    <div aria-hidden className="relative isolate mx-auto aspect-[16/10] w-full max-w-[32rem]">
+      <div className="absolute bottom-0 left-[3%] w-[34%]">
+        <Image src={multiklin} alt="" sizes="(min-width: 640px) 174px, 34vw" className="h-auto w-full" />
       </div>
-      <div className="absolute left-[31%] top-[-14%] z-10 w-[44%]">
-        <PackShot packLabel="5 L" unit="L" size={5} zones={["GREEN"]} transparent />
+      <div className="absolute bottom-0 left-[36%] z-10 w-[27%]">
+        <Image src={sanibac} alt="" sizes="(min-width: 640px) 138px, 27vw" className="h-auto w-full" priority />
       </div>
-      <div className="absolute right-[3%] top-[2%] w-[31%]">
-        <PackShot packLabel="1 L" unit="L" size={1} zones={["BLUE"]} transparent />
+      <div className="absolute bottom-0 right-[4%] w-[31%]">
+        <Image src={safshine} alt="" sizes="(min-width: 640px) 159px, 31vw" className="h-auto w-full" />
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ const OFFLINE_HTML = `<!doctype html><html lang="en-KE"><head><meta charset="utf
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline — Safuney</title>
 <style>body{margin:0;font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif;color:#10202b;background:#f4f7f9;
 display:grid;min-height:100vh;place-items:center;padding:24px}main{max-width:34rem}h1{font-size:1.5rem;
-margin:0 0 .5rem}p{margin:.5rem 0;color:#4a5c68}a{color:#0b5e73}</style></head><body><main>
+margin:0 0 .5rem}p{margin:.5rem 0;color:#4a5c68}a{color:#0e50a8}</style></head><body><main>
 <h1>You are offline</h1><p>Pages you have already opened are still available. Prices, stock and anything
 in your cart need a connection — we do not show you a price we cannot stand behind.</p>
 <p><a href="/">Try again</a></p></main></body></html>`;

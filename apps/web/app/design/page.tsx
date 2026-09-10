@@ -548,7 +548,7 @@ export default function DesignSystemPage() {
               heading="No products found for degreser."
               body={
                 <>
-                  Check the spelling, or browse <BodyLink href="/products#foodservice">Foodservice and kitchen hygiene</BodyLink>.
+                  Check the spelling, or browse <BodyLink href="/products#warewashing">Warewashing and kitchen hygiene</BodyLink>.
                 </>
               }
               actions={[

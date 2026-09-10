@@ -71,10 +71,13 @@ export default async function ContactPage({ searchParams }: { searchParams: Sear
           <dl className="mt-4 grid gap-5">
             <div>
               <dt className="text-label">Phone</dt>
-              <dd className="mt-1">
-                <a href={`tel:${contact.phone.e164}`} className="text-accent underline underline-offset-[3px]">
-                  {contact.phone.display}
-                </a>
+              <dd className="mt-1 flex flex-col gap-1">
+                {/* All three lines the catalogue prints. It does not say which is which, so neither do we. */}
+                {[contact.phone, ...contact.alternatePhones].map((line) => (
+                  <a key={line.e164} href={`tel:${line.e164}`} className="text-accent underline underline-offset-[3px]">
+                    {line.display}
+                  </a>
+                ))}
               </dd>
             </div>
             <div>

@@ -289,7 +289,8 @@ run("admin console", () => {
       const changed = plan.rows.find((r) => r.kind === "changed")!;
       expect(changed.changes.map((c) => c.field).sort()).toEqual(["price_kes", "stock_on_hand"]);
 
-      expect((await importCatalogue(edited)).ok).toBe(true);
+      const applied = await importCatalogue(edited);
+      expect(applied.ok, applied.message).toBe(true);
       const v = await prisma.productVariant.findUniqueOrThrow({ where: { id: variantId } });
       expect(v.priceMinorUnits).toBe(250000n);
       expect(v.stockOnHand).toBe(40);

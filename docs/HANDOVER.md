@@ -1,7 +1,11 @@
 # Safuney website — handover
 
-**Date:** 2026-09-09 · Nine phases, eleven pull requests. Ten merged to `main`; the eleventh is this
-one, which carries the QA pass and these documents.
+**Date:** 2026-09-10 · Nine phases, plus a brand pass and the real catalogue.
+
+**Latest change:** the site now runs on Safuney's own material — the logo, the two brand colours and
+the strapline from `PRODUCT CATALOGUE JULY 2024`, its nine sections, its 76 products with their pack
+sizes and dosing, and a photograph of nearly every one, lifted out of the PDF. See
+[`decisions/0016-the-real-brand.md`](./decisions/0016-the-real-brand.md).
 
 This is the one page to read. Everything else is linked from it.
 
@@ -21,23 +25,34 @@ It is **not indexed by Google**, deliberately, and will not be until you say so 
 
 Everything else is optional. These are not.
 
-### 1. Correct the catalogue — only you can do this
-The products on the site were harvested from the old site because it could not be fetched directly.
-Names, pack sizes and prices are all provisional. **Anything still marked "needs review" is invisible to
-customers** — that is the safety net, and it means the shop currently shows less than it will.
+### 1. Prices — only you can do this
+The catalogue you sent has everything except prices, so every pack currently reads **"Price on
+request"** and offers a quote instead of a Buy button. The cart refuses to sell an unpriced pack; that
+is deliberate, and it is the one thing keeping the shop from trading.
 
-Go to `/admin/catalogue` → **Export CSV** → fix it in a spreadsheet → **Import CSV** → read the diff →
-publish. Full instructions, including the Excel traps that actually bite:
+Go to `/admin/catalogue` → **Export CSV** → put the prices in a spreadsheet → **Import CSV** → read the
+diff → publish. Full instructions, including the Excel traps that actually bite:
 **[`runbooks/catalogue-import.md`](./runbooks/catalogue-import.md)**
+
+Two things in the same file need your eye while you are there:
+
+- **17 chemicals have no pack size**, because the catalogue never states one (SAF BACTOSAN, LIMEKLIN,
+  PRIMA RESHINE and the rest — the full list is question 15 in
+  [`discovery/questions-for-po.md`](./discovery/questions-for-po.md)). They show "Pack size on request".
+- **Nothing carries a hazard class.** The catalogue names caustics, acids, chlorine donors and
+  peroxides, but a hazard mark is a safety claim and we will only take it from your safety data sheets.
+  Send those and the marks, storage warnings and compliance library populate themselves.
 
 ### 2. Company details
 `/admin/settings`: **KRA PIN** and **VAT number**. Tax invoices already issue; until these are set they
 issue without the seller's identifiers, which is not KRA-compliant.
 
-`apps/web/config/site.ts`: confirm the address, phone, WhatsApp and email. Every one is currently marked
-unconfirmed, which is why the site asserts none of them to Google as fact — so Safuney does not appear
-in local search results until you confirm them. Opening hours are not on the site at all, because nobody
-has told me what they are.
+`apps/web/config/site.ts`: the address, the three phone lines and the email now come from page 16 of
+your catalogue and are marked confirmed, so the site does assert them to Google. Two things are still
+open: **opening hours** (not on the site at all, because nobody has told me what they are) and the
+**WhatsApp number**, which currently falls back to the first phone line. The catalogue prints
+"P.O BOX 34079 - 0100"; the site shows **00100** on the assumption that is the Nairobi GPO code —
+correct me if not.
 
 ### 3. Real staff accounts
 `/admin/staff`. Each person gets their own; the authenticator code shows **once**, at creation, and

@@ -63,7 +63,7 @@ export const FACILITY_TYPES: readonly FacilityType[] = [
     unitLabel: "Beds",
     unitHint: "Beds in use.",
     tasks: [
-      { key: "clinical", label: "Clinical surfaces and bed spaces", zone: "YELLOW", frequency: 60, frequencyLabel: "twice daily", litresPerUnit: 0.4, ratio: 100, category: "healthcare" },
+      { key: "clinical", label: "Clinical surfaces and bed spaces", zone: "YELLOW", frequency: 60, frequencyLabel: "twice daily", litresPerUnit: 0.4, ratio: 100, category: "disinfection" },
       { key: "floors", label: "Ward floors and corridors", zone: "BLUE", frequency: 30, frequencyLabel: "daily", litresPerUnit: 0.6, ratio: 40, category: "disinfection" },
       { key: "washroom", label: "Washrooms and sluice", zone: "RED", frequency: 60, frequencyLabel: "twice daily", litresPerUnit: 0.3, ratio: 40, category: "housekeeping" },
       { key: "hands", label: "Hand hygiene", zone: "YELLOW", frequency: 30, frequencyLabel: "daily", litresPerUnit: 0.05, ratio: 1, category: "personal-hygiene" },

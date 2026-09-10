@@ -55,11 +55,13 @@ export function SiteFooter() {
         <div>
           <p className="text-label">Contact</p>
           <ul className="mt-3 flex flex-col gap-2 text-small">
-            <li>
-              <a href={`tel:${contact.phone.e164}`} className="text-ink hover:underline underline-offset-[3px]">
-                {contact.phone.display}
-              </a>
-            </li>
+            {[contact.phone, ...contact.alternatePhones].map((line) => (
+              <li key={line.e164}>
+                <a href={`tel:${line.e164}`} className="text-ink hover:underline underline-offset-[3px]">
+                  {line.display}
+                </a>
+              </li>
+            ))}
             <li>
               <a href={`https://wa.me/${contact.whatsapp.e164}`} className="text-ink hover:underline underline-offset-[3px]">
                 WhatsApp

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
-const PRODUCT = "/products/disinfection/qac-surface-food-contact-sanitiser";
+const PRODUCT = "/products/disinfection/saf-quartsan";
 
 /** Runs in mock mode: the SMS code is shown on the page instead of being sent. */
 async function signInWithCode(page: Page, phone: string, next = "/account") {
@@ -36,7 +36,7 @@ test.describe("account", () => {
   test("signs in with a code, keeps the guest cart, sees the order in the account, signs out", async ({ page }) => {
     // Guest adds to the cart first; the cart must survive sign-in.
     await page.goto(PRODUCT);
-    await page.getByRole("radio", { name: /1 L/ }).check();
+    await page.getByRole("radio", { name: /5 L/ }).check();
     await page.getByRole("button", { name: "Add to cart" }).click();
     await expect(page.getByText(/Added 1 ×/)).toBeVisible();
 

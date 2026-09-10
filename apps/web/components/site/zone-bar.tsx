@@ -32,10 +32,14 @@ export function ZoneBar({ counts, animate }: ZoneBarProps) {
                   <span className="block text-h4 text-ink">{zone.label}</span>
                   <span className="block text-small text-ink-muted">{zone.meaning}</span>
                 </span>
-                {typeof count === "number" && count > 0 ? (
+                {counts ? (
                   // On the wide layout the count sits on its own line at the foot of the card, so it
-                  // lines up across all four instead of floating beside text of varying length.
-                  <span className="tnum shrink-0 text-small text-ink-muted lg:mt-3">{count} products</span>
+                  // lines up across all four instead of floating beside text of varying length. A zone
+                  // with nothing filed under it still gets a line: leaving it blank made one card
+                  // shorter than its neighbours and read as a rendering fault rather than as a fact.
+                  <span className="tnum shrink-0 text-small text-ink-muted lg:mt-3">
+                    {typeof count === "number" && count > 0 ? `${count} products` : "Ask us what to use"}
+                  </span>
                 ) : null}
                 <svg aria-hidden className="shrink-0 text-stainless lg:hidden" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 3l5 5-5 5" />

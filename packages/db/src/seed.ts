@@ -2,8 +2,15 @@
  * Seed: loads docs/discovery/catalogue-seed.csv (categories, products, variants) plus baseline
  * settings, delivery zones and feature flags. Idempotent: re-running upserts by slug/sku/key.
  *
- * Every catalogue row from the CSV keeps needsPoReview=true and price 0 until the PO reviews it,
- * and unreviewed products are never shown on the live site.
+ * The catalogue is Safuney's own PRODUCT CATALOGUE JULY 2024 — names, pack sizes, dosing and
+ * photography are theirs, transcribed rather than invented (ADR 0016). What that document does not
+ * contain is prices, so every variant seeds at price 0. A variant priced at 0 is "price on
+ * application": it is listed, searchable and photographed, but the cart refuses it and the page
+ * asks for a quote instead (see apps/web/lib/cart/service.ts). That keeps non-negotiable #1 — the
+ * server is the price authority — while still showing the real range.
+ *
+ * needsPoReview is therefore false for catalogue rows: the copy is the company's own published
+ * copy, and it is the price, not the product, that is missing.
  */
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -50,15 +57,75 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
+/**
+ * Colour-coded zone per catalogue category (plan §2.2). A category carries one zone; products that
+ * genuinely span zones (a general-purpose sanitiser) get theirs corrected in the admin console.
+ */
 const ZONE_BY_CATEGORY: Record<string, ApplicationZone> = {
-  foodservice: ApplicationZone.GREEN,
+  warewashing: ApplicationZone.GREEN,
   disinfection: ApplicationZone.GREEN,
+  "process-hygiene": ApplicationZone.GREEN,
   housekeeping: ApplicationZone.BLUE,
   laundry: ApplicationZone.BLUE,
-  healthcare: ApplicationZone.YELLOW,
-  laboratory: ApplicationZone.YELLOW,
   "personal-hygiene": ApplicationZone.RED,
+  bactro: ApplicationZone.RED,
+  specialty: ApplicationZone.NONE,
+  equipment: ApplicationZone.NONE,
 };
+
+/** Pack-shot manifest written by scripts/extract-catalogue-images.mjs (ADR 0016). */
+type CatalogueImage = { url: string; width: number; height: number; alt: string; source: string };
+function catalogueImages(): Record<string, CatalogueImage> {
+  try {
+    return JSON.parse(readFileSync(resolve(REPO_ROOT, "docs/discovery/catalogue-images.json"), "utf8")) as Record<string, CatalogueImage>;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Structured dosing, for the dilution calculator and the planner.
+ *
+ * Only ratios the catalogue actually states appear here. Products dosed by mass (g per kg of linen,
+ * g per litre of water) are not ratios and would be wrong in a "1 part to N" calculator, so their
+ * figures stay in the prose `dilutionText` the CSV carries. `ratio: 0` means used neat.
+ */
+const DILUTION_GUIDANCE: Record<string, Array<{ use: string; ratio: number; contactTimeMinutes?: number; note?: string }>> = {
+  "saf-autorinse": [{ use: "Machine rinse water", ratio: 500, note: "2 ml per litre of rinse water." }],
+  "saf-guard-hd": [
+    { use: "Pots and pans", ratio: 10 },
+    { use: "Glasses", ratio: 50 },
+  ],
+  "saf-quartsan": [{ use: "Surfaces and food-contact areas", ratio: 100, note: "10 ml in 1 litre of water, in spray bottles or sanitiser buckets." }],
+  "saf-bactosan": [{ use: "Cleaning, disinfection and deodorising", ratio: 50 }],
+  "grease-buster": [
+    { use: "Ovens, hoods and grills, neat", ratio: 0, note: "Spray, leave for a few seconds, then rub. Wear appropriate PPE." },
+    { use: "Ovens, hoods and grills, diluted", ratio: 10 },
+  ],
+  limeklin: [{ use: "Descaling", ratio: 0, note: "Use neat or dilute according to the extent of scaling." }],
+  "tiles-and-bathroom-cleaner": [{ use: "Floor tiles and bathrooms", ratio: 10, note: "1:10 or weaker depending on soilage levels and the extent of the stains." }],
+  "saf-stone-stripper": [{ use: "Stripping floor wax", ratio: 10, note: "1:10 or weaker depending on soilage." }],
+  "saf-multiklin": [
+    { use: "Heavy soil", ratio: 10 },
+    { use: "General cleaning", ratio: 100 },
+  ],
+  "saf-window-cleaner": [{ use: "Glass and windows", ratio: 0, note: "Used neat." }],
+  sanitouch: [{ use: "Sanitiser dispensers and sprayers", ratio: 0, note: "Use neat." }],
+  sanibac: [{ use: "Soap dispensers", ratio: 0, note: "Use neat." }],
+  sanipur: [{ use: "Soap dispensers", ratio: 0, note: "Use neat." }],
+  "safuney-shower-gel": [{ use: "Shower dispensers", ratio: 0, note: "Used neat." }],
+  "saf-ozonit": [
+    { use: "Cold sanitisation, light soil", ratio: 500, note: "0.2% solution." },
+    { use: "Cold sanitisation, heavy soil", ratio: 250, note: "0.4% solution." },
+  ],
+  "saftex-acid": [{ use: "Acid wash after caustic cleaning", ratio: 67, contactTimeMinutes: 30, note: "1.5% solution at 80 °C for 25 to 30 minutes." }],
+};
+
+function toHazard(h: string): HazardClass {
+  const key = h.trim().toUpperCase();
+  if (key in HazardClass) return HazardClass[key as keyof typeof HazardClass];
+  return HazardClass.NONE;
+}
 
 function toUnit(u: string): Unit {
   const key = u.trim().toUpperCase();
@@ -104,6 +171,7 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
   }
 
   // Products + variants.
+  const images = catalogueImages();
   let variants = 0;
   const products = new Set<string>();
   for (const r of rows) {
@@ -112,6 +180,7 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
     const categoryId = categoryIds.get(r["category_slug"]!);
     if (!categoryId) throw new Error(`Row ${slug}: unknown category ${r["category_slug"]}`);
     const needsReview = (r["needs_po_review"] ?? "true").toLowerCase() !== "false";
+    const guidance = DILUTION_GUIDANCE[slug];
     const product = await prisma.product.upsert({
       where: { slug },
       create: {
@@ -121,24 +190,46 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
         shortDescription: r["short_description"] || r["product_name"]!,
         categoryId,
         zone: ZONE_BY_CATEGORY[r["category_slug"]!] ?? ApplicationZone.NONE,
+        hazardClass: toHazard(r["hazard_class"] ?? ""),
         dilutionText: r["dilution_guidance"] || null,
+        dilutionGuidance: guidance ?? undefined,
         needsPoReview: needsReview,
         isActive: !needsReview,
       },
+      // The catalogue is the source of record for everything except price and stock, so a re-seed
+      // corrects copy, dosing and hazard class in a database that was already seeded.
       update: {
         name: r["product_name"]!,
         brand: r["brand"] || null,
         shortDescription: r["short_description"] || r["product_name"]!,
         categoryId,
+        zone: ZONE_BY_CATEGORY[r["category_slug"]!] ?? ApplicationZone.NONE,
+        hazardClass: toHazard(r["hazard_class"] ?? ""),
+        dilutionText: r["dilution_guidance"] || null,
+        ...(guidance ? { dilutionGuidance: guidance } : {}),
         needsPoReview: needsReview,
       },
     });
     products.add(slug);
 
+    // The catalogue's own pack shot, cut out of the PDF (ADR 0016). One per product, replaced in
+    // place on re-seed so a corrected extraction does not leave the old file orphaned on the page.
+    const image = images[slug];
+    if (image) {
+      const existing = await prisma.productImage.findFirst({ where: { productId: product.id }, orderBy: { sortOrder: "asc" } });
+      const data = { productId: product.id, url: image.url, alt: image.alt, width: image.width, height: image.height, sortOrder: 0 };
+      if (existing) await prisma.productImage.update({ where: { id: existing.id }, data });
+      else await prisma.productImage.create({ data });
+    }
+
     const packValue = r["pack_size"] ? r["pack_size"] : "1";
     const unit = toUnit(r["unit"] || "PCS");
-    const packLabel = r["pack_size"] ? `${r["pack_size"]} ${unitLabel(unit)}` : "each";
-    const sku = r["sku"] || `${slug.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}-${packLabel.replace(/\s+/g, "").toUpperCase()}`;
+    const packLabel = r["pack_label"] || (r["pack_size"] ? `${r["pack_size"]} ${unitLabel(unit)}` : "each");
+    // SKU from the pack, so 5 L and 20 L of the same product are distinct. A product the catalogue
+    // lists without a pack size has one variant and takes the bare code — appending a slug of the
+    // "Pack size on request" label would put that sentence on the product page as a part number.
+    const base = slug.toUpperCase().replace(/[^A-Z0-9]+/g, "-");
+    const sku = r["sku"] || (r["pack_size"] ? `${base}-${packLabel.replace(/\s+/g, "").toUpperCase()}` : base);
     await prisma.productVariant.upsert({
       where: { sku },
       create: {
@@ -212,186 +303,65 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
 }
 
 /**
- * SEED_DEMO=1 — preview and CI only. Marks the harvested products as reviewed and gives them
- * illustrative prices, stock, dilution guidance, hazard classes and tags so the catalogue, cart and
- * checkout can be exercised end to end. Every figure here is invented for demonstration and is
- * replaced by the PO's catalogue import. Refuses to run against a production deployment.
+ * SEED_DEMO=1 — preview and CI only. Gives a subset of the real catalogue illustrative prices,
+ * stock and tags so the catalogue, cart and checkout can be exercised end to end. Every figure here
+ * is invented for demonstration and is replaced by the PO's price list. Refuses to run against a
+ * production deployment.
  */
 export async function seedDemo(prisma: PrismaClient): Promise<number> {
   if (process.env["VERCEL_ENV"] === "production") throw new Error("SEED_DEMO must never run against production");
 
-  const demo: Record<string, {
-    price: Record<string, string>; // packLabel -> ex-VAT KES
-    stock?: Record<string, number>;
-    hazard?: HazardClass;
-    tags: string[];
-    dilution?: Array<{ use: string; ratio: number; contactTimeMinutes?: number; note?: string }>;
-    howToUse: string;
-    longDescription: string;
-    faq?: Array<{ q: string; a: string }>;
-    weightGramsPerLitre?: number;
-    extraPacks?: Array<{ value: string; unit: Unit; label: string }>;
-  }> = {
-    "qac-surface-food-contact-sanitiser": {
-      price: { "1 L": "380", "5 L": "1450", "20 L": "5200" },
-      stock: { "1 L": 120, "5 L": 42, "20 L": 8 },
-      hazard: HazardClass.IRRITANT,
-      tags: ["sanitiser", "food-contact", "no-rinse", "concentrate"],
-      dilution: [
-        { use: "Food-contact surfaces (no rinse)", ratio: 100, contactTimeMinutes: 1 },
-        { use: "General surfaces and equipment", ratio: 50, contactTimeMinutes: 5 },
-        { use: "Fogging and heavy contamination", ratio: 20, contactTimeMinutes: 10 },
-      ],
-      howToUse: "Clean the surface first: sanitisers do not work through grease or soil. Dilute with cold water at the ratio for the job, apply with a trigger spray or cloth, keep the surface wet for the contact time, then let it air dry. On food-contact surfaces use the 1:100 dilution and do not rinse.",
-      longDescription: "A quaternary ammonium compound (QAC) sanitiser for surfaces that touch food and for general equipment in kitchens, food processing and service areas. Effective against a broad range of bacteria at the stated dilutions and contact times; leaves no odour and does not corrode stainless steel at working strength.",
-      faq: [
-        { q: "Do I need to rinse after use?", a: "Not at 1:100 on food-contact surfaces. At stronger dilutions, rinse with potable water before food contact." },
-        { q: "Can I mix it with bleach?", a: "No. Never mix sanitisers or any cleaning chemicals; use them one at a time and rinse between products." },
-      ],
-      extraPacks: [{ value: "1", unit: Unit.L, label: "1 L" }, { value: "5", unit: Unit.L, label: "5 L" }, { value: "20", unit: Unit.L, label: "20 L" }],
-    },
-    "chlorine-salad-fruit-wash-powder": {
-      price: { "1 kg": "980" },
-      stock: { "1 kg": 25 },
-      hazard: HazardClass.OXIDISER,
-      tags: ["food-contact", "produce-wash", "chlorine"],
-      dilution: [{ use: "Salad and fruit wash", ratio: 500, contactTimeMinutes: 2, note: "Rinse produce with potable water after soaking." }],
-      howToUse: "Dissolve the measured powder fully in cold water before adding produce. Soak for the contact time, then rinse under running potable water. Make a fresh solution for each batch.",
-      longDescription: "A chlorine-based powder for washing salads, fruit and vegetables in commercial kitchens and food preparation areas. Dissolves quickly and gives a measured chlorine dose per batch.",
-      extraPacks: [{ value: "1", unit: Unit.KG, label: "1 kg" }],
-    },
-    "general-purpose-cleaner-disinfectant": {
-      price: { "5 L": "1150", "20 L": "3990" },
-      stock: { "5 L": 60, "20 L": 12 },
-      hazard: HazardClass.IRRITANT,
-      tags: ["disinfectant", "general-cleaning", "concentrate", "floors"],
-      dilution: [
-        { use: "Daily cleaning of floors and surfaces", ratio: 80, contactTimeMinutes: 5 },
-        { use: "Disinfection after spills", ratio: 40, contactTimeMinutes: 10 },
-      ],
-      howToUse: "Dilute in a bucket or trigger spray, apply to the surface, leave wet for the contact time and wipe or mop off. No rinse needed on floors; rinse food-contact surfaces.",
-      longDescription: "A combined cleaner and disinfectant for floors, walls, washrooms and general surfaces in offices, schools, hospitality and healthcare common areas. Cleans and disinfects in one step at the daily dilution.",
-      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }, { value: "20", unit: Unit.L, label: "20 L" }],
-    },
-    "chlorine-disinfectant-bleach": {
-      price: { "5 L": "690", "20 L": "2400" },
-      stock: { "5 L": 100, "20 L": 30 },
-      hazard: HazardClass.CORROSIVE,
-      tags: ["disinfectant", "chlorine", "laundry", "washrooms"],
-      dilution: [
-        { use: "Washroom and toilet disinfection", ratio: 20, contactTimeMinutes: 10 },
-        { use: "Laundry whitening (per 10 L wash)", ratio: 100 },
-        { use: "Blood and body-fluid spills", ratio: 10, contactTimeMinutes: 10, note: "Wear gloves and eye protection." },
-      ],
-      howToUse: "Always add product to water, never water to product. Use in a ventilated area, wear gloves, and keep away from acids and other cleaners. Make up fresh each day.",
-      longDescription: "A sodium hypochlorite disinfectant and bleaching solution for washrooms, isolation areas, laundries and spill response. Broad-spectrum activity at the stated dilutions.",
-      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }, { value: "20", unit: Unit.L, label: "20 L" }],
-    },
-    "alcohol-hand-sanitiser": {
-      price: { "500 ml": "420", "5 L": "3200" },
-      stock: { "500 ml": 200, "5 L": 15 },
-      hazard: HazardClass.FLAMMABLE,
-      tags: ["hand-hygiene", "alcohol", "ready-to-use"],
-      dilution: [{ use: "Hand rub", ratio: 0, note: "Apply 3 ml to dry hands and rub until dry, about 30 seconds." }],
-      howToUse: "Apply to dry hands and rub all surfaces, including between the fingers and around the thumbs, until dry. Do not rinse or wipe. Keep away from flames and heat.",
-      longDescription: "An alcohol-based hand rub for washrooms, kitchens, reception areas and clinical settings, in a 500 ml dispenser bottle and a 5 L refill.",
-      extraPacks: [{ value: "500", unit: Unit.ML, label: "500 ml" }, { value: "5", unit: Unit.L, label: "5 L" }],
-    },
-    "descaler-kitchen-housekeeping": {
-      price: { "5 L": "1650" },
-      stock: { "5 L": 18 },
-      hazard: HazardClass.CORROSIVE,
-      tags: ["descaler", "acid", "kettles", "dishwashers", "concentrate"],
-      dilution: [
-        { use: "Kettles, urns and boilers", ratio: 10, contactTimeMinutes: 20 },
-        { use: "Dishwasher descaling cycle", ratio: 20, contactTimeMinutes: 15 },
-        { use: "Taps, sinks and tiles", ratio: 40, contactTimeMinutes: 5 },
-      ],
-      howToUse: "Wear gloves and eye protection. Dilute, apply or circulate, allow the contact time, then rinse thoroughly with clean water. Do not use on marble, terrazzo or enamel.",
-      longDescription: "An acidic descaler that removes limescale from kettles, urns, dishwashers, boilers, taps and tiled surfaces in kitchens and housekeeping.",
-      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }],
-    },
-    "oven-grill-hood-cleaner": {
-      price: { "5 L": "1850", "20 L": "6400" },
-      stock: { "5 L": 22, "20 L": 5 },
-      hazard: HazardClass.CORROSIVE,
-      tags: ["degreaser", "ovens", "extraction-hoods", "heavy-duty"],
-      dilution: [
-        { use: "Ovens and grills (cold)", ratio: 0, contactTimeMinutes: 15, note: "Apply neat to a cold surface." },
-        { use: "Extraction hoods and filters", ratio: 5, contactTimeMinutes: 10 },
-        { use: "Fryers and heavy grease", ratio: 3, contactTimeMinutes: 15 },
-      ],
-      howToUse: "Switch the appliance off and let it cool. Wear gloves, goggles and an apron. Apply, allow the contact time, agitate with a pad, then rinse thoroughly. Not for aluminium.",
-      longDescription: "A heavy-duty alkaline degreaser for ovens, grills, extraction hoods, filters and fryers in commercial kitchens. Breaks down burnt-on carbon and grease.",
-      faq: [{ q: "Can it be used on aluminium?", a: "No. It is an alkaline product and will discolour and pit aluminium. Use it on stainless steel, enamel and cast iron only." }],
-    },
-    "crockery-cutlery-destainer": {
-      price: { "15 kg": "5900" },
-      stock: { "15 kg": 6 },
-      hazard: HazardClass.OXIDISER,
-      tags: ["destainer", "dishwashing", "chlorine", "powder"],
-      dilution: [{ use: "Soak tank for crockery and cutlery", ratio: 200, contactTimeMinutes: 20, note: "Rinse in the dishwasher after soaking." }],
-      howToUse: "Dissolve in hot water in a soak tank, immerse crockery and cutlery for the contact time, then run through the dishwasher. Do not soak silver-plated cutlery.",
-      longDescription: "A chlorinated powder that removes tea, coffee and tannin stains from crockery and cutlery in a soak tank before machine washing.",
-    },
-    "enzyme-drain-septic-treatment": {
-      price: { "5 L": "2100" },
-      stock: { "5 L": 14 },
-      hazard: HazardClass.NONE,
-      tags: ["drains", "septic", "biological", "odour-control"],
-      dilution: [
-        { use: "Drain maintenance (weekly, per drain)", ratio: 0, note: "Pour 250 ml down the drain last thing at night." },
-        { use: "Septic tank (per 5,000 L, monthly)", ratio: 0, note: "Flush 1 L down the nearest toilet." },
-      ],
-      howToUse: "Use at the end of the day so the enzymes work overnight without being flushed away. Do not use with bleach or acid within 12 hours.",
-      longDescription: "A biological drain cleaner and septic tank treatment. Enzymes and bacteria digest fat, oil and grease in drains, grease traps and septic systems and control odour without corrosive chemicals.",
-      extraPacks: [{ value: "5", unit: Unit.L, label: "5 L" }],
-    },
+  /**
+   * Invented prices, stock and weights for a subset of the real catalogue, so the shop can be driven
+   * end to end in preview and CI. Copy, pack sizes, dosing and photography are NOT invented here —
+   * they come from the catalogue in the main seed, and writing marketing prose for a real named
+   * product would be exactly the placeholder text this project refuses to ship.
+   *
+   * The products left out keep price 0 on purpose: that is the price-on-application path, and CI
+   * should exercise it too. A product whose pack size the catalogue never states (SAF BACTOSAN,
+   * LIMEKLIN and fifteen others) is left out on principle as well as on price — a demo price for an
+   * unknown pack is a figure with no unit.
+   */
+  const demo: Record<string, { price: Record<string, string>; stock?: Record<string, number>; tags: string[]; kgPerPack?: Record<string, number> }> = {
+    // Deep stock on the 5 L sanitiser on purpose: it is the pack the end-to-end suite orders over and
+    // over, and a demo figure that runs out turns the whole run red for a reason that is not a bug.
+    "saf-quartsan": { price: { "5 L": "1450", "20 L": "5200" }, stock: { "5 L": 400, "20 L": 40 }, tags: ["sanitiser", "food-contact", "no-rinse", "concentrate"] },
+    "saf-autoklin": { price: { "5 L": "1250", "20 L": "4400" }, stock: { "5 L": 30, "20 L": 12 }, tags: ["warewashing", "machine-dosed", "concentrate"] },
+    "saf-autorinse": { price: { "5 L": "1380", "20 L": "4900" }, stock: { "5 L": 26, "20 L": 9 }, tags: ["warewashing", "rinse-aid", "machine-dosed"] },
+    "saf-guard-hd": { price: { "5 L": "1350", "20 L": "4800" }, stock: { "5 L": 35, "20 L": 11 }, tags: ["warewashing", "potwash", "concentrate"] },
+    "safuney-m511": { price: { "5 L": "690", "20 L": "2400" }, stock: { "5 L": 100, "20 L": 30 }, tags: ["disinfectant", "chlorine", "washrooms"] },
+    sanitouch: { price: { "5 L": "3200", "20 L": "11500" }, stock: { "5 L": 15, "20 L": 4 }, tags: ["hand-hygiene", "alcohol", "ready-to-use"] },
+    "saf-salad-wash": { price: { "4 kg": "3600" }, stock: { "4 kg": 25 }, tags: ["food-contact", "produce-wash", "chlorine"] },
+    "grease-buster": { price: { "5 L": "1850", "20 L": "6400" }, stock: { "5 L": 22, "20 L": 5 }, tags: ["degreaser", "ovens", "extraction-hoods", "heavy-duty"] },
+    safshine: { price: { "15 kg": "5900" }, stock: { "15 kg": 6 }, tags: ["destainer", "dishwashing", "powder"] },
+    "bactro-trap-tablets": { price: { "Tub of 10 x 50 g tablets": "2100" }, stock: { "Tub of 10 x 50 g tablets": 14 }, tags: ["drains", "grease-trap", "biological", "odour-control"] },
+    sanibac: { price: { "5 L": "1100", "20 L": "3800" }, stock: { "5 L": 48, "20 L": 16 }, tags: ["hand-hygiene", "soap", "dispenser"] },
+    "saf-multiklin": { price: { "5 L": "1050", "20 L": "3600" }, stock: { "5 L": 55, "20 L": 20 }, tags: ["general-cleaning", "concentrate", "floors"] },
+    "saf-window-cleaner": { price: { "5 L": "900", "20 L": "3100" }, stock: { "5 L": 40, "20 L": 13 }, tags: ["glass", "ready-to-use", "housekeeping"] },
+    "saflin-015-one-shot": { price: { "5 kg": "1900", "20 kg": "6900" }, stock: { "5 kg": 20, "20 kg": 7 }, tags: ["laundry", "powder", "one-shot"] },
   };
 
   let count = 0;
   for (const [slug, d] of Object.entries(demo)) {
     const product = await prisma.product.findUnique({ where: { slug }, include: { variants: true } });
     if (!product) continue;
-    await prisma.product.update({
-      where: { id: product.id },
-      data: {
-        needsPoReview: false,
-        isActive: true,
-        hazardClass: d.hazard ?? HazardClass.NONE,
-        tags: d.tags,
-        dilutionGuidance: d.dilution ?? [],
-        howToUse: d.howToUse,
-        longDescription: d.longDescription,
-        faq: d.faq ?? [],
-      },
-    });
-    for (const pack of d.extraPacks ?? []) {
-      const sku = `${slug.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}-${pack.label.replace(/\s+/g, "").toUpperCase()}`;
-      await prisma.productVariant.upsert({
-        where: { sku },
-        create: { productId: product.id, sku, packSizeValue: pack.value, unit: pack.unit, packLabel: pack.label },
-        update: {},
-      });
-    }
-    const variants = await prisma.productVariant.findMany({ where: { productId: product.id } });
-    for (const v of variants) {
+    await prisma.product.update({ where: { id: product.id }, data: { tags: d.tags } });
+    for (const v of product.variants) {
       const price = d.price[v.packLabel];
-      if (!price) {
-        // Placeholder "each" variant from the CSV that the demo has replaced with real pack sizes.
-        if (v.packLabel === "each" && Object.keys(d.price).length > 0) await prisma.productVariant.delete({ where: { id: v.id } });
-        continue;
-      }
-      const litres = v.unit === Unit.L ? Number(v.packSizeValue) : v.unit === Unit.ML ? Number(v.packSizeValue) / 1000 : v.unit === Unit.KG ? Number(v.packSizeValue) : Number(v.packSizeValue) / 1000;
+      if (!price) continue;
+      // Shipping weight: the pack's own contents plus the container. Litres and kilogrammes are close
+      // enough for water-like concentrates; a pack with no stated size is treated as 5 units.
+      const size = Number(v.packSizeValue) || 5;
+      const contentKg = v.unit === Unit.ML ? size / 1000 : v.unit === Unit.G ? size / 1000 : v.unit === Unit.PCS ? 0.05 * size : size;
       await prisma.productVariant.update({
         where: { id: v.id },
         data: {
           priceMinorUnits: BigInt(price) * 100n,
           stockOnHand: d.stock?.[v.packLabel] ?? 10,
           stockReserved: 0,
-          weightGrams: Math.round(litres * (d.weightGramsPerLitre ?? 1050)) + 150,
+          weightGrams: Math.round(contentKg * 1050) + 150,
           isActive: true,
-          sortOrder: Math.round(litres * 10),
+          sortOrder: Math.round(contentKg * 10),
         },
       });
     }
@@ -401,10 +371,11 @@ export async function seedDemo(prisma: PrismaClient): Promise<number> {
   // Related products: things that are genuinely used together.
   const bySlug = async (s: string) => (await prisma.product.findUnique({ where: { slug: s } }))?.id;
   const pairs: Array<[string, string, RelationKind]> = [
-    ["oven-grill-hood-cleaner", "general-purpose-cleaner-disinfectant", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
-    ["qac-surface-food-contact-sanitiser", "general-purpose-cleaner-disinfectant", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
-    ["chlorine-disinfectant-bleach", "enzyme-drain-septic-treatment", RelationKind.ALTERNATIVE],
-    ["crockery-cutlery-destainer", "descaler-kitchen-housekeeping", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+    ["grease-buster", "saf-bactosan", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+    ["saf-quartsan", "saf-bactosan", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+    ["safuney-m511", "bactro-trap-tablets", RelationKind.ALTERNATIVE],
+    ["safshine", "limeklin", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
+    ["saf-autoklin", "saf-autorinse", RelationKind.FREQUENTLY_BOUGHT_TOGETHER],
   ];
   for (const [a, b, kind] of pairs) {
     const [fromProductId, toProductId] = [await bySlug(a), await bySlug(b)];

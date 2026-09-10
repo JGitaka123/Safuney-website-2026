@@ -6,7 +6,7 @@ import { breadcrumbJsonLd, jsonLdString } from "@/lib/seo/jsonld";
 
 export const metadata: Metadata = {
   title: "Solutions by industry",
-  description: "Cleaning and hygiene programmes for hospitality, healthcare, foodservice, education, industrial sites and facilities management in Kenya.",
+  description: "Cleaning and hygiene programmes for hospitality, healthcare, foodservice, education, food and beverage processing, industrial sites and facilities management in Kenya.",
   alternates: { canonical: "/solutions", languages: { en: "/solutions", sw: "/sw/solutions" } },
 };
 

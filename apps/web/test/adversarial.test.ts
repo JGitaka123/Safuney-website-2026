@@ -46,6 +46,7 @@ run("adversarial", () => {
       await tx.order.deleteMany({ where: { guestEmail: contact.email } });
     });
     await prisma.webhookEvent.deleteMany({ where: { eventKey: { contains: stamp } } });
+    await prisma.productVariant.deleteMany({ where: { sku: { endsWith: stamp } } });
     await prisma.product.deleteMany({ where: { slug: `adv-p-${stamp}` } });
     await prisma.category.deleteMany({ where: { slug: `adv-cat-${stamp}` } });
     await prisma.deliveryZone.deleteMany({ where: { slug: `adv-zone-${stamp}` } });
@@ -77,6 +78,33 @@ run("adversarial", () => {
         const order = await prisma.order.findUniqueOrThrow({ where: { number: r.orderNumber }, include: { items: true } });
         // A cart held open while the price changes must not lock in the old price.
         expect(order.items[0]?.unitPriceMinorUnits).toBe(200000n);
+      } finally {
+        await prisma.productVariant.update({ where: { id: variant }, data: { priceMinorUnits: 125000n } });
+      }
+    });
+
+    it("will not sell an unpriced pack for nothing", async () => {
+      // Safuney's catalogue does not publish prices, so most packs seed at 0 and are quoted instead.
+      // Zero is not a price: without this guard a crafted add-to-cart buys a 20 L drum for free.
+      const poa = await prisma.productVariant.create({
+        data: { productId: (await prisma.product.findUniqueOrThrow({ where: { slug: `adv-p-${stamp}` } })).id, sku: `ADV-POA-${stamp}`, packSizeValue: "20", unit: "L", packLabel: "20 L", priceMinorUnits: 0n, vatRateBps: 1600, stockOnHand: 50 },
+      });
+      const { token } = await carts.getOrCreate(undefined);
+      await expect(carts.add(token, poa.id, 1)).rejects.toMatchObject({ code: "POA" });
+      await expect(carts.setQty(token, poa.id, 3)).rejects.toMatchObject({ code: "POA" });
+      expect((await carts.find(token))?.lines ?? []).toEqual([]);
+    });
+
+    it("stops counting a line whose pack loses its price while the cart is open", async () => {
+      const token = await cartWith(2);
+      await prisma.productVariant.update({ where: { id: variant }, data: { priceMinorUnits: 0n } });
+      try {
+        const cart = await carts.find(token);
+        // The line is still there to be seen, but it contributes nothing and is flagged, rather than
+        // silently adding KES 0.00 to a total someone is about to pay.
+        expect(cart?.lines[0]?.unavailable).toBe(true);
+        expect(cart?.subtotalMinorUnits).toBe(0n);
+        expect(cart?.itemCount).toBe(0);
       } finally {
         await prisma.productVariant.update({ where: { id: variant }, data: { priceMinorUnits: 125000n } });
       }

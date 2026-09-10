@@ -60,11 +60,25 @@ describe("robots", () => {
 });
 
 describe("structured data", () => {
-  it("asserts nothing about the business that the PO has not confirmed", async () => {
+  it("asserts exactly the business facts that are confirmed, and no others", async () => {
     const { localBusinessJsonLd } = await import("@/lib/seo/jsonld");
-    // Every contact fact in config/site.ts is still poConfirmed: false, so there is nothing to claim.
-    expect(localBusinessJsonLd()).toBeNull();
-    expect(localBusinessJsonLd({ kraPin: "P051234567X" })).toBeNull();
+    const { site } = await import("@/config/site");
+    const ld = localBusinessJsonLd();
+    // Written against the flags rather than against today's values, so it stays true in both
+    // directions: a fact that loses its confirmation must disappear from the markup too.
+    const confirmed = site.contact.address.poConfirmed || site.contact.phone.poConfirmed || site.contact.email.poConfirmed;
+    if (!confirmed) {
+      expect(ld).toBeNull();
+      return;
+    }
+    expect(ld).not.toBeNull();
+    expect("address" in ld!).toBe(site.contact.address.poConfirmed);
+    expect("telephone" in ld!).toBe(site.contact.phone.poConfirmed);
+    expect("email" in ld!).toBe(site.contact.email.poConfirmed);
+    if (site.contact.phone.poConfirmed) expect(ld!["telephone"]).toBe(site.contact.phone.e164);
+    // A tax identifier is only ever asserted when it is passed in from settings.
+    expect("taxID" in ld!).toBe(false);
+    expect(localBusinessJsonLd({ kraPin: "P051234567X" })!["taxID"]).toBe("P051234567X");
   });
 
   it("escapes a closing tag so structured data cannot break out of its script element", async () => {

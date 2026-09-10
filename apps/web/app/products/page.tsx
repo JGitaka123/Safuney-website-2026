@@ -7,7 +7,7 @@ import { ZoneBar } from "@/components/site/zone-bar";
 export const metadata: Metadata = {
   title: "Products",
   description:
-    "Cleaning and hygiene chemicals by application: foodservice, disinfection, laundry, housekeeping, healthcare, laboratory, specialty and personal hygiene.",
+    "Cleaning and hygiene products by application: warewashing, disinfection, speciality, personal hygiene, housekeeping, process hygiene, laundry, the Bactro biological range, and cleaning equipment.",
 };
 
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ zone?: string }> }) {
@@ -27,8 +27,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
       </nav>
       <h1 className="mt-3 text-h1">Products</h1>
       <p className="mt-3 max-w-[62ch] text-ink-muted">
-        Cleaning and hygiene chemicals by application. Prices, pack sizes, dilution ratios and safety data sheets appear
-        on each product as the catalogue is published. Until then, request a quote and we will price it the same day.
+        Safuney&rsquo;s full range by application, with the pack sizes and dosing from the product catalogue. Where a
+        pack is not priced online yet, ask for a quote and we come back with a price within one working day.
       </p>
 
       <section aria-labelledby="zone-filter" className="mt-10">

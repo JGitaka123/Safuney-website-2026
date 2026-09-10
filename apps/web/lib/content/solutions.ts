@@ -34,7 +34,7 @@ export const INDUSTRIES: readonly Industry[] = [
     intro:
       "A hotel cleans four very different environments on one shift — guest bathrooms, public floors, a commercial kitchen and a laundry — and the cost of mixing them up is a guest complaint or a failed inspection. Colour-coded zoning keeps the cloth that cleaned a toilet away from a breakfast counter, and correct dilution keeps the cost per room predictable instead of drifting up with every new housekeeper.",
     zones: ["RED", "BLUE", "GREEN"],
-    categories: ["housekeeping", "disinfection", "laundry", "foodservice", "specialty"],
+    categories: ["housekeeping", "disinfection", "laundry", "warewashing", "specialty"],
     faq: [
       { q: "How do we stop housekeepers over-diluting?", a: "Buy concentrates with a dosing system rather than ready-to-use bottles, and train on the ratio. Every product page shows its dilution and a calculator that turns a room count into litres, so a supervisor can check the figure rather than guess it." },
       { q: "Can one disinfectant cover guest rooms and the kitchen?", a: "A QAC sanitiser approved for food-contact surfaces covers both, but the cloths and the colour coding still have to be separate. Where a washroom needs a stronger kill, a chlorine-based product is the right tool — and must never be mixed with an acidic descaler." },
@@ -48,10 +48,10 @@ export const INDUSTRIES: readonly Industry[] = [
     intro:
       "In clinical settings the cleaning method is part of the infection-prevention plan, not a housekeeping detail. What matters is contact time, the right product for the surface, and a colour code that keeps isolation areas separate from everything else.",
     zones: ["YELLOW", "RED", "BLUE"],
-    categories: ["healthcare", "disinfection", "housekeeping", "personal-hygiene", "laboratory"],
+    categories: ["disinfection", "housekeeping", "personal-hygiene", "bactro", "specialty"],
     faq: [
       { q: "Why does contact time matter more than concentration?", a: "A disinfectant kills over time at its stated dilution. Wiping it off after ten seconds gives you a clean-looking surface and none of the kill. Every dilution figure on this site assumes the contact time on the label." },
-      { q: "Do you supply for isolation areas?", a: "Yellow-zone products for clinical and isolation areas are listed under Healthcare. Keep their cloths, mops and buckets separate from every other zone." },
+      { q: "Do you supply for isolation areas?", a: "An oxygen-based cleaner-disinfectant and a chlorine-based disinfectant at 4% active chlorine cover clinical and isolation cleaning; both are under Disinfection and sanitisation. Whichever you use, keep its cloths, mops and buckets separate from every other zone." },
       { q: "What about hand hygiene?", a: "Alcohol hand sanitiser and washroom hand products are under Personal hygiene. Alcohol works on visibly clean hands; where hands are soiled, soap and water first." },
     ],
   },
@@ -62,7 +62,7 @@ export const INDUSTRIES: readonly Industry[] = [
     intro:
       "A commercial kitchen is cleaned between services, by people who are already busy, with products that are safe on surfaces food touches. That means a food-contact-approved sanitiser, a degreaser strong enough for extraction canopies and fryers, and a destainer for crockery — used in the right order, because degreasing after sanitising undoes the sanitising.",
     zones: ["GREEN"],
-    categories: ["foodservice", "disinfection", "specialty", "personal-hygiene"],
+    categories: ["warewashing", "disinfection", "specialty", "personal-hygiene"],
     faq: [
       { q: "Clean first or sanitise first?", a: "Clean first, always. A sanitiser applied over grease sanitises the grease. Degrease, rinse, then sanitise and leave the contact time." },
       { q: "Is a food-contact sanitiser safe without rinsing?", a: "At its stated dilution, a QAC sanitiser sold for food-contact use is designed to be left to air-dry. Above that dilution it is not — which is the practical reason to dose rather than pour." },
@@ -76,7 +76,7 @@ export const INDUSTRIES: readonly Industry[] = [
     intro:
       "Schools clean at scale, on a budget, with staff who turn over. That argues for a short product list that covers everything, concentrates that stretch, and a colour code simple enough to survive new staff. Boarding facilities add laundry and a kitchen, and term-time outbreaks make washroom hygiene the thing that actually matters.",
     zones: ["RED", "BLUE", "GREEN"],
-    categories: ["housekeeping", "disinfection", "personal-hygiene", "laundry", "foodservice"],
+    categories: ["housekeeping", "disinfection", "personal-hygiene", "laundry", "warewashing"],
     faq: [
       { q: "How short can our product list be?", a: "For most schools: one general-purpose cleaner-disinfectant, one washroom product, one food-contact sanitiser for the kitchen, hand soap and a laundry detergent. Five products, four colours." },
       { q: "How do we make concentrates last?", a: "Dose them. A 5 L concentrate at 1:40 is 200 L of solution — but only if it is measured. Poured by eye it is closer to 80 L, and the difference is most of a cleaning budget." },
@@ -90,11 +90,25 @@ export const INDUSTRIES: readonly Industry[] = [
     intro:
       "Industrial cleaning is mostly degreasing, descaling and drain maintenance, on surfaces that tolerate stronger chemistry than a hotel floor — and around staff who need to know what they are handling. Hazard class, protective equipment and safe storage matter more here than anywhere else on this site, which is why every product carries its hazard mark and its safety data sheet.",
     zones: ["BLUE"],
-    categories: ["specialty", "housekeeping", "disinfection", "laboratory"],
+    categories: ["specialty", "housekeeping", "process-hygiene", "equipment"],
     faq: [
       { q: "What must never be stored together?", a: "Chlorine-based products and acidic descalers. Together they release chlorine gas. Separate shelves, and never the same dosing equipment." },
       { q: "Do you supply safety data sheets?", a: "Yes — on the product page and in the SDS library. Print the current version for the site file; the library keeps the version history." },
       { q: "What clears drains without damaging pipework?", a: "An enzyme-based drain and septic treatment, dosed regularly, rather than a caustic opener used in an emergency. It is slower, and it does not eat the pipe." },
+    ],
+  },
+  {
+    slug: "food-and-beverage-processing",
+    name: "Food and beverage processing",
+    summary: "Dairies, breweries, bottlers and produce handling: clean-in-place, process surfaces and product safety.",
+    intro:
+      "Process cleaning is a sequence, not a product. Caustic detergent lifts protein and fat, an acid wash takes the scale the caustic leaves behind, and a cold peracetic sanitiser finishes surfaces that cannot take another heat cycle. Each step has a concentration and a temperature, and skipping one shows up as scale, as taint, or as a plate count nobody can explain.",
+    zones: ["GREEN"],
+    categories: ["process-hygiene", "disinfection", "warewashing", "personal-hygiene"],
+    faq: [
+      { q: "Why an acid wash after the caustic one?", a: "Caustic removes organic soil but leaves mineral scale, and scale is where organisms shelter. An acid detergent at around 1.5% and 80 °C for 25 to 30 minutes clears it. Run them in that order and never together." },
+      { q: "What sanitises a surface that cannot be heated?", a: "A peracetic acid and hydrogen peroxide disinfectant at 0.2 to 0.4%, cold. It rinses clean and does not need a heat cycle to work." },
+      { q: "Do you supply raw materials as well as formulated products?", a: "Yes. Caustic pearls and flakes at 99% purity and hydrogen peroxide at 35% and 50% are on the same list as the formulated detergents." },
     ],
   },
   {
@@ -104,7 +118,7 @@ export const INDUSTRIES: readonly Industry[] = [
     intro:
       "A facilities contractor is judged on consistency across sites and on a cost per square metre that holds. Both come from the same place: a standard product list, dosing rather than pouring, and staff trained on the same method everywhere. Corporate accounts here carry agreed pricing, so a site manager ordering in Nakuru pays what was negotiated in Nairobi.",
     zones: ["RED", "BLUE", "GREEN", "YELLOW"],
-    categories: ["housekeeping", "disinfection", "foodservice", "specialty", "personal-hygiene"],
+    categories: ["housekeeping", "disinfection", "warewashing", "specialty", "personal-hygiene"],
     faq: [
       { q: "Can each site order on our account?", a: "Yes. An organisation account holds your agreed prices, and you can require approval above a threshold so a site cannot commit you beyond it." },
       { q: "Can we repeat an order?", a: "Save an order as a list and reorder it in one action, or set a scheduled delivery so it repeats without anyone having to remember." },

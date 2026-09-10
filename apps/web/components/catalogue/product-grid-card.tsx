@@ -19,10 +19,22 @@ export function ProductGridCard({ product, mode, categorySlug, headingLevel = 3 
       zones={product.zone === "NONE" ? [] : [product.zone as ZoneKey]}
       packs={product.variants.map((v) => v.packLabel)}
       priceLabel={price ? price.label.replace(/^From /, "") : undefined}
+      priceNote={price ? undefined : "Price on request"}
       hazard={product.hazardClass as HazardClass}
       image={
         image ? (
-          <Image src={image.url} alt={image.alt} width={image.width ?? 600} height={image.height ?? 600} className="h-full w-full object-cover" sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" />
+          // Centred and never scaled past its own pixels (ADR 0016).
+          <div className="grid h-full w-full place-items-center p-4">
+            <Image
+              src={image.url}
+              alt={image.alt}
+              width={image.width ?? 480}
+              height={image.height ?? 480}
+              className="object-contain"
+              style={{ width: "100%", height: "auto", maxWidth: `${image.width ?? 480}px`, maxHeight: "100%" }}
+              sizes="(min-width: 1024px) 260px, (min-width: 640px) 33vw, 45vw"
+            />
+          </div>
         ) : lead ? (
           // No photograph yet: draw the pack from what the variant actually is (see PackShot).
           <PackShot
@@ -35,7 +47,7 @@ export function ProductGridCard({ product, mode, categorySlug, headingLevel = 3 
       }
       action={
         <Link href={href} className="inline-flex min-h-11 w-full items-center justify-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
-          Choose pack size
+          {product.variants.length > 1 ? "Choose pack size" : price ? "View product" : "Request a quote"}
         </Link>
       }
     />

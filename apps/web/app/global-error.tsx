@@ -30,7 +30,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         }}
       >
         <main style={{ maxWidth: "34rem" }}>
-          <div style={{ height: 6, width: 72, background: "#0b5e73", marginBottom: 24 }} />
+          <div style={{ height: 6, width: 72, background: "#0e50a8", marginBottom: 24 }} />
           <p style={{ margin: 0, fontSize: "0.8125rem", color: "#4a5c68" }}>Safuney</p>
           <h1 style={{ margin: "8px 0 0", fontSize: "1.75rem", lineHeight: 1.15, fontWeight: 600 }}>The site is having a problem</h1>
           <p style={{ color: "#4a5c68" }}>
@@ -38,7 +38,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             you press the button that says so.
           </p>
           <p style={{ color: "#4a5c68" }}>
-            Try again in a moment, or call <a href="tel:+254796808822" style={{ color: "#0b5e73" }}>+254 796 808 822</a> and
+            Try again in a moment, or call <a href="tel:+254796808822" style={{ color: "#0e50a8" }}>+254 796 808 822</a> and
             a person will take your order.
           </p>
           <button

@@ -26,8 +26,8 @@ test.describe("admin console", () => {
     });
 
     test("a price change is written and the audit log names who did it", async ({ page }) => {
-      await page.goto("/admin/catalogue?q=sanitiser");
-      const row = page.getByRole("row").filter({ hasText: "sanitiser" }).first();
+      await page.goto("/admin/catalogue?q=quartsan");
+      const row = page.getByRole("row").filter({ hasText: "QUARTSAN" }).first();
       const price = row.getByRole("textbox", { name: /^Price for / }).first();
       await expect(price).toBeVisible();
       const before = await price.inputValue();
@@ -42,16 +42,16 @@ test.describe("admin console", () => {
       await expectNoA11yViolations(page);
 
       // Put it back, so a repeated run starts where this one did.
-      await page.goto("/admin/catalogue?q=sanitiser");
-      const again = page.getByRole("row").filter({ hasText: "sanitiser" }).first();
+      await page.goto("/admin/catalogue?q=quartsan");
+      const again = page.getByRole("row").filter({ hasText: "QUARTSAN" }).first();
       await again.getByRole("textbox", { name: /^Price for / }).first().fill(before);
       await again.getByRole("button", { name: "Save" }).first().click();
       await expect(again.getByText("Saved")).toBeVisible();
     });
 
     test("a stock count below what live orders reserve is refused", async ({ page }) => {
-      await page.goto("/admin/catalogue?q=sanitiser");
-      const row = page.getByRole("row").filter({ hasText: "sanitiser" }).first();
+      await page.goto("/admin/catalogue?q=quartsan");
+      const row = page.getByRole("row").filter({ hasText: "QUARTSAN" }).first();
       const counted = row.getByRole("textbox", { name: "Counted quantity" }).first();
       const before = await counted.inputValue();
       await counted.fill("-1");
@@ -60,7 +60,7 @@ test.describe("admin console", () => {
       await expect(row.getByRole("alert")).toBeVisible();
       // Nothing was written.
       await page.reload();
-      await expect(page.getByRole("row").filter({ hasText: "sanitiser" }).first().getByRole("textbox", { name: "Counted quantity" }).first()).toHaveValue(before);
+      await expect(page.getByRole("row").filter({ hasText: "QUARTSAN" }).first().getByRole("textbox", { name: "Counted quantity" }).first()).toHaveValue(before);
     });
 
     test("the CSV round trip reports no changes, and a bad price is refused by name", async ({ page }) => {
@@ -80,9 +80,13 @@ test.describe("admin console", () => {
 
       const lines = csv.split("\r\n");
       const headers = lines[0]!.split(",");
-      const cells = lines[1]!.split(",");
+      // Splitting on commas only works on a row with no quoted field, and catalogue descriptions have
+      // commas in them. Pick a row that is safe to edit that way rather than corrupting a quoted one.
+      const target = lines.findIndex((l, i) => i > 0 && l.length > 0 && !l.includes('"'));
+      expect(target).toBeGreaterThan(0);
+      const cells = lines[target]!.split(",");
       cells[headers.indexOf("price_kes")] = "twelve hundred";
-      lines[1] = cells.join(",");
+      lines[target] = cells.join(",");
       await page.setInputFiles("#catalogue-csv", { name: "broken.csv", mimeType: "text/csv", buffer: Buffer.from(lines.join("\r\n"), "utf8") });
       await expect(page.getByText(/Nothing will be imported while any row has a problem/)).toBeVisible();
       await expect(page.getByText(/price_kes: "twelve hundred"/)).toBeVisible();

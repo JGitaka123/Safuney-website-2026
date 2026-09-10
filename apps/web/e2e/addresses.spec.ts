@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations, expectNoHorizontalOverflow } from "./helpers";
 
-const PRODUCT = "/products/disinfection/qac-surface-food-contact-sanitiser";
+const PRODUCT = "/products/disinfection/saf-quartsan";
 
 function freshPhone(): string {
   return `07${String(Date.now() + Math.floor(Math.random() * 1000)).slice(-8)}`;
@@ -39,7 +39,7 @@ test.describe("address book", () => {
 
     // Checkout picks the saved address and fills the delivery fields.
     await page.goto(PRODUCT);
-    await page.getByRole("radio", { name: /1 L/ }).check();
+    await page.getByRole("radio", { name: /5 L/ }).check();
     await page.getByRole("button", { name: "Add to cart" }).click();
     await expect(page.getByText(/Added 1 ×/)).toBeVisible();
     await page.goto("/checkout");
