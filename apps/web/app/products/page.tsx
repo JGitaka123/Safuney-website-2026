@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ZONES, ZoneBand, zoneMeta } from "@safuney/ui";
-import { getCategories, getZoneCounts } from "@/lib/catalogue";
-import { ZoneBar } from "@/components/site/zone-bar";
+import { ZONES, cn, zoneMeta } from "@safuney/ui";
+import { site } from "@/config/site";
+import { getCategories, getProductsBySlug } from "@/lib/catalogue";
+import { whatsappHref } from "@/lib/contact";
+import { getPriceDisplayMode } from "@/lib/settings";
+import { ProductGridCard } from "@/components/catalogue/product-grid-card";
+import { btn } from "@/components/marketing/buttons";
+import { Crumbs } from "@/components/marketing/crumbs";
+import { CtaBand } from "@/components/marketing/cta-band";
+import { Icon } from "@/components/marketing/icons";
+import { RangeGrid } from "@/components/marketing/range-grid";
 
 export const metadata: Metadata = {
   title: "Products",
@@ -13,79 +21,103 @@ export const metadata: Metadata = {
 export default async function ProductsPage({ searchParams }: { searchParams: Promise<{ zone?: string }> }) {
   const { zone } = await searchParams;
   const selected = zoneMeta(zone);
-  const [categories, counts] = await Promise.all([getCategories(), getZoneCounts()]);
+  const [categories, featured, mode] = await Promise.all([getCategories(), getProductsBySlug(site.featuredProducts), getPriceDisplayMode()]);
   const shown = selected ? categories.filter((c) => c.zones.includes(selected.key)) : categories;
+  const total = categories.reduce((n, c) => n + (c.productCount ?? 0), 0);
 
   return (
-    <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-16">
-      <nav aria-label="Breadcrumb" className="text-small text-ink-muted">
-        <Link href="/" className="hover:underline underline-offset-[3px]">
-          Home
-        </Link>
-        <span aria-hidden> / </span>
-        <span aria-current="page">Products</span>
-      </nav>
-      <h1 className="mt-3 text-h1">Products</h1>
-      <p className="mt-3 max-w-[62ch] text-ink-muted">
-        Safuney&rsquo;s full range by application, with the pack sizes and dosing from the product catalogue. Where a
-        pack is not priced online yet, ask for a quote and we come back with a price within one working day.
-      </p>
-
-      <section aria-labelledby="zone-filter" className="mt-10">
-        <h2 id="zone-filter" className="text-h3">
-          Where will you use it?
-        </h2>
-        <div className="mt-4">
-          <ZoneBar counts={counts} />
+    <>
+      <section aria-labelledby="products-heading" className="on-dark bg-hero">
+        <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-12">
+          <Crumbs items={[{ label: "Products" }]} />
+          <h1 id="products-heading" className="mt-4 text-h1 text-white">
+            Products
+          </h1>
+          <p className="mt-2 text-body-lg text-white/75">
+            {total} products in {categories.length} ranges. Priced in one working day.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link href="/quote" className={btn.cta}>
+              Get a quote
+              <Icon name="arrowRight" className="size-5" />
+            </Link>
+            <a href={whatsappHref("Hello Safuney, here is my product list for a quote:")} target="_blank" rel="noopener noreferrer" className={btn.ghost}>
+              <Icon name="whatsapp" className="size-5 text-whatsapp" />
+              Send your list on WhatsApp
+            </a>
+          </div>
         </div>
-        {selected ? (
-          <p className="mt-4 text-small">
-            Showing categories for <strong>{selected.label}</strong>.{" "}
-            <Link href="/products" className="text-accent underline underline-offset-[3px]">
-              Show all categories
-            </Link>
-          </p>
-        ) : null}
       </section>
 
-      <section aria-labelledby="categories" className="mt-12">
-        <h2 id="categories" className="text-h3">
-          {selected ? `Categories for ${selected.label.toLowerCase()}` : "All categories"}
-        </h2>
-        {shown.length === 0 ? (
-          <p className="mt-4 max-w-[62ch]">
-            Nothing is filed under {selected?.label.toLowerCase()} yet.{" "}
-            <Link href="/quote" className="text-accent underline underline-offset-[3px]">
-              Ask us and we will usually source it
-            </Link>
-            .
-          </p>
-        ) : (
-          <ul className="mt-4 grid border-t border-line md:grid-cols-2 md:gap-x-12">
-            {shown.map((c) => (
-              <li key={c.slug} id={c.slug} className="scroll-mt-20 border-b border-line py-5">
-                <h3 className="text-h4">{c.name}</h3>
-                <p className="mt-1 text-small text-ink-muted">{c.blurb}</p>
-                {c.zones.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-caption text-ink-muted">
-                    <ZoneBand zones={c.zones} className="max-w-24" />
-                    <span>Use in: {c.zones.map((z) => ZONES.find((m) => m.key === z)?.label).join(", ")}</span>
-                  </div>
-                ) : null}
-                <p className="mt-3 text-small">
-                  {typeof c.productCount === "number" && c.productCount > 0 ? (
-                    <span className="tnum">{c.productCount} products listed.</span>
-                  ) : (
-                    <Link href={`/quote?category=${c.slug}`} className="text-accent underline underline-offset-[3px]">
-                      Request a quote for {c.name.toLowerCase()}
-                    </Link>
-                  )}
-                </p>
-              </li>
-            ))}
+      <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-14">
+        <section aria-labelledby="zone-filter">
+          <h2 id="zone-filter" className="text-h4">
+            Where will you use it?
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {ZONES.map((z) => {
+              const active = selected?.key === z.key;
+              return (
+                <li key={z.key}>
+                  <Link
+                    href={active ? "/products" : `/products?zone=${z.slug}`}
+                    aria-current={active ? "true" : undefined}
+                    className={cn(
+                      "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-small font-medium text-ink",
+                      active ? "border-2 border-accent bg-accent-wash" : "border-line bg-surface hover:border-stainless",
+                    )}
+                  >
+                    <span aria-hidden className={cn("size-2.5 rounded-full", z.swatch)} />
+                    {z.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
-        )}
-      </section>
-    </div>
+          {selected ? (
+            <p className="mt-4 text-small">
+              Showing categories for <strong>{selected.label}</strong>.{" "}
+              <Link href="/products" className="text-accent underline underline-offset-[3px]">
+                Show all categories
+              </Link>
+            </p>
+          ) : null}
+        </section>
+
+        <section aria-labelledby="categories" className="mt-10">
+          <h2 id="categories" className="text-h2">
+            {selected ? `Ranges for ${selected.label.toLowerCase()}` : "All ranges"}
+          </h2>
+          {shown.length === 0 ? (
+            <p className="mt-4 max-w-[62ch]">
+              Nothing is filed under {selected?.label.toLowerCase()} yet.{" "}
+              <Link href="/quote" className="text-accent underline underline-offset-[3px]">
+                Ask us and we will usually source it
+              </Link>
+              .
+            </p>
+          ) : (
+            <RangeGrid categories={shown} className="mt-6" />
+          )}
+        </section>
+
+        {!selected && featured.length > 0 ? (
+          <section aria-labelledby="essentials" className="mt-16">
+            <h2 id="essentials" className="text-h2">
+              The essentials
+            </h2>
+            <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {featured.map((p) => (
+                <li key={p.id}>
+                  <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+
+      <CtaBand title="Can't see it? We can usually source it." body="Send the product or brand you use today." />
+    </>
   );
 }

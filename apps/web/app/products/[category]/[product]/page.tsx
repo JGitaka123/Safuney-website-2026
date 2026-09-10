@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import { DilutionTable, HazardBadge, HazardPictogram, hazardLabel, ZoneBadge, type HazardClass, type ZoneKey } from "@safuney/ui";
 import { money } from "@safuney/db";
 import { site } from "@/config/site";
-import { services } from "@/lib/env";
 import { parseGuidance, ratioLabel } from "@/lib/catalogue/dilution";
-import { getProduct, listVisibleProductPaths, stockStatus } from "@/lib/catalogue/queries";
+import { parseFilters } from "@/lib/catalogue/filters";
+import { getCategoryPage, getProduct, listVisibleProductPaths, stockStatus } from "@/lib/catalogue/queries";
+import { productEnquiry, telHref, whatsappHref } from "@/lib/contact";
 import { displayPrice } from "@/lib/pricing";
 import { getPriceDisplayMode, isFeatureEnabled } from "@/lib/settings";
 import { breadcrumbJsonLd, faqJsonLd, jsonLdString, productJsonLd } from "@/lib/seo/jsonld";
@@ -16,6 +17,9 @@ import { DilutionCalculator } from "@/components/catalogue/dilution-calculator";
 import { ProductGridCard } from "@/components/catalogue/product-grid-card";
 import { PurchasePanel, type PurchaseVariant } from "@/components/catalogue/purchase-panel";
 import { AvailabilityNote } from "@/components/catalogue/availability-note";
+import { btn } from "@/components/marketing/buttons";
+import { CtaBand } from "@/components/marketing/cta-band";
+import { Icon } from "@/components/marketing/icons";
 
 type Params = Promise<{ category: string; product: string }>;
 
@@ -32,7 +36,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { category, product: slug } = await params;
-  const product = services.database() ? await getProduct(category, slug) : null;
+  const product = await getProduct(category, slug);
   if (!product) return { title: "Product" };
   /*
    * SKU and category in the title, after the product name.
@@ -50,8 +54,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: product.seoTitle ?? derived,
     description: product.seoDescription ?? product.shortDescription,
     alternates: { canonical: `/products/${category}/${slug}` },
-    // `images` is set only when there are real photographs: an empty array here would override the
-    // generated share card from opengraph-image.tsx and leave the link with no image at all.
     // No `images` here on purpose: setting it would override the generated share card in
     // opengraph-image.tsx with the bare 480 px cut-out, which platforms either reject as too small or
     // composite onto a background of their own choosing. The card carries the same photograph at the
@@ -69,9 +71,11 @@ function litresOf(v: { packSizeValue: unknown; unit: string }): number {
   return v.unit === "ML" || v.unit === "G" ? n / 1000 : v.unit === "PCS" ? 0 : n;
 }
 
+/** What a buyer gets whichever pack they ask about. Every line is a standing commitment elsewhere on the site. */
+const ASSURANCES = ["Priced within one working day", "eTIMS-compliant invoice", "Delivery across Kenya", "Safety data sheet on request"];
+
 export default async function ProductPage({ params }: { params: Params }) {
   const { category, product: slug } = await params;
-  if (!services.database()) notFound();
   const [product, mode, shopEnabled] = await Promise.all([getProduct(category, slug), getPriceDisplayMode(), isFeatureEnabled("shop.enabled")]);
   if (!product) notFound();
 
@@ -110,6 +114,10 @@ export default async function ProductPage({ params }: { params: Params }) {
   const zone = product.zone === "NONE" ? null : (product.zone as ZoneKey);
   const image = product.images[0];
 
+  // The rest of the range, for the buyer who landed here and wants the thing next to it.
+  const rangePage = await getCategoryPage(category, parseFilters({}));
+  const moreFromRange = (rangePage?.products ?? []).filter((p) => p.slug !== product.slug).slice(0, 4);
+
   const jsonLd = [
     breadcrumbJsonLd([
       { name: "Products", path: "/products" },
@@ -136,176 +144,190 @@ export default async function ProductPage({ params }: { params: Params }) {
   ];
 
   return (
-    <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-12">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
-      <Breadcrumbs items={[{ href: "/products", label: "Products" }, { href: `/products/${category}`, label: product.category.name }, { label: product.name }]} />
+    <>
+      <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-12">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
+        <Breadcrumbs items={[{ href: "/products", label: "Products" }, { href: `/products/${category}`, label: product.category.name }, { label: product.name }]} />
 
-      <div className="mt-4 grid gap-8 lg:grid-cols-12 lg:gap-12">
-        <div className="min-w-0 lg:col-span-6">
-          <figure className="border border-line bg-surface">
-            <div className="grid aspect-square place-items-center overflow-hidden p-6">
-              {image ? (
-                // Never scaled past the file's own pixels. The pack shots are resampled once, at
-                // extraction (ADR 0016); letting the browser stretch them again on top of that is
-                // what turns a real photograph into a blurred one.
-                <Image
-                  src={image.url}
-                  alt={image.alt}
-                  width={image.width ?? 480}
-                  height={image.height ?? 480}
-                  priority
-                  className="object-contain"
-                  style={{ width: "100%", height: "auto", maxWidth: `${image.width ?? 480}px`, maxHeight: "100%" }}
-                  sizes="(min-width: 1024px) 480px, 100vw"
-                />
-              ) : (
-                <div aria-hidden className="grid h-full w-full place-items-center bg-ground-deep p-8">
-                  <span className="text-center text-h2 text-ink">{product.name}</span>
-                </div>
-              )}
-            </div>
-            {zone ? <div className={`h-1.5 w-full ${zone === "RED" ? "bg-zone-red" : zone === "BLUE" ? "bg-zone-blue" : zone === "GREEN" ? "bg-zone-green" : "bg-zone-yellow"}`} /> : null}
-          </figure>
-          {product.images.length > 1 ? (
-            <ul className="mt-3 grid grid-cols-5 gap-2">
-              {product.images.slice(0, 5).map((img) => (
-                <li key={img.url} className="border border-line bg-surface">
-                  <Image src={img.url} alt={img.alt} width={200} height={200} className="aspect-square w-full object-contain" />
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-5 lg:col-span-6">
-          {product.brand ? <p className="text-small text-ink-muted">{product.brand}</p> : null}
-          <h1 className="text-h1">{product.name}</h1>
-          <p className="max-w-[62ch] text-body text-ink-muted">{product.shortDescription}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            {zone ? <ZoneBadge zone={zone} /> : null}
-            {product.hazardClass !== "NONE" ? <HazardBadge hazard={product.hazardClass as HazardClass} /> : null}
-          </div>
-          <PurchasePanel productName={product.name} variants={variants} mode={mode} vatRateBps={vatRateBps} shopEnabled={shopEnabled} />
-          {/* Server-rendered from live stock: the first pack is the one selected on arrival. */}
-          {variants[0] ? <AvailabilityNote variantId={variants[0].id} /> : null}
-        </div>
-      </div>
-
-      <div className="mt-14 grid gap-12 lg:grid-cols-12">
-        <div className="flex min-w-0 flex-col gap-12 lg:col-span-8">
-          {product.longDescription ? (
-            <section aria-labelledby="about">
-              <h2 id="about" className="text-h2">
-                About this product
-              </h2>
-              <div className="prose mt-4">
-                {product.longDescription.split(/\n{2,}/).map((para, i) => (
-                  <p key={i}>{para}</p>
-                ))}
+        <div className="mt-5 grid gap-8 lg:grid-cols-12 lg:gap-12">
+          <div className="min-w-0 lg:col-span-6">
+            <figure className="bg-stage relative overflow-hidden rounded-[20px] border border-line shadow-card">
+              <div className="grid aspect-square place-items-center overflow-hidden p-8">
+                {image ? (
+                  // Never scaled past the file's own pixels. The pack shots are resampled once, at
+                  // extraction (ADR 0016); letting the browser stretch them again on top of that is
+                  // what turns a real photograph into a blurred one.
+                  <Image
+                    src={image.url}
+                    alt={image.alt}
+                    width={image.width ?? 480}
+                    height={image.height ?? 480}
+                    priority
+                    className="object-contain drop-shadow-[0_18px_24px_rgba(16,32,43,0.18)]"
+                    style={{ width: "auto", height: "auto", maxWidth: "100%", maxHeight: "100%" }}
+                    sizes="(min-width: 1024px) 480px, 100vw"
+                  />
+                ) : (
+                  <div aria-hidden className="grid h-full w-full place-items-center bg-ground-deep p-8">
+                    <span className="text-center text-h2 text-ink">{product.name}</span>
+                  </div>
+                )}
               </div>
-            </section>
-          ) : null}
-
-          {dilution.length > 0 ? (
-            <section aria-labelledby="dilution">
-              <h2 id="dilution" className="text-h2">
-                Dilution and contact time
-              </h2>
-              <div className="mt-4">
-                <DilutionTable
-                  caption={`Dilution chart for ${product.name}`}
-                  rows={dilution.map((r) => ({ ratio: ratioLabel(r.ratio), use: r.use, contactTime: r.contactTimeMinutes ? `${r.contactTimeMinutes} min` : "—", note: r.note }))}
-                />
-              </div>
-              <div className="mt-6">
-                <DilutionCalculator rows={dilution} packs={product.variants.map((v) => ({ label: v.packLabel, litres: litresOf(v) })).filter((p) => p.litres > 0)} />
-              </div>
-            </section>
-          ) : product.dilutionText ? (
-            <section aria-labelledby="dilution">
-              <h2 id="dilution" className="text-h2">
-                Dilution
-              </h2>
-              <p className="mt-4 max-w-[62ch]">{product.dilutionText}</p>
-            </section>
-          ) : null}
-
-          {product.howToUse ? (
-            <section aria-labelledby="how">
-              <h2 id="how" className="text-h2">
-                How to use
-              </h2>
-              <div className="prose mt-4">
-                {product.howToUse.split(/\n{2,}/).map((para, i) => (
-                  <p key={i}>{para}</p>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <section aria-labelledby="safety">
-            <h2 id="safety" className="text-h2">
-              Safety and documents
-            </h2>
-            {product.hazardClass !== "NONE" ? (
-              <div className="mt-4 flex items-start gap-3 bg-warning-wash p-4 text-warning-ink">
-                <HazardPictogram hazard={product.hazardClass as Exclude<HazardClass, "NONE">} size={24} className="mt-0.5 shrink-0" />
-                <p className="text-small">
-                  <strong>{hazardLabel[product.hazardClass as HazardClass]}.</strong> Read the label and the safety data sheet before use. Wear the protective equipment it specifies, never mix with other chemicals, and store closed in the original container away from food.
-                </p>
-              </div>
-            ) : null}
-            {documents.length > 0 ? (
-              <ul className="mt-4 flex flex-col divide-y divide-line border-y border-line">
-                {documents.map((d) => (
-                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                    <span>
-                      <span className="block font-medium">{d.type === "SDS" ? "Safety data sheet" : d.type === "COA" ? "Certificate of analysis" : d.title}</span>
-                      <span className="block text-caption text-ink-muted">
-                        Version {d.version}, {new Date(d.publishedAt).toLocaleDateString("en-KE", { year: "numeric", month: "short", day: "numeric" })}
-                      </span>
-                    </span>
-                    <a href={d.fileUrl} className="inline-flex min-h-11 items-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep" download>
-                      Download PDF
-                    </a>
+              {zone ? <div className={`absolute inset-x-0 bottom-0 h-1.5 ${zone === "RED" ? "bg-zone-red" : zone === "BLUE" ? "bg-zone-blue" : zone === "GREEN" ? "bg-zone-green" : "bg-zone-yellow"}`} /> : null}
+            </figure>
+            {product.images.length > 1 ? (
+              <ul className="mt-3 grid grid-cols-5 gap-2">
+                {product.images.slice(0, 5).map((img) => (
+                  <li key={img.url} className="overflow-hidden rounded-chip border border-line bg-surface">
+                    <Image src={img.url} alt={img.alt} width={200} height={200} className="aspect-square w-full object-contain" />
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-4 max-w-[62ch] text-small">
-                The safety data sheet and certificate of analysis for this product are supplied on request.{" "}
-                <Link href={`/contact?topic=contact&sku=${product.variants[0]?.sku ?? ""}`} className="text-accent underline underline-offset-[3px]">
-                  Ask us for the documents
-                </Link>
-                .
-              </p>
-            )}
-          </section>
+            ) : null}
+          </div>
 
-          {faq.length > 0 ? (
-            <section aria-labelledby="faq">
-              <h2 id="faq" className="text-h2">
-                Questions people ask
+          <div className="flex min-w-0 flex-col gap-5 lg:col-span-6">
+            <p className="text-small">
+              <Link href={`/products/${category}`} className="font-medium text-accent hover:underline underline-offset-[3px]">
+                {product.category.name}
+              </Link>
+              {product.brand ? <span className="text-ink-muted"> · {product.brand}</span> : null}
+            </p>
+            <h1 className="-mt-2 text-h1">{product.name}</h1>
+            <p className="max-w-[62ch] text-body-lg text-ink-muted">{product.shortDescription}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {zone ? <ZoneBadge zone={zone} /> : null}
+              {product.hazardClass !== "NONE" ? <HazardBadge hazard={product.hazardClass as HazardClass} /> : null}
+            </div>
+            <div className="rounded-[20px] border border-line bg-surface p-5 shadow-card md:p-6">
+              <PurchasePanel productName={product.name} variants={variants} mode={mode} vatRateBps={vatRateBps} shopEnabled={shopEnabled} />
+              {/* Server-rendered from live stock: the first pack is the one selected on arrival. */}
+              {variants[0] && !product.fromSnapshot ? <AvailabilityNote variantId={variants[0].id} /> : null}
+            </div>
+            <ul className="grid gap-2 text-small text-ink sm:grid-cols-2">
+              {ASSURANCES.map((a) => (
+                <li key={a} className="flex items-center gap-2">
+                  <Icon name="check" className="size-4 shrink-0 text-brand-green-ink" />
+                  {a}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-16 grid gap-12 lg:grid-cols-12">
+          <div className="flex min-w-0 flex-col gap-12 lg:col-span-8">
+            {product.longDescription ? (
+              <section aria-labelledby="about">
+                <h2 id="about" className="text-h2">
+                  About this product
+                </h2>
+                <div className="prose mt-4">
+                  {product.longDescription.split(/\n{2,}/).map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {dilution.length > 0 ? (
+              <section aria-labelledby="dilution">
+                <h2 id="dilution" className="text-h2">
+                  Dilution and contact time
+                </h2>
+                <div className="mt-4">
+                  <DilutionTable
+                    caption={`Dilution chart for ${product.name}`}
+                    rows={dilution.map((r) => ({ ratio: ratioLabel(r.ratio), use: r.use, contactTime: r.contactTimeMinutes ? `${r.contactTimeMinutes} min` : "—", note: r.note }))}
+                  />
+                </div>
+                <div className="mt-6">
+                  <DilutionCalculator rows={dilution} packs={product.variants.map((v) => ({ label: v.packLabel, litres: litresOf(v) })).filter((p) => p.litres > 0)} />
+                </div>
+              </section>
+            ) : product.dilutionText ? (
+              <section aria-labelledby="dilution">
+                <h2 id="dilution" className="text-h2">
+                  Dilution
+                </h2>
+                <p className="mt-4 max-w-[62ch]">{product.dilutionText}</p>
+              </section>
+            ) : null}
+
+            {product.howToUse ? (
+              <section aria-labelledby="how">
+                <h2 id="how" className="text-h2">
+                  How to use
+                </h2>
+                <div className="prose mt-4">
+                  {product.howToUse.split(/\n{2,}/).map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section aria-labelledby="safety">
+              <h2 id="safety" className="text-h2">
+                Safety and documents
               </h2>
-              <dl className="mt-4 divide-y divide-line border-y border-line">
-                {faq.map((f) => (
-                  <div key={f.q} className="py-4">
-                    <dt className="text-h4">{f.q}</dt>
-                    <dd className="mt-1 max-w-[62ch] text-body text-ink-muted">{f.a}</dd>
-                  </div>
-                ))}
-              </dl>
+              {product.hazardClass !== "NONE" ? (
+                <div className="mt-4 flex items-start gap-3 rounded-chip bg-warning-wash p-4 text-warning-ink">
+                  <HazardPictogram hazard={product.hazardClass as Exclude<HazardClass, "NONE">} size={24} className="mt-0.5 shrink-0" />
+                  <p className="text-small">
+                    <strong>{hazardLabel[product.hazardClass as HazardClass]}.</strong> Read the label and the safety data sheet before use. Wear the protective equipment it specifies, never mix with other chemicals, and store closed in the original container away from food.
+                  </p>
+                </div>
+              ) : null}
+              {documents.length > 0 ? (
+                <ul className="mt-4 flex flex-col divide-y divide-line border-y border-line">
+                  {documents.map((d) => (
+                    <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                      <span>
+                        <span className="block font-medium">{d.type === "SDS" ? "Safety data sheet" : d.type === "COA" ? "Certificate of analysis" : d.title}</span>
+                        <span className="block text-caption text-ink-muted">
+                          Version {d.version}, {new Date(d.publishedAt).toLocaleDateString("en-KE", { year: "numeric", month: "short", day: "numeric" })}
+                        </span>
+                      </span>
+                      <a href={d.fileUrl} className={`${btn.secondary} min-h-11 px-4`} download>
+                        Download PDF
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 max-w-[62ch] text-small">
+                  The safety data sheet and certificate of analysis for this product are supplied on request.{" "}
+                  <Link href={`/contact?topic=contact&sku=${product.variants[0]?.sku ?? ""}`} className="text-accent underline underline-offset-[3px]">
+                    Ask us for the documents
+                  </Link>
+                  .
+                </p>
+              )}
             </section>
-          ) : null}
 
-          <section aria-labelledby="reviews">
-            <h2 id="reviews" className="text-h2">
-              Reviews
-            </h2>
-            {product.reviews.length === 0 ? (
-              <p className="mt-4 max-w-[62ch] text-small text-ink-muted">No reviews yet. Reviews come from customers who bought this product through the site.</p>
-            ) : (
-              <>
+            {faq.length > 0 ? (
+              <section aria-labelledby="faq">
+                <h2 id="faq" className="text-h2">
+                  Questions people ask
+                </h2>
+                <dl className="mt-4 divide-y divide-line border-y border-line">
+                  {faq.map((f) => (
+                    <div key={f.q} className="py-4">
+                      <dt className="text-h4">{f.q}</dt>
+                      <dd className="mt-1 max-w-[62ch] text-body text-ink-muted">{f.a}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
+
+            {/* An empty reviews block tells a buyer nothing and reads as a warning, so it only appears once there is a review. */}
+            {product.reviews.length > 0 ? (
+              <section aria-labelledby="reviews">
+                <h2 id="reviews" className="text-h2">
+                  Reviews
+                </h2>
                 {product.ratingSummary ? (
                   <p className="mt-2 text-small">
                     <span className="tnum font-medium">{product.ratingSummary.average}</span> out of 5 from {product.ratingSummary.count} verified {product.ratingSummary.count === 1 ? "purchase" : "purchases"}
@@ -326,65 +348,100 @@ export default async function ProductPage({ params }: { params: Params }) {
                     </li>
                   ))}
                 </ul>
-              </>
-            )}
-          </section>
+              </section>
+            ) : null}
+          </div>
+
+          <aside className="flex min-w-0 flex-col gap-10 lg:col-span-4">
+            <section aria-labelledby="help" className="on-dark bg-hero rounded-[20px] p-6 text-white shadow-lift">
+              <h2 id="help" className="text-h3 text-white">
+                Not sure it is the right product?
+              </h2>
+              <p className="mt-2 text-small text-white/75">Tell us the surface, the soil and the size of the job. We confirm the product, the dilution and the pack size.</p>
+              <div className="mt-5 flex flex-col gap-3">
+                <a href={whatsappHref(`Hello Safuney, I have a question about ${product.name}.`)} target="_blank" rel="noopener noreferrer" className={btn.whatsapp}>
+                  <Icon name="whatsapp" className="size-5" />
+                  Ask on WhatsApp
+                </a>
+                <a href={telHref} className={btn.ghost}>
+                  <Icon name="phone" className="size-4" />
+                  Call {site.contact.phone.display}
+                </a>
+              </div>
+            </section>
+            {boughtTogether.length > 0 ? (
+              <section aria-labelledby="together">
+                <h2 id="together" className="text-h3">
+                  Frequently bought together
+                </h2>
+                <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-1">
+                  {boughtTogether.map((p) => (
+                    <li key={p.id}>
+                      <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {dispensers.length > 0 ? (
+              <section aria-labelledby="dispensers">
+                <h2 id="dispensers" className="text-h3">
+                  Compatible dispensers
+                </h2>
+                <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-1">
+                  {dispensers.map((p) => (
+                    <li key={p.id}>
+                      <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {alternatives.length > 0 ? (
+              <section aria-labelledby="alternatives">
+                <h2 id="alternatives" className="text-h3">
+                  Alternatives
+                </h2>
+                <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-1">
+                  {alternatives.map((p) => (
+                    <li key={p.id}>
+                      <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+          </aside>
         </div>
 
-        <aside className="flex min-w-0 flex-col gap-10 lg:col-span-4">
-          {boughtTogether.length > 0 ? (
-            <section aria-labelledby="together">
-              <h2 id="together" className="text-h3">
-                Frequently bought together
+        {moreFromRange.length > 0 ? (
+          <section aria-labelledby="more-from-range" className="mt-16">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <h2 id="more-from-range" className="text-h2">
+                More from {product.category.name.toLowerCase()}
               </h2>
-              <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-1">
-                {boughtTogether.map((p) => (
-                  <li key={p.id}>
-                    <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-          {dispensers.length > 0 ? (
-            <section aria-labelledby="dispensers">
-              <h2 id="dispensers" className="text-h3">
-                Compatible dispensers
-              </h2>
-              <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-1">
-                {dispensers.map((p) => (
-                  <li key={p.id}>
-                    <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-          {alternatives.length > 0 ? (
-            <section aria-labelledby="alternatives">
-              <h2 id="alternatives" className="text-h3">
-                Alternatives
-              </h2>
-              <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-1">
-                {alternatives.map((p) => (
-                  <li key={p.id}>
-                    <ProductGridCard product={p} mode={mode} categorySlug={p.category.slug} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-          <section aria-labelledby="help" className="border border-line bg-surface p-5">
-            <h2 id="help" className="text-h4">
-              Need advice on this product?
-            </h2>
-            <p className="mt-2 text-small text-ink-muted">Tell us the surface, the soil and the size of the job and we will confirm the dilution and pack size.</p>
-            <a href={`tel:${site.contact.phone.e164}`} className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-button border border-stainless bg-surface px-4 text-button text-ink hover:bg-ground-deep">
-              Call {site.contact.phone.display}
-            </a>
+              <Link href={`/products/${category}`} className="inline-flex items-center gap-1.5 text-body font-medium text-accent hover:underline underline-offset-[3px]">
+                See the whole range
+                <Icon name="arrowRight" className="size-4" />
+              </Link>
+            </div>
+            <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              {moreFromRange.map((p) => (
+                <li key={p.id}>
+                  <ProductGridCard product={p} mode={mode} categorySlug={category} />
+                </li>
+              ))}
+            </ul>
           </section>
-        </aside>
+        ) : null}
       </div>
-    </div>
+
+      <CtaBand
+        id="product-cta"
+        title={`Ordering ${product.name} in quantity?`}
+        body="Tell us how much. We price it in one working day."
+        whatsappText={productEnquiry(product.name)}
+      />
+    </>
   );
 }

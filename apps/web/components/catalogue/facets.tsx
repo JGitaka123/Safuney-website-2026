@@ -70,11 +70,13 @@ export function Facets({ base, filters, facets, idPrefix = "facet" }: FacetsProp
         </FacetGroup>
       ) : null}
 
-      <FacetGroup id={`${idPrefix}-stock`} title="Availability">
-        <FacetLink selected={filters.inStock} href={href(base, withFilter(filters, { inStock: !filters.inStock }))}>
-          In stock now
-        </FacetLink>
-      </FacetGroup>
+      {facets.availability ? (
+        <FacetGroup id={`${idPrefix}-stock`} title="Availability">
+          <FacetLink selected={filters.inStock} href={href(base, withFilter(filters, { inStock: !filters.inStock }))}>
+            In stock now
+          </FacetLink>
+        </FacetGroup>
+      ) : null}
 
       {facets.priceRange ? (
         <FacetGroup id={`${idPrefix}-price`} title="Price" list={false}>

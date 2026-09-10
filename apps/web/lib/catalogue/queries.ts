@@ -2,7 +2,9 @@ import { cache } from "react";
 import { db, Prisma, type ApplicationZone } from "@safuney/db";
 import type { ZoneKey } from "@safuney/ui";
 import { services } from "@/lib/env";
-import { PAGE_SIZE, type CatalogueFilters } from "./filters";
+import { assembleCategoryPage } from "./assemble";
+import type { CatalogueFilters } from "./filters";
+import { snapshotCategoryPage, snapshotPaths, snapshotProduct } from "./static";
 
 /** Only PO-reviewed, active products are ever visible (plan §6.5, brief §5). */
 export const VISIBLE_PRODUCT: Prisma.ProductWhereInput = { isActive: true, needsPoReview: false };
@@ -26,7 +28,7 @@ const variantSelect = {
   barcode: true,
 } satisfies Prisma.ProductVariantSelect;
 
-const cardSelect = {
+export const cardSelect = {
   id: true,
   slug: true,
   name: true,
@@ -55,8 +57,29 @@ export interface CategoryPage {
     applications: Array<{ value: string; count: number }>;
     zones: Array<{ value: ZoneKey; count: number }>;
     priceRange: { min: number; max: number } | null;
+    /** False when stock is not known (the catalogue snapshot), so "In stock now" is not offered. */
+    availability: boolean;
   };
 }
+
+/**
+ * Where the shop window reads from (ADR 0017): the database once it holds published products; until
+ * then — no DATABASE_URL, a database not yet seeded, or one that cannot be reached — the catalogue
+ * snapshot compiled from the company's own printed catalogue.
+ *
+ * The switch is all-or-nothing on purpose. Falling back product by product would resurrect anything
+ * the PO had deliberately withdrawn in the admin console.
+ */
+export const catalogueSource = cache(async (): Promise<"database" | "snapshot"> => {
+  if (!services.database()) return "snapshot";
+  try {
+    const any = await db().product.findFirst({ where: VISIBLE_PRODUCT, select: { id: true } });
+    return any ? "database" : "snapshot";
+  } catch (error) {
+    console.error("catalogueSource: database unavailable, using the catalogue snapshot", error);
+    return "snapshot";
+  }
+});
 
 function productWhere(categoryId: string | null, f: CatalogueFilters): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = { ...VISIBLE_PRODUCT };
@@ -97,14 +120,9 @@ function orderBy(f: CatalogueFilters): Prisma.ProductOrderByWithRelationInput[] 
   }
 }
 
-function minPrice(p: ProductCardData): bigint {
-  const priced = p.variants.filter((v) => v.priceMinorUnits > 0n).map((v) => v.priceMinorUnits);
-  return priced.length ? priced.reduce((a, b) => (b < a ? b : a)) : 0n;
-}
-
 /** A category listing with facet counts computed over the *unfiltered* category so options never disappear. */
 export const getCategoryPage = cache(async (slug: string, f: CatalogueFilters): Promise<CategoryPage | null> => {
-  if (!services.database()) return null;
+  if ((await catalogueSource()) === "snapshot") return snapshotCategoryPage(slug, f);
   const prisma = db();
   const category = await prisma.category.findFirst({
     where: { slug, isActive: true },
@@ -120,39 +138,7 @@ export const getCategoryPage = cache(async (slug: string, f: CatalogueFilters): 
     prisma.product.findMany({ where: baseWhere, select: { brand: true, tags: true, zone: true, variants: { where: { isActive: true }, select: { packLabel: true, priceMinorUnits: true } } } }),
   ]);
 
-  let sorted = all;
-  if (f.sort === "price-asc") sorted = [...all].sort((a, b) => Number(minPrice(a) - minPrice(b)));
-  if (f.sort === "price-desc") sorted = [...all].sort((a, b) => Number(minPrice(b) - minPrice(a)));
-
-  const total = sorted.length;
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const page = Math.min(f.page, pageCount);
-  const products = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const count = (values: (string | null | undefined)[]) => {
-    const m = new Map<string, number>();
-    for (const v of values) if (v) m.set(v, (m.get(v) ?? 0) + 1);
-    return [...m.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => a.value.localeCompare(b.value));
-  };
-  const prices = facetProducts.flatMap((p) => p.variants.map((v) => v.priceMinorUnits)).filter((p) => p > 0n);
-  const zoneCounts = count(facetProducts.map((p) => (p.zone === "NONE" ? null : p.zone))) as Array<{ value: ZoneKey; count: number }>;
-
-  return {
-    category,
-    products,
-    total,
-    page,
-    pageCount,
-    facets: {
-      brands: count(facetProducts.map((p) => p.brand)),
-      packs: count(facetProducts.flatMap((p) => p.variants.map((v) => v.packLabel))),
-      applications: count(facetProducts.flatMap((p) => p.tags)),
-      zones: zoneCounts,
-      priceRange: prices.length
-        ? { min: Number(prices.reduce((a, b) => (b < a ? b : a)) / 100n), max: Number(prices.reduce((a, b) => (b > a ? b : a)) / 100n) + 1 }
-        : null,
-    },
-  };
+  return assembleCategoryPage(category, all, facetProducts, f);
 });
 
 const productSelect = {
@@ -184,10 +170,12 @@ const productSelect = {
 
 export type ProductDetail = Prisma.ProductGetPayload<{ select: typeof productSelect }> & {
   ratingSummary: { average: number; count: number } | null;
+  /** True when the product came from the catalogue snapshot: no live stock, no cart, price on request. */
+  fromSnapshot?: boolean;
 };
 
 export const getProduct = cache(async (categorySlug: string, productSlug: string): Promise<ProductDetail | null> => {
-  if (!services.database()) return null;
+  if ((await catalogueSource()) === "snapshot") return snapshotProduct(categorySlug, productSlug);
   const prisma = db();
   const product = await prisma.product.findFirst({
     where: { slug: productSlug, ...VISIBLE_PRODUCT, OR: [{ category: { slug: categorySlug } }, { category: { parent: { slug: categorySlug } } }] },
@@ -203,7 +191,7 @@ export const getProduct = cache(async (categorySlug: string, productSlug: string
 
 /** Slugs for static generation of product pages. */
 export async function listVisibleProductPaths(): Promise<Array<{ category: string; product: string }>> {
-  if (!services.database()) return [];
+  if ((await catalogueSource()) === "snapshot") return snapshotPaths();
   const rows = await db().product.findMany({ where: VISIBLE_PRODUCT, select: { slug: true, category: { select: { slug: true, parent: { select: { slug: true } } } } } });
   return rows.map((r) => ({ category: r.category.parent?.slug ?? r.category.slug, product: r.slug }));
 }

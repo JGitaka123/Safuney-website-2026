@@ -1,133 +1,127 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { ButtonLink } from "@safuney/ui";
 import { site } from "@/config/site";
+import { getCategories } from "@/lib/catalogue";
+import { Crumbs } from "@/components/marketing/crumbs";
+import { CtaBand } from "@/components/marketing/cta-band";
+import { Icon, type IconName } from "@/components/marketing/icons";
+import { SectionHeading } from "@/components/marketing/section-heading";
+
+import lineup from "@/public/brand/range-lineup.webp";
 
 export const metadata: Metadata = {
   title: "About Safuney",
-  description: `${site.legalName} is an independent supplier of professional cleaning and hygiene chemicals and support services, based on Mombasa Road, Nairobi.`,
+  description: `${site.legalName} makes and supplies professional cleaning and hygiene chemicals in Kenya, with training, dosing equipment and support services. Office on Mombasa Road, Nairobi.`,
 };
 
-export default function AboutPage() {
-  const { contact } = site;
+const PRINCIPLES: Array<{ title: string; body: string }> = [
+  { title: "Correct product", body: "The right chemistry for each surface." },
+  { title: "Correct dilution", body: "Measured, not poured." },
+  { title: "Correct zone", body: "Colour-coded, so cloths never cross over." },
+  { title: "Correct contact time", body: "Left wet long enough to work." },
+];
+
+const WAYS_TO_BUY: Array<{ icon: IconName; title: string; href: string }> = [
+  { icon: "search", title: "Browse the range", href: "/products" },
+  { icon: "clipboard", title: "Ask for a quote", href: "/quote" },
+  { icon: "receipt", title: "Open a credit account", href: "/account/credit" },
+];
+
+export default async function AboutPage() {
+  const categories = await getCategories();
+  const productTotal = categories.reduce((n, c) => n + (c.productCount ?? 0), 0);
+  const facts: Array<{ icon: IconName; title: string; body: string }> = [
+    { icon: "factory", title: `Blended in ${site.company.plant}`, body: "Our own plant." },
+    { icon: "sparkles", title: `${productTotal} products`, body: `${categories.length} ranges, dishwash to laundry.` },
+    { icon: "users", title: `Reps in ${site.company.regions.length} regions`, body: site.company.regions.join(", ") + "." },
+    { icon: "receipt", title: "eTIMS-compliant", body: "KRA-ready invoices." },
+  ];
+
   return (
-    <div className="mx-auto max-w-reading px-5 py-10 md:px-6 md:py-16">
-      <nav aria-label="Breadcrumb" className="text-small text-ink-muted">
-        <Link href="/" className="hover:underline underline-offset-[3px]">
-          Home
-        </Link>
-        <span aria-hidden> / </span>
-        <span aria-current="page">About</span>
-      </nav>
-      <h1 className="mt-3 text-h1">About Safuney</h1>
-      <p className="mt-3 max-w-[62ch] text-ink-muted">
-        An independent supplier of professional cleaning and hygiene chemicals, and the training, equipment service and
-        housekeeping support that make them work.
-      </p>
+    <>
+      <section aria-labelledby="about-heading" className="on-dark bg-hero">
+        <div className="mx-auto grid max-w-page items-center gap-10 px-5 py-12 md:grid-cols-12 md:px-6 md:py-16">
+          <div className="md:col-span-6">
+            <Crumbs items={[{ label: "About" }]} />
+            <h1 id="about-heading" className="mt-4 text-hero text-white">
+              About Safuney
+            </h1>
+            <p className="mt-4 max-w-[40ch] text-body-lg text-white/75">
+              Kenyan maker and supplier of professional cleaning and hygiene chemicals. <span className="italic text-brand-lime">{site.strapline}.</span>
+            </p>
+          </div>
+          <div className="md:col-span-6">
+            <Image src={lineup} alt="Five Safuney 5 L packs from the range" sizes="(min-width: 768px) 560px, 100vw" className="h-auto w-full rounded-[20px] shadow-lift" priority />
+          </div>
+        </div>
+      </section>
 
-      <div className="prose mt-8">
-        <h2>Who we are</h2>
-        <p>
-          {site.legalName} supplies professional cleaning and hygiene products to institutional, hospitality, industrial
-          and commercial customers in Kenya. We are independent: we choose products on how they perform in a commercial
-          kitchen, a ward, a washroom or a laundry, not on who makes them. Our office is at {contact.address.lines[0]},
-          Nairobi.
-        </p>
-        <p>
-          The range covers warewashing and kitchen hygiene, disinfection and sanitisation, speciality products,
-          personal hygiene, housekeeping and public areas, food, beverage and process hygiene, laundry, the Bactro
-          biological range, and cleaning equipment and consumables. It keeps growing as customers bring us new cleaning
-          problems.
-        </p>
-
-        <h2>Clinical confidence, in practice</h2>
-        <p>
-          Most cleaning failures are not caused by a weak product. They are caused by the right product used the wrong
-          way. Clinical confidence means that anyone on your team, on any shift, can get the same result. In practice it
-          comes down to four things:
-        </p>
-        <ul>
-          <li>
-            <strong>Correct product.</strong> A degreaser for the fryer, a food-contact sanitiser for the prep bench, a
-            chlorine disinfectant where a chlorine disinfectant is needed. Every product on this site says where it
-            belongs.
-          </li>
-          <li>
-            <strong>Correct dilution.</strong> A concentrate that is over-diluted does not disinfect. Under-diluted, it
-            wastes money and can damage surfaces. We publish the ratio for each use and service the dosing equipment
-            that measures it.
-          </li>
-          <li>
-            <strong>Correct zone.</strong> Facilities colour-code their cleaning so that washroom equipment never reaches
-            a kitchen: red for sanitary areas, blue for general surfaces, green for food preparation, yellow for
-            clinical areas. Our products carry the same zones.
-          </li>
-          <li>
-            <strong>Correct contact time.</strong> Disinfectants need to stay wet on the surface for a set time to work.
-            Wiping straight away cleans, but it does not disinfect. We state the contact time so that it can be built
-            into the routine.
-          </li>
-        </ul>
-
-        <h2>Three service lines</h2>
-        <p>The chemical is half of the result. The other half is the person, the dosing equipment and the routine.</p>
-        <ul>
-          {site.services.map((svc) => (
-            <li key={svc.slug}>
-              <strong>{svc.name}.</strong> {svc.detail}
+      <div className="relative z-10 mx-auto -mt-8 max-w-page px-5 md:px-6">
+        <ul className="grid gap-px overflow-hidden rounded-card border border-line bg-line shadow-lift sm:grid-cols-2 lg:grid-cols-4">
+          {facts.map((f) => (
+            <li key={f.title} className="flex items-center gap-4 bg-surface p-5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-wash text-accent">
+                <Icon name={f.icon} />
+              </span>
+              <p className="leading-tight">
+                <span className="block text-h4 text-ink">{f.title}</span>
+                <span className="mt-1 block text-small text-ink-muted">{f.body}</span>
+              </p>
             </li>
           ))}
         </ul>
-        <p>
-          <Link href="/services">Read more about support services</Link>
-        </p>
+      </div>
 
-        <h2>Who we work with</h2>
-        <p>
-          Our customers include hospitality, healthcare, foodservice, education, industrial and agricultural
-          organisations, gaming and recreation venues, country clubs and maintenance contractors. If your site has a
-          kitchen, a washroom, a laundry or a ward, we can help.
-        </p>
-
-        <h2>How to buy</h2>
-        <ul>
-          <li>
-            <strong>Order online.</strong> Browse the <Link href="/products">product range</Link>, choose a pack size and
-            pay by M-Pesa or card, with delivery to your site or collection from the office. See{" "}
-            <Link href="/delivery-and-returns">delivery and returns</Link> for how it works.
-          </li>
-          <li>
-            <strong>Ask for a quote.</strong> For bulk orders, a product that is not listed, or a site-wide programme,{" "}
-            <Link href="/quote">request a quote</Link> and we will price it for you.
-          </li>
-          <li>
-            <strong>Open a credit account.</strong> Organisations that order regularly can apply to pay on invoice.{" "}
-            <Link href="/contact?topic=credit">Ask about a credit account</Link>.
-          </li>
-        </ul>
-
-        <h2>Contact</h2>
-        <p>
-          Phone <a href={`tel:${contact.phone.e164}`}>{contact.phone.display}</a>, WhatsApp{" "}
-          <a href={`https://wa.me/${contact.whatsapp.e164}`}>{contact.phone.display}</a> or email{" "}
-          <a href={`mailto:${contact.email.address}`}>{contact.email.address}</a>.
-        </p>
-        <address className="not-italic">
-          {contact.address.lines.map((line) => (
-            <span key={line} className="block">
-              {line}
-            </span>
+      <section aria-labelledby="principles" className="mx-auto max-w-page px-5 py-16 md:px-6 md:py-20">
+        <SectionHeading id="principles" title="Clean, done correctly" />
+        <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {PRINCIPLES.map((p, i) => (
+            <li key={p.title} className="rounded-card border border-line bg-surface p-6 shadow-card">
+              <span className="text-eyebrow uppercase text-accent tnum">0{i + 1}</span>
+              <h3 className="mt-2 text-h4 text-ink">{p.title}</h3>
+              <p className="mt-1 text-small text-ink-muted">{p.body}</p>
+            </li>
           ))}
-          <span className="mt-2 block">{contact.address.poBox}</span>
-        </address>
-      </div>
+        </ol>
+      </section>
 
-      <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-        <ButtonLink href="/contact">Send us a message</ButtonLink>
-        <ButtonLink href="/products" variant="secondary">
-          Browse products
-        </ButtonLink>
-      </div>
-    </div>
+      <section aria-labelledby="who" className="border-y border-line bg-surface">
+        <div className="mx-auto grid max-w-page gap-12 px-5 py-16 md:px-6 md:py-20 lg:grid-cols-12">
+          <div className="lg:col-span-6">
+            <SectionHeading id="who" title="Who we work with" />
+            <ul className="mt-6 flex flex-wrap gap-2">
+              {site.industries.map((i) => (
+                <li key={i} className="rounded-full border border-line bg-ground px-4 py-2 text-small font-medium text-ink">
+                  {i}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="lg:col-span-6">
+            <h2 className="text-h2 text-ink">How to buy</h2>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+              {WAYS_TO_BUY.map((w) => (
+                <li key={w.title}>
+                  <Link href={w.href} className="group flex h-full flex-col gap-3 rounded-card border border-line bg-ground p-5 transition hover:border-stainless hover:shadow-card">
+                    <Icon name={w.icon} className="size-6 text-accent" />
+                    <span className="text-h4 text-ink">{w.title}</span>
+                    <Icon name="arrowRight" className="mt-auto size-4 text-accent transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-small text-ink-muted">
+              {site.contact.address.lines.join(", ")}.{" "}
+              <Link href="/contact" className="text-accent underline underline-offset-[3px]">
+                Contact us
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <CtaBand id="about-cta" />
+    </>
   );
 }

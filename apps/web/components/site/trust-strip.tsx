@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { site } from "@/config/site";
+import { whatsappHref } from "@/lib/contact";
+import { Icon, type IconName } from "@/components/marketing/icons";
 
 export interface TrustFacts {
   kraPin: string;
@@ -16,8 +18,9 @@ export interface TrustFacts {
  */
 export function TrustStrip({ facts }: { facts: TrustFacts }) {
   const { contact } = site;
-  const items: Array<{ label: string; value: React.ReactNode }> = [
+  const items: Array<{ icon: IconName; label: string; value: React.ReactNode }> = [
     {
+      icon: "mapPin",
       label: "Where we are",
       value: (
         <>
@@ -27,18 +30,19 @@ export function TrustStrip({ facts }: { facts: TrustFacts }) {
       ),
     },
     {
+      icon: "phone",
       label: "Talk to a person",
       value: (
         <>
-          <a href={`tel:${contact.phone.e164}`} className="text-accent underline">
+          <a href={`tel:${contact.phone.e164}`} className="font-medium text-accent underline underline-offset-[3px]">
             {contact.phone.display}
           </a>
           <span className="mt-1 block">
-            <a href={`https://wa.me/${contact.whatsapp.e164}`} className="text-accent underline" rel="noopener noreferrer" target="_blank">
+            <a href={whatsappHref()} className="text-accent underline underline-offset-[3px]" rel="noopener noreferrer" target="_blank">
               WhatsApp
             </a>
-            {" · "}
-            <a href={`mailto:${contact.email.address}`} className="text-accent underline">
+            {" or "}
+            <a href={`mailto:${contact.email.address}`} className="text-accent underline underline-offset-[3px]">
               {contact.email.address}
             </a>
           </span>
@@ -46,12 +50,13 @@ export function TrustStrip({ facts }: { facts: TrustFacts }) {
       ),
     },
     {
+      icon: "truck",
       label: "Delivery and returns",
       value: (
         <>
-          Nairobi and countrywide, quoted at checkout before you pay.
+          Nairobi and countrywide, quoted before you pay.
           <span className="mt-1 block">
-            <Link href="/delivery-and-returns" className="text-accent underline">
+            <Link href="/delivery-and-returns" className="text-accent underline underline-offset-[3px]">
               What happens if something is wrong
             </Link>
           </span>
@@ -59,6 +64,7 @@ export function TrustStrip({ facts }: { facts: TrustFacts }) {
       ),
     },
     {
+      icon: "receipt",
       label: "How you can pay",
       value: <>M-Pesa, card, cash on delivery, or on invoice with an approved credit account.</>,
     },
@@ -66,6 +72,7 @@ export function TrustStrip({ facts }: { facts: TrustFacts }) {
 
   if (facts.kraPin || facts.vatNumber) {
     items.push({
+      icon: "shield",
       label: "Registered",
       value: (
         <>
@@ -79,15 +86,21 @@ export function TrustStrip({ facts }: { facts: TrustFacts }) {
 
   return (
     <section aria-labelledby="trust-heading" className="border-t border-line bg-surface">
-      <div className="mx-auto max-w-page px-5 py-10 md:px-6">
-        <h2 id="trust-heading" className="text-h3">
+      <div className="mx-auto max-w-page px-5 py-14 md:px-6 md:py-16">
+        <h2 id="trust-heading" className="text-h2">
           Who you are buying from
         </h2>
-        <dl className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {/* The icon sits inside the <dt>: a <dl> group may hold only <dt> and <dd>. */}
           {items.map((item) => (
-            <div key={item.label}>
-              <dt className="text-label text-ink-muted">{item.label}</dt>
-              <dd className="mt-2 text-body text-ink">{item.value}</dd>
+            <div key={item.label} className="relative min-h-11 pl-15">
+              <dt className="text-label text-ink-muted">
+                <span aria-hidden className="absolute left-0 top-0 grid size-11 place-items-center rounded-full bg-accent-wash text-accent">
+                  <Icon name={item.icon} className="size-5" />
+                </span>
+                {item.label}
+              </dt>
+              <dd className="mt-1 text-body text-ink">{item.value}</dd>
             </div>
           ))}
         </dl>

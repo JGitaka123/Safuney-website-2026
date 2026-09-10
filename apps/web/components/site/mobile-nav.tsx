@@ -4,9 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { Sheet } from "@safuney/ui";
 import { site } from "@/config/site";
+import { telHref, whatsappHref } from "@/lib/contact";
+import { btn } from "@/components/marketing/buttons";
+import { Icon } from "@/components/marketing/icons";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
   return (
     <div className="md:hidden">
       <Sheet
@@ -30,31 +34,48 @@ export function MobileNav() {
           <ul className="flex flex-col py-2">
             {site.nav.primary.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} onClick={() => setOpen(false)} className="flex min-h-12 items-center px-5 text-h4 font-medium hover:bg-ground-deep">
+                <Link href={item.href} onClick={close} className="flex min-h-12 items-center px-5 text-h4 font-medium hover:bg-ground-deep">
                   {item.label}
                 </Link>
               </li>
             ))}
           </ul>
+          <div className="border-t border-line px-5 py-4">
+            <p className="text-label text-ink-muted">Shop by range</p>
+            <ul className="mt-2 grid grid-cols-1 gap-1">
+              {site.productAreas.map((area) => (
+                <li key={area.slug}>
+                  <Link href={`/products/${area.slug}`} onClick={close} className="flex min-h-11 items-center text-body text-ink hover:text-accent">
+                    {area.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
           <ul className="border-t border-line py-2">
             {site.nav.help.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} onClick={() => setOpen(false)} className="flex min-h-11 items-center px-5 text-body text-ink hover:bg-ground-deep">
+                <Link href={item.href} onClick={close} className="flex min-h-11 items-center px-5 text-body text-ink hover:bg-ground-deep">
                   {item.label}
                 </Link>
               </li>
             ))}
           </ul>
           <div className="mt-auto flex flex-col gap-3 border-t border-line p-5">
-            <a href={`tel:${site.contact.phone.e164}`} className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-4 text-button text-white">
-              Call {site.contact.phone.display}
-            </a>
-            <a
-              href={`https://wa.me/${site.contact.whatsapp.e164}`}
-              className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-4 text-button text-ink"
-            >
-              WhatsApp
-            </a>
+            <Link href="/quote" onClick={close} className={btn.cta}>
+              Get a quote
+              <Icon name="arrowRight" className="size-5" />
+            </Link>
+            <div className="grid grid-cols-2 gap-3">
+              <a href={telHref} className={`${btn.secondary} px-3`}>
+                <Icon name="phone" className="size-4" />
+                Call
+              </a>
+              <a href={whatsappHref()} target="_blank" rel="noopener noreferrer" className={`${btn.whatsapp} px-3`}>
+                <Icon name="whatsapp" className="size-4" />
+                WhatsApp
+              </a>
+            </div>
           </div>
         </nav>
       </Sheet>

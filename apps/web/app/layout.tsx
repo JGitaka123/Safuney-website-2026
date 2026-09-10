@@ -9,6 +9,7 @@ import { isIndexable } from "@/lib/seo/indexing";
 import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
 import { PwaRegister } from "@/components/site/pwa-register";
+import { ContactDock } from "@/components/marketing/contact-dock";
 import { flagEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = {
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           {children}
         </main>
         <SiteFooter />
+        <ContactDock />
         <PwaRegister enabled={pwa} />
         <Analytics />
         <SpeedInsights />

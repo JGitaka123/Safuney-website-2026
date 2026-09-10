@@ -29,7 +29,7 @@ export function Toast({ open, message, onClose, action, durationMs = 6000, close
   }, [open, durationMs, onClose]);
 
   return (
-    <div role="status" aria-live="polite" className={cn("pointer-events-none fixed inset-x-5 bottom-5 z-50 flex justify-center sm:inset-x-auto sm:right-6 sm:justify-end", className)}>
+    <div role="status" aria-live="polite" className={cn("pointer-events-none fixed inset-x-5 bottom-24 z-50 flex justify-center sm:inset-x-auto sm:right-6 sm:justify-end", className)}>
       {open ? (
         <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-sheet border border-line bg-surface py-3 pl-4 pr-2 text-body text-ink shadow-float">
           <div className="min-w-0 flex-1">{message}</div>

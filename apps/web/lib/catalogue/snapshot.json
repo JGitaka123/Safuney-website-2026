@@ -1,0 +1,2330 @@
+{
+  "source": "PRODUCT CATALOGUE JULY 2024, via docs/discovery/catalogue-seed.csv",
+  "categories": [
+    {
+      "slug": "warewashing",
+      "name": "Warewashing and kitchen hygiene",
+      "description": "Machine and manual warewashing for commercial kitchens: auto-dosed dishwasher detergent and rinse aid, heavy-duty potwash, and a decarbonising soak for pots and pans.",
+      "zone": "GREEN"
+    },
+    {
+      "slug": "disinfection",
+      "name": "Disinfection and sanitisation",
+      "description": "QAC and chlorine chemistry for surfaces and food-contact areas, a powder wash for salads and fruit, alcohol hand sanitiser, and an oxygen-based cleaner-disinfectant.",
+      "zone": "GREEN"
+    },
+    {
+      "slug": "specialty",
+      "name": "Speciality products",
+      "description": "The jobs that need their own chemistry: descaling, ovens and grills, crockery destaining, and a caustic drain and fat-trap opener.",
+      "zone": "NONE"
+    },
+    {
+      "slug": "personal-hygiene",
+      "name": "Personal hygiene",
+      "description": "Germicidal handwash, perfumed or fragrance-free, and a shower gel. All dispenser-ready and used neat.",
+      "zone": "RED"
+    },
+    {
+      "slug": "housekeeping",
+      "name": "Housekeeping, public areas and fitness centres",
+      "description": "Rooms, washrooms and public areas: glass, tiles and bathrooms, floor stripping and polishing, carpet shampoo, degreaser, air fresheners and furniture polish.",
+      "zone": "BLUE"
+    },
+    {
+      "slug": "process-hygiene",
+      "name": "Food, beverage and process hygiene",
+      "description": "Plant and process cleaning for dairy, beverage and food production: alkaline and acid CIP detergents, peracetic disinfection, a food-safe destainer and raw caustic.",
+      "zone": "GREEN"
+    },
+    {
+      "slug": "laundry",
+      "name": "Laundry",
+      "description": "Commercial laundry, where Safuney supplies the products, the support and the training: one-shot and fully built detergent powders, boosters, bleaches, softener, sour, and the A. L. Wilson spotting range.",
+      "zone": "BLUE"
+    },
+    {
+      "slug": "bactro",
+      "name": "Bactro biological range",
+      "description": "Bacterial and enzyme cleaners, liquid and tablet, for washrooms, drains, grease traps and urinals. They keep working between cleans.",
+      "zone": "RED"
+    },
+    {
+      "slug": "equipment",
+      "name": "Cleaning equipment and consumables",
+      "description": "Scrubbing machines, vacuums, janitor carts, wringer buckets, mops, brooms, squeegees, gloves and paper dispensers — the kit that applies the chemistry.",
+      "zone": "NONE"
+    }
+  ],
+  "products": [
+    {
+      "slug": "saf-autoklin",
+      "name": "SAF AUTOKLIN",
+      "brand": null,
+      "categorySlug": "warewashing",
+      "shortDescription": "Dishwasher and glasswasher machine liquid detergent, auto-dosed.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "Auto-dosed to achieve at least 300 ppm for glasses and 600 ppm for dishes.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-autoklin.webp",
+        "width": 327,
+        "height": 480,
+        "alt": "SAF AUTOKLIN pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-AUTOKLIN-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-AUTOKLIN-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-autorinse",
+      "name": "SAF AUTORINSE",
+      "brand": null,
+      "categorySlug": "warewashing",
+      "shortDescription": "Auto-dosed rinse additive and drying agent for spotless kitchenware and glasses.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "Dosed at 2 ml per litre of rinse water.",
+      "dilutionGuidance": [
+        {
+          "use": "Machine rinse water",
+          "ratio": 500,
+          "note": "2 ml per litre of rinse water."
+        }
+      ],
+      "image": {
+        "url": "/products/saf-autorinse.webp",
+        "width": 328,
+        "height": 480,
+        "alt": "SAF AUTORINSE pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-AUTORINSE-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-AUTORINSE-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-guard-hd",
+      "name": "SAF-GUARD HD",
+      "brand": null,
+      "categorySlug": "warewashing",
+      "shortDescription": "Heavy-duty concentrated warewash detergent and potwash.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "From 1:10 for pots and pans to 1:50 for glasses.",
+      "dilutionGuidance": [
+        {
+          "use": "Pots and pans",
+          "ratio": 10
+        },
+        {
+          "use": "Glasses",
+          "ratio": 50
+        }
+      ],
+      "image": {
+        "url": "/products/saf-guard-hd.webp",
+        "width": 322,
+        "height": 480,
+        "alt": "SAF-GUARD HD pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-GUARD-HD-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-GUARD-HD-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-pot-and-pan",
+      "name": "SAF POT AND PAN",
+      "brand": null,
+      "categorySlug": "warewashing",
+      "shortDescription": "Decarbonising powder for soaking pots and pans. Effective for removing carbon soot from kitchen utensils.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-pot-and-pan.webp",
+        "width": 380,
+        "height": 480,
+        "alt": "SAF POT AND PAN pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-POT-AND-PAN-5KG",
+          "packLabel": "5 kg",
+          "packSizeValue": "5",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-POT-AND-PAN-20KG",
+          "packLabel": "20 kg",
+          "packSizeValue": "20",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-quartsan",
+      "name": "SAF QUARTSAN",
+      "brand": null,
+      "categorySlug": "disinfection",
+      "shortDescription": "QAC-based sanitiser for surfaces and food-contact areas.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "10 ml in 1 litre of water, in spray bottles or sanitiser buckets.",
+      "dilutionGuidance": [
+        {
+          "use": "Surfaces and food-contact areas",
+          "ratio": 100,
+          "note": "10 ml in 1 litre of water, in spray bottles or sanitiser buckets."
+        }
+      ],
+      "image": {
+        "url": "/products/saf-quartsan.webp",
+        "width": 323,
+        "height": 480,
+        "alt": "SAF QUARTSAN pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-QUARTSAN-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-QUARTSAN-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-salad-wash",
+      "name": "SAF SALAD WASH",
+      "brand": null,
+      "categorySlug": "disinfection",
+      "shortDescription": "Powder chlorine-based cleaner for salads and fruit.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "Soak fruit and vegetables in a 4 g/l solution in cold water, then rinse in potable water.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-salad-wash.webp",
+        "width": 391,
+        "height": 480,
+        "alt": "SAF SALAD WASH pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-SALAD-WASH-4KG",
+          "packLabel": "4 kg",
+          "packSizeValue": "4",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-bactosan",
+      "name": "SAF BACTOSAN",
+      "brand": null,
+      "categorySlug": "disinfection",
+      "shortDescription": "General-purpose cleaner, disinfectant and deodoriser for washrooms, urinals, garbage rooms, bins and sanitary areas.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "Use at 1:50 for cleaning, disinfection and deodorising.",
+      "dilutionGuidance": [
+        {
+          "use": "Cleaning, disinfection and deodorising",
+          "ratio": 50
+        }
+      ],
+      "image": {
+        "url": "/products/saf-bactosan.webp",
+        "width": 347,
+        "height": 480,
+        "alt": "SAF BACTOSAN pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-BACTOSAN",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "safuney-m511",
+      "name": "SAFUNEY M511",
+      "brand": null,
+      "categorySlug": "disinfection",
+      "shortDescription": "Chlorine-based disinfectant and bleaching solution at 4% active chlorine.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/safuney-m511.webp",
+        "width": 333,
+        "height": 480,
+        "alt": "SAFUNEY M511 pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFUNEY-M511-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFUNEY-M511-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "sanitouch",
+      "name": "SANITOUCH",
+      "brand": null,
+      "categorySlug": "disinfection",
+      "shortDescription": "Alcohol-based hand sanitiser, liquid or gel.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "Use neat in sanitiser dispensers or sprayers.",
+      "dilutionGuidance": [
+        {
+          "use": "Sanitiser dispensers and sprayers",
+          "ratio": 0,
+          "note": "Use neat."
+        }
+      ],
+      "image": {
+        "url": "/products/sanitouch.webp",
+        "width": 347,
+        "height": 480,
+        "alt": "SANITOUCH pack"
+      },
+      "variants": [
+        {
+          "sku": "SANITOUCH-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SANITOUCH-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-steriklin",
+      "name": "SAF STERIKLIN",
+      "brand": null,
+      "categorySlug": "disinfection",
+      "shortDescription": "Cleaner, degreaser and oxygen-based disinfectant.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-steriklin.webp",
+        "width": 346,
+        "height": 480,
+        "alt": "SAF STERIKLIN pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-STERIKLIN-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-STERIKLIN-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "limeklin",
+      "name": "LIMEKLIN",
+      "brand": null,
+      "categorySlug": "specialty",
+      "shortDescription": "General-purpose descalant for kitchen and other institutional equipment.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use neat or dilute according to the extent of scaling.",
+      "dilutionGuidance": [
+        {
+          "use": "Descaling",
+          "ratio": 0,
+          "note": "Use neat or dilute according to the extent of scaling."
+        }
+      ],
+      "image": {
+        "url": "/products/limeklin.webp",
+        "width": 330,
+        "height": 480,
+        "alt": "LIMEKLIN pack"
+      },
+      "variants": [
+        {
+          "sku": "LIMEKLIN",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "grease-buster",
+      "name": "GREASE BUSTER",
+      "brand": null,
+      "categorySlug": "specialty",
+      "shortDescription": "Oven, grill and hood cleaner.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": "Used neat or diluted at 1:10. Spray, leave for a few seconds, then rub. Wear appropriate PPE.",
+      "dilutionGuidance": [
+        {
+          "use": "Ovens, hoods and grills, neat",
+          "ratio": 0,
+          "note": "Spray, leave for a few seconds, then rub. Wear appropriate PPE."
+        },
+        {
+          "use": "Ovens, hoods and grills, diluted",
+          "ratio": 10
+        }
+      ],
+      "image": {
+        "url": "/products/grease-buster.webp",
+        "width": 393,
+        "height": 480,
+        "alt": "GREASE BUSTER pack"
+      },
+      "variants": [
+        {
+          "sku": "GREASE-BUSTER-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "GREASE-BUSTER-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "safshine",
+      "name": "SAFSHINE",
+      "brand": null,
+      "categorySlug": "specialty",
+      "shortDescription": "Destainer for crockery, cutlery, coffee and tea pots, and all washable kitchen surfaces and equipment. Removes tea, coffee, tannin, fruit-juice, starch and scale deposits.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": "Dissolve the powder in hot water, then add the articles to be soaked.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/safshine.webp",
+        "width": 397,
+        "height": 480,
+        "alt": "SAFSHINE pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFSHINE-15KG",
+          "packLabel": "15 kg",
+          "packSizeValue": "15",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "drain-kleen",
+      "name": "DRAIN KLEEN",
+      "brand": null,
+      "categorySlug": "specialty",
+      "shortDescription": "Caustic-based drain cleaner and fat-trap opener.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": "Mix 1 kg with water and pour into the drains.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/drain-kleen.webp",
+        "width": 400,
+        "height": 480,
+        "alt": "DRAIN KLEEN pack"
+      },
+      "variants": [
+        {
+          "sku": "DRAIN-KLEEN-5KG",
+          "packLabel": "5 kg",
+          "packSizeValue": "5",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "DRAIN-KLEEN-20KG",
+          "packLabel": "20 kg",
+          "packSizeValue": "20",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "sanibac",
+      "name": "SANIBAC",
+      "brand": null,
+      "categorySlug": "personal-hygiene",
+      "shortDescription": "Perfumed germicidal handwash soap, pink. Also supplied as a perfumed antimicrobial hand soap in 20 L.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": "Use neat in soap dispensers.",
+      "dilutionGuidance": [
+        {
+          "use": "Soap dispensers",
+          "ratio": 0,
+          "note": "Use neat."
+        }
+      ],
+      "image": {
+        "url": "/products/sanibac.webp",
+        "width": 328,
+        "height": 480,
+        "alt": "SANIBAC pack"
+      },
+      "variants": [
+        {
+          "sku": "SANIBAC-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SANIBAC-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "sanipur",
+      "name": "SANIPUR",
+      "brand": null,
+      "categorySlug": "personal-hygiene",
+      "shortDescription": "Germicidal fragrance-free handwash soap.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": "Use neat in soap dispensers.",
+      "dilutionGuidance": [
+        {
+          "use": "Soap dispensers",
+          "ratio": 0,
+          "note": "Use neat."
+        }
+      ],
+      "image": {
+        "url": "/products/sanipur.webp",
+        "width": 360,
+        "height": 480,
+        "alt": "SANIPUR pack"
+      },
+      "variants": [
+        {
+          "sku": "SANIPUR-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SANIPUR-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "safuney-shower-gel",
+      "name": "SAFUNEY SHOWER GEL",
+      "brand": null,
+      "categorySlug": "personal-hygiene",
+      "shortDescription": "A well-balanced shower gel.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": "Used neat.",
+      "dilutionGuidance": [
+        {
+          "use": "Shower dispensers",
+          "ratio": 0,
+          "note": "Used neat."
+        }
+      ],
+      "image": {
+        "url": "/products/safuney-shower-gel.webp",
+        "width": 365,
+        "height": 480,
+        "alt": "SAFUNEY SHOWER GEL pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFUNEY-SHOWER-GEL-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFUNEY-SHOWER-GEL-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-window-cleaner",
+      "name": "SAF WINDOW CLEANER",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "All-purpose glass and window cleaner.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Used neat.",
+      "dilutionGuidance": [
+        {
+          "use": "Glass and windows",
+          "ratio": 0,
+          "note": "Used neat."
+        }
+      ],
+      "image": {
+        "url": "/products/saf-window-cleaner.webp",
+        "width": 349,
+        "height": 480,
+        "alt": "SAF WINDOW CLEANER pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-WINDOW-CLEANER-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-WINDOW-CLEANER-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "tiles-and-bathroom-cleaner",
+      "name": "TILES & BATHROOM CLEANER",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Acid-based deep cleaner and stain remover for floor tiles and bathrooms.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use at 1:10 or a weaker dilution depending on soilage levels and the extent of the stains.",
+      "dilutionGuidance": [
+        {
+          "use": "Floor tiles and bathrooms",
+          "ratio": 10,
+          "note": "1:10 or weaker depending on soilage levels and the extent of the stains."
+        }
+      ],
+      "image": {
+        "url": "/products/tiles-and-bathroom-cleaner.webp",
+        "width": 337,
+        "height": 480,
+        "alt": "TILES & BATHROOM CLEANER pack"
+      },
+      "variants": [
+        {
+          "sku": "TILES-AND-BATHROOM-CLEANER-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-stone-stripper",
+      "name": "SAF STONE STRIPPER",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Alkaline floor wax stripper and deep cleaner.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Dilute at 1:10 or weaker depending on soilage.",
+      "dilutionGuidance": [
+        {
+          "use": "Stripping floor wax",
+          "ratio": 10,
+          "note": "1:10 or weaker depending on soilage."
+        }
+      ],
+      "image": {
+        "url": "/products/saf-stone-stripper.webp",
+        "width": 382,
+        "height": 480,
+        "alt": "SAF STONE STRIPPER pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-STONE-STRIPPER-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "gradeshine",
+      "name": "GRADESHINE",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Polymer wax floor polish for all types of stone and hard floor.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/gradeshine.webp",
+        "width": 378,
+        "height": 480,
+        "alt": "GRADESHINE pack"
+      },
+      "variants": [
+        {
+          "sku": "GRADESHINE-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "GRADESHINE-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-carpet-shampoo",
+      "name": "SAF CARPET SHAMPOO",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Carpet cleaner and shampoo for all types of carpet.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-carpet-shampoo.webp",
+        "width": 354,
+        "height": 480,
+        "alt": "SAF CARPET SHAMPOO pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-CARPET-SHAMPOO-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-CARPET-SHAMPOO-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "prima-reshine",
+      "name": "PRIMA RESHINE",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Polishing cream for restoring gloss on porcelain, polished steel and glazed surfaces.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/prima-reshine.webp",
+        "width": 252,
+        "height": 480,
+        "alt": "PRIMA RESHINE pack"
+      },
+      "variants": [
+        {
+          "sku": "PRIMA-RESHINE",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-degreaser",
+      "name": "SAF DEGREASER",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Heavy-duty floor, workshop and engine cleaner and degreaser.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-degreaser.webp",
+        "width": 337,
+        "height": 480,
+        "alt": "SAF DEGREASER pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-DEGREASER",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-air-freshener",
+      "name": "SAF AIR FRESHENERS",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Concentrated air freshener in Summer Fruit, Citrus or Lavender.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-air-freshener.webp",
+        "width": 340,
+        "height": 480,
+        "alt": "SAF AIR FRESHENERS pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-AIR-FRESHENER-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-AIR-FRESHENER-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-multiklin",
+      "name": "SAF-MULTIKLIN",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Multi-purpose fragranced liquid detergent for all washable surfaces — dishes, walls, floors and equipment.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Dilute 1:10 to 1:100 depending on the application.",
+      "dilutionGuidance": [
+        {
+          "use": "Heavy soil",
+          "ratio": 10
+        },
+        {
+          "use": "General cleaning",
+          "ratio": 100
+        }
+      ],
+      "image": {
+        "url": "/products/saf-multiklin.webp",
+        "width": 347,
+        "height": 480,
+        "alt": "SAF-MULTIKLIN pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-MULTIKLIN-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAF-MULTIKLIN-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "multi-pol-furniture-polish",
+      "name": "MULTI-POL FURNITURE POLISH",
+      "brand": null,
+      "categorySlug": "housekeeping",
+      "shortDescription": "Fluid cream polish based on natural and synthetic oils and waxes. Cleans and shines laminated and solid wooden furniture. Non-flammable and suitable for varnished and painted surfaces.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/multi-pol-furniture-polish.webp",
+        "width": 239,
+        "height": 480,
+        "alt": "MULTI-POL FURNITURE POLISH pack"
+      },
+      "variants": [
+        {
+          "sku": "MULTI-POL-FURNITURE-POLISH",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saftex-liquid",
+      "name": "SAFTEX LIQUID",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "Alkaline detergent for cleaning milk heaters, tanks and steel pipeline.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saftex-liquid.webp",
+        "width": 402,
+        "height": 480,
+        "alt": "SAFTEX LIQUID pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFTEX-LIQUID",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saftex-acid",
+      "name": "SAFTEX ACID",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "Concentrated acid detergent for treating process equipment after cleaning with a caustic detergent.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "1.5% solution at 80 °C for 25–30 minutes.",
+      "dilutionGuidance": [
+        {
+          "use": "Acid wash after caustic cleaning",
+          "ratio": 67,
+          "contactTimeMinutes": 30,
+          "note": "1.5% solution at 80 °C for 25 to 30 minutes."
+        }
+      ],
+      "image": {
+        "url": "/products/saftex-acid.webp",
+        "width": 410,
+        "height": 480,
+        "alt": "SAFTEX ACID pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFTEX-ACID",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-ozonit",
+      "name": "SAF OZONIT",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "Liquid acidic disinfectant based on hydrogen peroxide and peracetic acid, for the food industry.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "0.2 to 0.4% for cold sanitisation.",
+      "dilutionGuidance": [
+        {
+          "use": "Cold sanitisation, light soil",
+          "ratio": 500,
+          "note": "0.2% solution."
+        },
+        {
+          "use": "Cold sanitisation, heavy soil",
+          "ratio": 250,
+          "note": "0.4% solution."
+        }
+      ],
+      "image": {
+        "url": "/products/saf-ozonit.webp",
+        "width": 402,
+        "height": 480,
+        "alt": "SAF OZONIT pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-OZONIT",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saf-multiklin-fragrance-free",
+      "name": "SAF MULTIKLIN (FRAGRANCE-FREE)",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "Multipurpose cleaner for floors, walls and general-purpose cleaning, without fragrance.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saf-multiklin-fragrance-free.webp",
+        "width": 336,
+        "height": 480,
+        "alt": "SAF MULTIKLIN (FRAGRANCE-FREE) pack"
+      },
+      "variants": [
+        {
+          "sku": "SAF-MULTIKLIN-FRAGRANCE-FREE",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "dipshine",
+      "name": "DIPSHINE",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "Food-safe heavy-duty destainer, cleaner and disinfectant for the dairy and food-processing industries.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": "50 g per litre of water.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/dipshine.webp",
+        "width": 335,
+        "height": 480,
+        "alt": "DIPSHINE pack"
+      },
+      "variants": [
+        {
+          "sku": "DIPSHINE",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "hydrogen-peroxide",
+      "name": "HYDROGEN PEROXIDE 35% AND 50%",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "General-purpose disinfection of food-process equipment.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/hydrogen-peroxide.webp",
+        "width": 206,
+        "height": 480,
+        "alt": "HYDROGEN PEROXIDE 35% AND 50% pack"
+      },
+      "variants": [
+        {
+          "sku": "HYDROGEN-PEROXIDE",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "caustic-pearls-and-flakes",
+      "name": "CAUSTIC PEARLS & FLAKES",
+      "brand": null,
+      "categorySlug": "process-hygiene",
+      "shortDescription": "Raw material caustic lye, 99% purity, in pearl or flake form.",
+      "zone": "GREEN",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/caustic-pearls-and-flakes.webp",
+        "width": 276,
+        "height": 480,
+        "alt": "CAUSTIC PEARLS & FLAKES pack"
+      },
+      "variants": [
+        {
+          "sku": "CAUSTIC-PEARLS-AND-FLAKES-25KG",
+          "packLabel": "25 kg",
+          "packSizeValue": "25",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-015-one-shot",
+      "name": "SAFLIN 015 ONE SHOT",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "One-shot machine laundry detergent powder for soft to medium-hard water environments.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use between 6 and 15 g per kg of linen depending on soilage.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-015-one-shot.webp",
+        "width": 390,
+        "height": 480,
+        "alt": "SAFLIN 015 ONE SHOT pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-015-ONE-SHOT-5KG",
+          "packLabel": "5 kg",
+          "packSizeValue": "5",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-015-ONE-SHOT-20KG",
+          "packLabel": "20 kg",
+          "packSizeValue": "20",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-021-fully-built",
+      "name": "SAFLIN 021 FULLY BUILT",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Fully built machine laundry detergent powder, used alongside a laundry booster and adaptable to hard-water environments.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use between 6 and 12 g per kg of linen depending on soilage.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-021-fully-built.webp",
+        "width": 399,
+        "height": 480,
+        "alt": "SAFLIN 021 FULLY BUILT pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-021-FULLY-BUILT-5KG",
+          "packLabel": "5 kg",
+          "packSizeValue": "5",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-021-FULLY-BUILT-20KG",
+          "packLabel": "20 kg",
+          "packSizeValue": "20",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-handwash",
+      "name": "SAFLIN HANDWASH",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Neutral, mild hand-washing laundry detergent powder for top loaders and hand washing.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use at 10 to 30 g per kg.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-handwash.webp",
+        "width": 411,
+        "height": 480,
+        "alt": "SAFLIN HANDWASH pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-HANDWASH-4KG",
+          "packLabel": "4 kg",
+          "packSizeValue": "4",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-HANDWASH-15KG",
+          "packLabel": "15 kg",
+          "packSizeValue": "15",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-emulsifier-080",
+      "name": "SAFLIN EMULSIFIER 080",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Booster emulsifier liquid — a detergent power intensifier that lifts oily soils in all linen categories.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-emulsifier-080.webp",
+        "width": 354,
+        "height": 480,
+        "alt": "SAFLIN EMULSIFIER 080 pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-EMULSIFIER-080-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-EMULSIFIER-080-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-oxy-045",
+      "name": "SAFLIN OXY 045",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Oxygen bleach and disinfectant, suitable for all colours.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use 3 to 5 ml based on linen category. Effective for bleaching linen at 60–80 °C.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-oxy-045.webp",
+        "width": 350,
+        "height": 480,
+        "alt": "SAFLIN OXY 045 pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-OXY-045-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-OXY-045-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-softplus-070",
+      "name": "SAFLIN SOFTPLUS 070",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Fabric softener.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": "Use 2 to 4 ml for towels.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-softplus-070.webp",
+        "width": 396,
+        "height": 480,
+        "alt": "SAFLIN SOFTPLUS 070 pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-SOFTPLUS-070-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-SOFTPLUS-070-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-hs-063",
+      "name": "SAFLIN HS 063",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Heavy-duty hydrosulphite bleach for linen recovery.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-hs-063.webp",
+        "width": 360,
+        "height": 480,
+        "alt": "SAFLIN HS 063 pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-HS-063-5KG",
+          "packLabel": "5 kg",
+          "packSizeValue": "5",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-HS-063-20KG",
+          "packLabel": "20 kg",
+          "packSizeValue": "20",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-040-chlorine-bleach",
+      "name": "SAFLIN 040 CHLORINE-BASED BLEACH",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Chlorine-based bleach and disinfectant.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-040-chlorine-bleach.webp",
+        "width": 345,
+        "height": 480,
+        "alt": "SAFLIN 040 CHLORINE-BASED BLEACH pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-040-CHLORINE-BLEACH-20L",
+          "packLabel": "20 L",
+          "packSizeValue": "20",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-ionizer",
+      "name": "SAFLIN IONIZER",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Neutralising sour and iron remover.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-ionizer.webp",
+        "width": 411,
+        "height": 480,
+        "alt": "SAFLIN IONIZER pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-IONIZER-5KG",
+          "packLabel": "5 kg",
+          "packSizeValue": "5",
+          "unit": "KG",
+          "vatRateBps": 1600
+        },
+        {
+          "sku": "SAFLIN-IONIZER-20KG",
+          "packLabel": "20 kg",
+          "packSizeValue": "20",
+          "unit": "KG",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "saflin-rust-away",
+      "name": "SAFLIN RUST AWAY",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Rust-stain remover for textiles and other surfaces.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/saflin-rust-away.webp",
+        "width": 350,
+        "height": 480,
+        "alt": "SAFLIN RUST AWAY pack"
+      },
+      "variants": [
+        {
+          "sku": "SAFLIN-RUST-AWAY",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "fabron-spotter-b",
+      "name": "FABRON SPOTTER B",
+      "brand": null,
+      "categorySlug": "laundry",
+      "shortDescription": "Laundry stain spotter, effective for removing lipstick, pigments, cosmetics and crayon.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/fabron-spotter-b.webp",
+        "width": 228,
+        "height": 480,
+        "alt": "FABRON SPOTTER B pack"
+      },
+      "variants": [
+        {
+          "sku": "FABRON-SPOTTER-B",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "yellow-go",
+      "name": "YELLOW GO",
+      "brand": "A. L. Wilson Chemical Co.",
+      "categorySlug": "laundry",
+      "shortDescription": "Dye stripper. One of the A. L. Wilson laundry spotting agents Safuney supplies.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/yellow-go.webp",
+        "width": 191,
+        "height": 480,
+        "alt": "YELLOW GO pack"
+      },
+      "variants": [
+        {
+          "sku": "YELLOW-GO",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "qwik-go",
+      "name": "QWIK GO",
+      "brand": "A. L. Wilson Chemical Co.",
+      "categorySlug": "laundry",
+      "shortDescription": "Protein stain remover for blood, milk and food stains. One of the A. L. Wilson laundry spotting agents Safuney supplies.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/qwik-go.webp",
+        "width": 178,
+        "height": 480,
+        "alt": "QWIK GO pack"
+      },
+      "variants": [
+        {
+          "sku": "QWIK-GO",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "tar-go-dry",
+      "name": "TAR GO DRY",
+      "brand": "A. L. Wilson Chemical Co.",
+      "categorySlug": "laundry",
+      "shortDescription": "Dry-side spotter for tar, grease and oil-based stains. One of the A. L. Wilson laundry spotting agents Safuney supplies.",
+      "zone": "BLUE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/tar-go-dry.webp",
+        "width": 213,
+        "height": 480,
+        "alt": "TAR GO DRY pack"
+      },
+      "variants": [
+        {
+          "sku": "TAR-GO-DRY",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-extreme-liquid",
+      "name": "BACTRO EXTREME LIQUID",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Bacterial bathroom and tile cleaner: a powerful biological detergent, mal-odour neutraliser and deodoriser for service areas.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-extreme-liquid.webp",
+        "width": 231,
+        "height": 480,
+        "alt": "BACTRO EXTREME LIQUID pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-EXTREME-LIQUID-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-textile",
+      "name": "BACTRO TEXTILE",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Fragranced textile, upholstery and carpet cleaner with reduced environmental impact.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-textile.webp",
+        "width": 227,
+        "height": 480,
+        "alt": "BACTRO TEXTILE pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-TEXTILE-5L",
+          "packLabel": "5 L",
+          "packSizeValue": "5",
+          "unit": "L",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-bath-and-tile-tablets",
+      "name": "BACTRO BATH & TILE TABLETS",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Bacterial cleaner and descaler for tiles, ceramics, floors and sanitary ware in bathroom environments. The tablet alternative to Bactro.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-bath-and-tile-tablets.webp",
+        "width": 309,
+        "height": 480,
+        "alt": "BACTRO BATH & TILE TABLETS pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-BATH-AND-TILE-TABLETS-24X12TUBES(288TABLETS)",
+          "packLabel": "24 x 12 tubes (288 tablets)",
+          "packSizeValue": "288",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-clean-tablets",
+      "name": "BACTRO CLEAN TABLETS",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Bacterial multipurpose cleaner for all hard surfaces. The tablet alternative to Bactro All.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-clean-tablets.webp",
+        "width": 320,
+        "height": 480,
+        "alt": "BACTRO CLEAN TABLETS pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-CLEAN-TABLETS-24X12TUBES(288TABLETS)",
+          "packLabel": "24 x 12 tubes (288 tablets)",
+          "packSizeValue": "288",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-zyme-tablets",
+      "name": "BACTRO ZYME TABLETS",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Bacterial bathroom and tile cleaner: a biological detergent, mal-odour neutraliser and deodoriser for service areas, in tablet form.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-zyme-tablets.webp",
+        "width": 350,
+        "height": 480,
+        "alt": "BACTRO ZYME TABLETS pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-ZYME-TABLETS",
+          "packLabel": "Pack size on request",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-bio-block-urinal",
+      "name": "BACTRO BIO BLOCK URINAL",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Enzyme-based biological urinal cleaner and odour counteractant. Neutralises urine and the by-products that precipitate in plumbing, eliminating foul odours.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": "One tablet per urinal per week.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-bio-block-urinal.webp",
+        "width": 278,
+        "height": 480,
+        "alt": "BACTRO BIO BLOCK URINAL pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-BIO-BLOCK-URINAL-TUBOF10X50GTABLETS",
+          "packLabel": "Tub of 10 x 50 g tablets",
+          "packSizeValue": "10",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "bactro-trap-tablets",
+      "name": "BACTRO-TRAP TABLETS",
+      "brand": null,
+      "categorySlug": "bactro",
+      "shortDescription": "Enzyme-based biological drain cleaner, fat-trap opener and septic-tank treatment. Digests animal fat and vegetable oil in food facilities.",
+      "zone": "RED",
+      "hazardClass": "NONE",
+      "dilutionText": "One tablet per grease trap per week.",
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/bactro-trap-tablets.webp",
+        "width": 275,
+        "height": 480,
+        "alt": "BACTRO-TRAP TABLETS pack"
+      },
+      "variants": [
+        {
+          "sku": "BACTRO-TRAP-TABLETS-TUBOF10X50GTABLETS",
+          "packLabel": "Tub of 10 x 50 g tablets",
+          "packSizeValue": "10",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "industrial-floor-scrubbing-machine",
+      "name": "Industrial floor scrubbing machine",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Single-disc floor scrubbing machine for hard floors. Supplied, serviced and repaired by Safuney.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/industrial-floor-scrubbing-machine.webp",
+        "width": 209,
+        "height": 480,
+        "alt": "Industrial floor scrubbing machine pack"
+      },
+      "variants": [
+        {
+          "sku": "INDUSTRIAL-FLOOR-SCRUBBING-MACHINE",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "industrial-vacuum-cleaner",
+      "name": "Industrial vacuum cleaner",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Drum vacuum with hose and floor tool, for wet and dry pick-up in back-of-house areas. Supplied, serviced and repaired by Safuney.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/industrial-vacuum-cleaner.webp",
+        "width": 480,
+        "height": 404,
+        "alt": "Industrial vacuum cleaner pack"
+      },
+      "variants": [
+        {
+          "sku": "INDUSTRIAL-VACUUM-CLEANER",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "janitor-trolley",
+      "name": "Janitor trolley housekeeping cart",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Housekeeping cart with shelves and a waste-bag holder, for a room-servicing round.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/janitor-trolley.webp",
+        "width": 480,
+        "height": 454,
+        "alt": "Janitor trolley housekeeping cart pack"
+      },
+      "variants": [
+        {
+          "sku": "JANITOR-TROLLEY",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "wringer-bucket-trolley",
+      "name": "Wringer bucket trolley",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Two-bucket trolley with a side-press wringer, so clean and dirty water never share a bucket.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/wringer-bucket-trolley.webp",
+        "width": 432,
+        "height": 480,
+        "alt": "Wringer bucket trolley pack"
+      },
+      "variants": [
+        {
+          "sku": "WRINGER-BUCKET-TROLLEY",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "single-mobile-wringer",
+      "name": "Single mobile wringer",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Single bucket on castors with a side-press wringer.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/single-mobile-wringer.webp",
+        "width": 365,
+        "height": 480,
+        "alt": "Single mobile wringer pack"
+      },
+      "variants": [
+        {
+          "sku": "SINGLE-MOBILE-WRINGER",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "double-mobile-wringer-bucket",
+      "name": "Double mobile wringer bucket",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Two colour-separated buckets on one frame with a shared wringer, for the two-bucket mopping method.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/double-mobile-wringer-bucket.webp",
+        "width": 334,
+        "height": 480,
+        "alt": "Double mobile wringer bucket pack"
+      },
+      "variants": [
+        {
+          "sku": "DOUBLE-MOBILE-WRINGER-BUCKET",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "single-round-mop-bucket",
+      "name": "Single round mop bucket",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Round mop bucket with a cone wringer, for round mop heads.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/single-round-mop-bucket.webp",
+        "width": 334,
+        "height": 480,
+        "alt": "Single round mop bucket pack"
+      },
+      "variants": [
+        {
+          "sku": "SINGLE-ROUND-MOP-BUCKET",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "heavy-duty-gloves",
+      "name": "Heavy duty gloves",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Long-cuff heavy-duty gloves for handling concentrates and hot wash water.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/heavy-duty-gloves.webp",
+        "width": 313,
+        "height": 480,
+        "alt": "Heavy duty gloves pack"
+      },
+      "variants": [
+        {
+          "sku": "HEAVY-DUTY-GLOVES",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "nitrile-gloves",
+      "name": "Nitrile gloves",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Nitrile gloves for general cleaning and chemical handling.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/nitrile-gloves.webp",
+        "width": 350,
+        "height": 480,
+        "alt": "Nitrile gloves pack"
+      },
+      "variants": [
+        {
+          "sku": "NITRILE-GLOVES",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "paper-dispenser",
+      "name": "Paper dispenser",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Wall-mounted dispenser for multifold hand towels.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/paper-dispenser.webp",
+        "width": 480,
+        "height": 392,
+        "alt": "Paper dispenser pack"
+      },
+      "variants": [
+        {
+          "sku": "PAPER-DISPENSER",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "multifold-paper-towels",
+      "name": "Multifold paper towels",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Multifold hand towels for washroom and kitchen dispensers.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/multifold-paper-towels.webp",
+        "width": 480,
+        "height": 467,
+        "alt": "Multifold paper towels pack"
+      },
+      "variants": [
+        {
+          "sku": "MULTIFOLD-PAPER-TOWELS",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "towel-dispenser",
+      "name": "Towel dispenser",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Wall-mounted washroom towel dispenser.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/towel-dispenser.webp",
+        "width": 370,
+        "height": 480,
+        "alt": "Towel dispenser pack"
+      },
+      "variants": [
+        {
+          "sku": "TOWEL-DISPENSER",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "floor-sweepers",
+      "name": "Floor sweepers",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Flat dust-mop sweepers on a swivel frame, for large hard-floor areas.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/floor-sweepers.webp",
+        "width": 480,
+        "height": 467,
+        "alt": "Floor sweepers pack"
+      },
+      "variants": [
+        {
+          "sku": "FLOOR-SWEEPERS",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "floor-squeegee",
+      "name": "Floor squeegee",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Floor squeegee on a handle, for clearing water after a wash-down.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/floor-squeegee.webp",
+        "width": 320,
+        "height": 480,
+        "alt": "Floor squeegee pack"
+      },
+      "variants": [
+        {
+          "sku": "FLOOR-SQUEEGEE",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "round-mops",
+      "name": "Round mops",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Round mop heads for use with a cone-wringer bucket.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/round-mops.webp",
+        "width": 368,
+        "height": 480,
+        "alt": "Round mops pack"
+      },
+      "variants": [
+        {
+          "sku": "ROUND-MOPS",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "dusting-cloths",
+      "name": "Dusting cloths",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Colour-coded microfibre cloths, so a cloth used in a washroom never reaches a kitchen surface.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/dusting-cloths.webp",
+        "width": 480,
+        "height": 437,
+        "alt": "Dusting cloths pack"
+      },
+      "variants": [
+        {
+          "sku": "DUSTING-CLOTHS",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "brooms",
+      "name": "Hard and soft brooms",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Colour-coded hard and soft brooms for indoor and outdoor sweeping.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/brooms.webp",
+        "width": 363,
+        "height": 480,
+        "alt": "Hard and soft brooms pack"
+      },
+      "variants": [
+        {
+          "sku": "BROOMS",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "spray-bottles",
+      "name": "Spray bottles",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Colour-coded trigger spray bottles for diluted solutions.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/spray-bottles.webp",
+        "width": 480,
+        "height": 309,
+        "alt": "Spray bottles pack"
+      },
+      "variants": [
+        {
+          "sku": "SPRAY-BOTTLES",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "telescopic-poles",
+      "name": "Telescopic poles",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Extending poles for high-level cleaning tools.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/telescopic-poles.webp",
+        "width": 456,
+        "height": 480,
+        "alt": "Telescopic poles pack"
+      },
+      "variants": [
+        {
+          "sku": "TELESCOPIC-POLES",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "dust-pans",
+      "name": "Dust pans",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Dust pan and brush set.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/dust-pans.webp",
+        "width": 480,
+        "height": 380,
+        "alt": "Dust pans pack"
+      },
+      "variants": [
+        {
+          "sku": "DUST-PANS",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    },
+    {
+      "slug": "cobweb-remover",
+      "name": "Cobweb remover",
+      "brand": null,
+      "categorySlug": "equipment",
+      "shortDescription": "Cobweb brush for a telescopic pole, for high-level corners and ceilings.",
+      "zone": "NONE",
+      "hazardClass": "NONE",
+      "dilutionText": null,
+      "dilutionGuidance": [],
+      "image": {
+        "url": "/products/cobweb-remover.webp",
+        "width": 347,
+        "height": 480,
+        "alt": "Cobweb remover pack"
+      },
+      "variants": [
+        {
+          "sku": "COBWEB-REMOVER",
+          "packLabel": "each",
+          "packSizeValue": "1",
+          "unit": "PCS",
+          "vatRateBps": 1600
+        }
+      ]
+    }
+  ]
+}

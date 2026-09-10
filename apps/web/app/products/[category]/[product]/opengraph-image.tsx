@@ -1,9 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
-import { db } from "@safuney/db";
-import { services } from "@/lib/env";
 import { site } from "@/config/site";
+import { getProduct } from "@/lib/catalogue/queries";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -58,15 +57,13 @@ export default async function Image({ params }: { params: Promise<{ category: st
     { name: "Plex", data: regular, weight: 400 as const, style: "normal" as const },
   ];
 
-  const product = services.database()
-    ? await db().product.findFirst({
-        where: { slug, isActive: true, needsPoReview: false, category: { slug: category } },
-        select: { name: true, shortDescription: true, zone: true, hazardClass: true, images: { orderBy: { sortOrder: "asc" }, take: 1, select: { url: true } }, variants: { where: { isActive: true }, select: { packLabel: true }, orderBy: { sortOrder: "asc" }, take: 5 } },
-      })
-    : null;
+  // The same lookup as the page, so a product shown from the catalogue snapshot (ADR 0017) gets its
+  // own card rather than the generic one.
+  const product = await getProduct(category, slug);
 
   const zone = product ? ZONE[product.zone] : undefined;
-  const packs = product?.variants.map((v) => v.packLabel) ?? [];
+  // "each" and "Pack size on request" are not sizes; they do not go on the card as chips.
+  const packs = (product?.variants.map((v) => v.packLabel) ?? []).filter((label) => /\d/.test(label)).slice(0, 5);
   // Satori cannot fetch over the network here, and it does not decode WebP, so the pack shot is read
   // off disk and handed over as a PNG data URI. A missing or unreadable file just leaves it out.
   const shot = await packShot(product?.images[0]?.url);

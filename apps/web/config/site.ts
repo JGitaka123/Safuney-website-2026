@@ -80,62 +80,107 @@ export const site = {
     poConfirmed: false,
   },
   /**
+   * What the storefront tells a first-time buyer about the company (ADR 0017). Source: the directors'
+   * Business Growth Strategy v2 (2 September 2026) — the plant, the reps' territories and eTIMS
+   * compliance are stated there as things the company already has.
+   */
+  company: {
+    /** Where the chemicals are blended. */
+    plant: "Ruai, Nairobi",
+    /** The three sales territories, one rep each. */
+    regions: ["Nairobi and Mount Kenya", "the Coast", "Western and Nakuru"],
+    /** "eTIMS-compliant supplier" is the line the strategy asks every quotation to carry. */
+    etims: true,
+  },
+  /**
+   * The lead offer: a free site survey, and a two-week trial beside the current supplier where it suits
+   * the site (growth strategy, Pillar 2). It is a commercial promise the directors have to be ready to
+   * honour, so it is one switch: `enabled: false` removes every mention of it from the site.
+   */
+  offer: {
+    enabled: true,
+    poConfirmed: false,
+    title: "Free site survey",
+    summary: "We check what you use and what it costs per clean, then recommend a programme, with a two-week trial where it suits.",
+  },
+  /**
+   * Customers named on the site — only with each customer's written permission (growth strategy,
+   * Pillar 5). Empty until the directors confirm who has agreed; the strip does not render while empty.
+   */
+  clients: [] as string[],
+  /** Products put in front of a first-time visitor, in this order. Slugs from the catalogue. */
+  featuredProducts: [
+    "saf-quartsan",
+    "saf-multiklin",
+    "saf-autoklin",
+    "grease-buster",
+    "sanibac",
+    "saflin-015-one-shot",
+    "bactro-extreme-liquid",
+    "safuney-m511",
+    "saf-autorinse",
+    "sanitouch",
+    "saf-window-cleaner",
+    "bactro-trap-tablets",
+  ],
+  /**
    * The catalogue's own nine sections, in the catalogue's own order, with the colour-coded zone each
    * mostly serves (plan §4.1). Slugs match docs/discovery/catalogue-seed.csv — change both together.
+   * Blurbs are one short line: a list of what is in the range, not a description of it.
    */
   productAreas: [
     {
       slug: "warewashing",
       name: "Warewashing and kitchen hygiene",
-      blurb: "Auto-dosed dishwasher detergent and rinse aid, heavy-duty potwash, and a decarbonising soak for pots and pans.",
+      blurb: "Dishwasher detergent, rinse aid, potwash and pot-and-pan soak.",
       zones: ["GREEN"],
     },
     {
       slug: "disinfection",
       name: "Disinfection and sanitisation",
-      blurb: "QAC and chlorine chemistry for surfaces and food contact, a powder wash for salads and fruit, and alcohol hand sanitiser.",
+      blurb: "Sanitisers, chlorine disinfectant, salad wash and hand sanitiser.",
       zones: ["RED", "BLUE", "GREEN", "YELLOW"],
     },
     {
       slug: "specialty",
       name: "Speciality products",
-      blurb: "Descaling, ovens and grills, crockery destaining, and a caustic drain and fat-trap opener.",
+      blurb: "Descaler, oven and grill cleaner, destainer and drain opener.",
       zones: ["GREEN", "BLUE"],
     },
     {
       slug: "personal-hygiene",
       name: "Personal hygiene",
-      blurb: "Germicidal handwash, perfumed or fragrance-free, and a shower gel. Dispenser-ready and used neat.",
+      blurb: "Germicidal handwash and shower gel, dispenser-ready.",
       zones: ["RED"],
     },
     {
       slug: "housekeeping",
       name: "Housekeeping, public areas and fitness centres",
-      blurb: "Glass, tiles and bathrooms, floor stripping and polishing, carpet shampoo, degreaser, air fresheners and furniture polish.",
+      blurb: "Glass, tiles, floors, carpets, air fresheners and polish.",
       zones: ["BLUE", "RED"],
     },
     {
       slug: "process-hygiene",
       name: "Food, beverage and process hygiene",
-      blurb: "Alkaline and acid CIP detergents, peracetic disinfection, a food-safe destainer and raw caustic.",
+      blurb: "CIP detergents, peracetic disinfectant, destainer and caustic.",
       zones: ["GREEN"],
     },
     {
       slug: "laundry",
       name: "Laundry",
-      blurb: "One-shot and fully built detergent powders, boosters, bleaches, softener, sour, and the A. L. Wilson spotting range.",
+      blurb: "Detergent powders, boosters, bleaches, softener and stain spotters.",
       zones: ["BLUE"],
     },
     {
       slug: "bactro",
       name: "Bactro biological range",
-      blurb: "Bacterial and enzyme cleaners, liquid and tablet, for washrooms, drains, grease traps and urinals.",
+      blurb: "Biological cleaners and tablets for washrooms, drains and urinals.",
       zones: ["RED"],
     },
     {
       slug: "equipment",
       name: "Cleaning equipment and consumables",
-      blurb: "Scrubbing machines, vacuums, janitor carts, wringer buckets, mops, brooms, squeegees, gloves and paper dispensers.",
+      blurb: "Machines, trolleys, buckets, mops, brooms, gloves and dispensers.",
       zones: [],
     },
   ],
@@ -143,20 +188,20 @@ export const site = {
     {
       slug: "training",
       name: "Training",
-      blurb: "Staff training that builds professional, consistent cleaning practice.",
+      blurb: "Dilution, zones and safe handling, taught on site.",
       detail:
         "On-site training for housekeeping, kitchen and laundry teams: correct dilution, contact times, colour-coded zoning, safe handling and the records auditors ask for.",
     },
     {
       slug: "equipment",
       name: "Equipment service and repair",
-      blurb: "Service and repair for all types of cleaning equipment.",
+      blurb: "Dosing systems, dispensers and machines kept working.",
       detail: "Servicing and repair of dosing systems, dispensers, floor machines and laundry dosing so that the chemicals you buy are applied at the ratio they were designed for.",
     },
     {
       slug: "housekeeping",
       name: "Housekeeping services",
-      blurb: "Managed housekeeping to keep workplaces healthy.",
+      blurb: "Trained, supervised teams, supplied with the right products.",
       detail: "Managed housekeeping teams for offices, institutions and hospitality sites, supplied with the right products, trained on them and supervised.",
     },
   ],

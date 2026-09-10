@@ -4,7 +4,10 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Alert, Button, PackSelector, QuantityStepper, Toast } from "@safuney/ui";
 import { addToCart } from "@/lib/cart/actions";
+import { productEnquiry, quoteHref, whatsappHref } from "@/lib/contact";
 import { announceCartChange } from "@/components/site/cart-link";
+import { btn } from "@/components/marketing/buttons";
+import { Icon } from "@/components/marketing/icons";
 import { unitPrice } from "@/lib/pricing";
 
 export interface PurchaseVariant {
@@ -47,6 +50,8 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
   // A pack with no list price is quoted, not sold online (see lib/cart/service.ts). The server would
   // refuse it anyway; showing Add to cart and then refusing would just waste the buyer's time.
   const poa = selected?.poa ?? false;
+  // "Pack size on request" and "each" are not sizes, so they never go into a button label.
+  const sizedPack = selected && /\d/.test(selected.label) ? selected.label : undefined;
   const perUnit = selected && !poa ? unitPrice(BigInt(selected.exVatMinor), selected.packSizeValue, selected.unit, mode, vatRateBps) : null;
 
   function submit() {
@@ -101,12 +106,14 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
 
       {poa ? (
         <div className="flex flex-col gap-3">
-          <Link
-            href={`/quote?product=${encodeURIComponent(productName)}${selected ? `&pack=${encodeURIComponent(selected.label)}` : ""}`}
-            className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep"
-          >
-            Request a quote
+          <Link href={quoteHref({ product: productName, pack: sizedPack })} className={btn.cta}>
+            {sizedPack ? `Get a price for ${sizedPack}` : "Get a price"}
+            <Icon name="arrowRight" className="size-5" />
           </Link>
+          <a href={whatsappHref(productEnquiry(productName, sizedPack))} target="_blank" rel="noopener noreferrer" className={btn.whatsapp}>
+            <Icon name="whatsapp" className="size-5" />
+            Ask for a price on WhatsApp
+          </a>
           <p className="text-small text-ink-muted">This pack is quoted rather than priced online. Tell us the quantity and we come back with a price within one working day.</p>
         </div>
       ) : shopEnabled ? (
@@ -120,7 +127,7 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
           {selected?.stock.key === "out" ? (
             <div className="flex flex-col gap-3">
               <p className="text-small">This pack is out of stock. Choose another pack size, or ask us when it is back.</p>
-              <Link href={`/quote?sku=${selected.sku}`} className="inline-flex min-h-11 items-center justify-center rounded-button border border-stainless bg-surface px-5 text-button text-ink">
+              <Link href={`/quote?sku=${selected.sku}`} className={btn.secondary}>
                 Ask about {selected.label}
               </Link>
             </div>
@@ -129,16 +136,17 @@ export function PurchasePanel({ productName, variants, mode, vatRateBps, shopEna
               Add to cart
             </Button>
           )}
-          <Link href={`/quote?product=${encodeURIComponent(productName)}${selected ? `&pack=${encodeURIComponent(selected.label)}` : ""}`} className="text-small text-accent underline underline-offset-[3px]">
+          <Link href={quoteHref({ product: productName, pack: sizedPack })} className="text-small text-accent underline underline-offset-[3px]">
             Buying in bulk? Request a quote
           </Link>
         </>
       ) : (
         <div className="flex flex-col gap-3">
-          <Link href={`/quote?sku=${selected?.sku ?? ""}`} className="inline-flex min-h-11 items-center justify-center rounded-button bg-ink px-5 text-button text-white hover:bg-accent-deep">
-            Request a quote
+          <Link href={`/quote?sku=${selected?.sku ?? ""}`} className={btn.cta}>
+            Get a price
+            <Icon name="arrowRight" className="size-5" />
           </Link>
-          <p className="text-small text-ink-muted">Online ordering opens with the full catalogue. Until then we quote the same day.</p>
+          <p className="text-small text-ink-muted">Online ordering is not open yet. We quote within one working day.</p>
         </div>
       )}
 

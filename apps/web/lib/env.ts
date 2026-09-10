@@ -23,6 +23,11 @@ export const services = {
   database: () => has("DATABASE_URL"),
   email: () => has("RESEND_API_KEY"),
   redis: () => has("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN") || has("KV_REST_API_URL", "KV_REST_API_TOKEN"),
+  /**
+   * Somewhere for an enquiry to go: stored in the database, emailed to the leads inbox, or both
+   * (lib/leads.ts). Without either, forms hand the enquiry to WhatsApp instead of failing.
+   */
+  leads: () => has("DATABASE_URL") || has("RESEND_API_KEY"),
 } as const;
 
 export const config = {

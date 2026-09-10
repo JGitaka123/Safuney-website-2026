@@ -2,7 +2,8 @@ import { db, Prisma, type DocumentType } from "@safuney/db";
 import { ZONES, type ZoneKey } from "@safuney/ui";
 import { getCategories } from "@/lib/catalogue";
 import { services } from "@/lib/env";
-import { VISIBLE_PRODUCT, type ProductCardData } from "./queries";
+import { catalogueSource, VISIBLE_PRODUCT, type ProductCardData } from "./queries";
+import { SNAPSHOT_ID_PREFIX, snapshotSearch } from "./static";
 
 /*
  * Site search (brief: instant results as you type, typo tolerance, category and document results).
@@ -12,6 +13,9 @@ import { VISIBLE_PRODUCT, type ProductCardData } from "./queries";
  * "degreser" and "sanitzer" still find degreasers and sanitisers. Only active, PO-reviewed products
  * in active categories are ever returned (plan §6.5). User input is only ever passed as a bound
  * parameter of a tagged template; it is never concatenated into SQL.
+ *
+ * Until the database holds a published catalogue, products and categories are searched in the
+ * catalogue snapshot instead (ADR 0017), so the header search box is never a dead end.
  */
 
 export const MIN_QUERY_LENGTH = 2;
@@ -84,8 +88,11 @@ interface RankedRow {
 /** Products matching `q`, best first. */
 export async function searchProducts(rawQ: string, { limit = 24 }: SearchOptions = {}): Promise<SearchProduct[]> {
   const q = normaliseQuery(rawQ);
-  if (!q || !services.database()) return [];
+  if (!q) return [];
   const take = Math.max(1, Math.min(100, Math.floor(limit)));
+  if ((await catalogueSource()) === "snapshot") {
+    return snapshotSearch(q, take).map(({ card, score }) => ({ ...card, category: { ...card.category, parent: null }, categoryPath: card.category.slug, score }));
+  }
   const prisma = db();
   const pattern = likePattern(q);
 
@@ -144,8 +151,16 @@ interface CategoryRow {
 /** Active categories whose name matches `q`, with at least one visible product. */
 export async function searchCategories(rawQ: string, { limit = 8 }: SearchOptions = {}): Promise<SearchCategory[]> {
   const q = normaliseQuery(rawQ);
-  if (!q || !services.database()) return [];
+  if (!q) return [];
   const take = Math.max(1, Math.min(50, Math.floor(limit)));
+  if ((await catalogueSource()) === "snapshot") {
+    const needle = q.toLowerCase();
+    const categories = await getCategories();
+    return categories
+      .filter((c) => (c.productCount ?? 0) > 0 && c.name.toLowerCase().includes(needle))
+      .slice(0, take)
+      .map((c) => ({ id: `${SNAPSHOT_ID_PREFIX}${c.slug}`, slug: c.slug, name: c.name, zone: c.zones[0] ?? null, href: `/products/${c.slug}`, productCount: c.productCount ?? 0 }));
+  }
   const pattern = likePattern(q);
   const rows = await db().$queryRaw<CategoryRow[]>`
     SELECT
