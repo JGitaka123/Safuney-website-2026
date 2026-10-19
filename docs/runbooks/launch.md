@@ -16,10 +16,10 @@ Do not begin until **all** of these are true. Each has cost someone a launch som
 | - | ----- | -------------- |
 | 1 | The catalogue is corrected and reviewed | `/admin/catalogue?filter=needs-review` shows **0 products**. Anything still flagged is invisible to customers, and turning on indexing publishes whatever is *not* flagged — at whatever price it currently carries. |
 | 2 | Company KRA PIN and VAT number are set | `/admin/settings`. Tax invoices already issue; without these they issue without the seller's identifiers, which is not KRA-compliant. |
-| 3 | Real staff accounts exist | `/admin/staff`. The demo accounts (`admin@safuney.test` and friends) exist only where `SEED_DEMO=1`, which is never production — but confirm the real people can sign in **before** you need them to. |
+| 3 | Real staff accounts exist | The first administrator comes from `pnpm --filter @safuney/db create-admin you@safuney.com "Name"` run against the production `DATABASE_URL`; everyone else from `/admin/staff`. The demo accounts (`admin@safuney.test` and friends) exist only where `SEED_DEMO=1`, which is never production — but confirm the real people can sign in **before** you need them to. |
 | 4 | `AUTH_SECRET` is set in Vercel, different for Production and Preview | `openssl rand -base64 32`. Sharing one between environments means a preview session is a production session. |
 | 5 | Payment credentials are live, not sandbox | Section 3 below. |
-| 6 | Email and SMS are configured | `RESEND_API_KEY` with a verified domain; Africa's Talking key and sender ID. Without them the site still works and simply sends nothing — which customers experience as silence after paying. |
+| 6 | Email and SMS are configured | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` (the cPanel `no_reply@safuney.com` mailbox) or `RESEND_API_KEY`; Africa's Talking key and sender ID. Without them the site still works and simply sends nothing — which customers experience as silence after paying. |
 | 7 | A test order has gone all the way through on the preview | Place it, pay it, pick it, dispatch it, deliver it. Confirm the emails and SMS arrived. |
 
 ---
@@ -79,11 +79,13 @@ Then submit `https://safuney.com/sitemap.xml` in Google Search Console.
 ### M-Pesa (Daraja)
 1. In the Safaricom developer portal, move the app from sandbox to **production**: new consumer key and
    secret, the real **shortcode**, and the **passkey** for that shortcode.
-2. Register the callback URL **against the production domain**:
-   `https://safuney.com/api/payments/mpesa/callback`
-   Daraja will not call a URL it has not been told about, and it will not call `http`.
-3. Set in Vercel Production: `DARAJA_CONSUMER_KEY`, `DARAJA_CONSUMER_SECRET`, `DARAJA_SHORTCODE`,
-   `DARAJA_PASSKEY`, `DARAJA_ENV=production`.
+2. The callback URL is sent with every payment request, built from `NEXT_PUBLIC_SITE_URL`:
+   `https://safuney.com/api/payments/mpesa/callback/<MPESA_CALLBACK_SECRET>`. So set
+   `NEXT_PUBLIC_SITE_URL` to the final `https` domain first; Daraja will not call `http`.
+3. Set in Vercel Production: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`,
+   `MPESA_PASSKEY`, `MPESA_CALLBACK_SECRET` (any long random string), `MPESA_ENV=production`, and
+   `MPESA_TRANSACTION_TYPE=CustomerBuyGoodsOnline` if the shortcode is a Till rather than a Paybill.
+   These are the names the code reads (`packages/payments/src/adapters/mpesa-daraja.ts`).
 4. Set `PAYMENTS_MODE=live`. **The registry refuses to run mock mode in production**, so a
    misconfiguration here fails loudly rather than quietly accepting fake payments.
 5. Place one real order for a small amount and confirm the money arrives and the order goes to PAID.

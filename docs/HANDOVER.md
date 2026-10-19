@@ -14,7 +14,7 @@ own material — logo, colours, strapline, range and photography — is from `PR
 **Production today has no database and no email key** (only `NEXT_PUBLIC_SITE_URL` is set in Vercel).
 The catalogue and WhatsApp enquiries work regardless; online ordering, stored quotes and emailed leads
 start working once `DATABASE_URL` is set and seeded (`pnpm --filter @safuney/db seed`) and
-`RESEND_API_KEY` is added. Two commercial switches in `apps/web/config/site.ts` need a director's
+email is configured (`SMTP_*` from the cPanel mailbox, or `RESEND_API_KEY`). Two commercial switches in `apps/web/config/site.ts` need a director's
 word: `offer` (the free site survey, on) and `clients` (customers named on the site, empty until they
 agree in writing).
 
@@ -66,7 +66,10 @@ open: **opening hours** (not on the site at all, because nobody has told me what
 correct me if not.
 
 ### 3. Real staff accounts
-`/admin/staff`. Each person gets their own; the authenticator code shows **once**, at creation, and
+The first administrator is created from a terminal, since `/admin/staff` needs an administrator signed
+in: `pnpm --filter @safuney/db create-admin you@safuney.com "Your Name"` with `DATABASE_URL` set to
+production. It prints a password and an authenticator key once; run it again to recover a lost one.
+Everyone else from `/admin/staff`. Each person gets their own; the authenticator code shows **once**, at creation, and
 cannot be recovered. The demo accounts exist only where the demo seed runs, which is never production.
 
 ## Then, in this order
@@ -83,7 +86,7 @@ cannot be recovered. The demo accounts exist only where the demo seed runs, whic
 
 | Thing | Needs | Without it |
 | ----- | ----- | ---------- |
-| Emails to customers | `RESEND_API_KEY` + verified domain | Site works, sends nothing — customers hear silence after paying |
+| Emails to customers, sign-in codes | `SMTP_*` (the cPanel `no_reply@` mailbox) or `RESEND_API_KEY` | Site works, sends nothing — customers hear silence after paying |
 | SMS to customers | Africa's Talking key + sender ID | Same |
 | Product advisor | `ANTHROPIC_API_KEY` | The page routes the question to your team instead |
 | Error monitoring | Sentry DSN | `vercel logs --follow` is the fallback |

@@ -44,7 +44,10 @@ export async function requestCodeAction(target: string): Promise<SignInActionRes
   const wait = await limited(identifier);
   if (wait) return { ok: false, message: wait };
   const r = await requestOtp(identifier);
-  if (!r.ok) return { ok: false, message: r.reason === "not_configured" ? "Codes by SMS are not available right now. Use an emailed link instead." : "Check the number or address and try again." };
+  if (!r.ok) {
+    if (r.reason !== "not_configured") return { ok: false, message: "Check the number or address and try again." };
+    return { ok: false, message: identifier.startsWith("email:") ? "We could not send the code just now. Try again in a minute, or call us." : "Codes by SMS are not available right now. Use an emailed link instead." };
+  }
   return { ok: true, mockCode: r.mockCode };
 }
 
