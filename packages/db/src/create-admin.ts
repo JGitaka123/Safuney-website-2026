@@ -39,8 +39,10 @@ export function base32(bytes: Buffer): string {
 export async function createAdmin(prisma: PrismaClient, email: string, name: string | null) {
   const address = email.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) throw new Error(`"${email}" is not an email address`);
-  // 18 bytes → 24 base64url characters, comfortably past the 12-character minimum /admin/staff enforces.
-  const password = randomBytes(18).toString("base64url");
+  // 16 bytes → 32 hex characters: well past the 12-character minimum /admin/staff enforces, and only
+  // letters and digits, because a terminal's double-click selection stops at "-" and a password copied
+  // in part fails sign-in with nothing to say why.
+  const password = randomBytes(16).toString("hex");
   const totpSecret = base32(randomBytes(20));
   const data = { role: UserRole.ADMIN, passwordHash: hashPassword(password), totpSecret, isActive: true, emailVerified: new Date() };
   const existing = await prisma.user.findUnique({ where: { email: address }, select: { id: true } });
@@ -72,6 +74,8 @@ Safuney, and type the key above (time-based). Or paste this into a QR generator 
   ${r.uri}
 
 Sign in at /sign-in/staff. This is shown once — store the password in a password manager now.
+The password and key above replace any earlier ones: use both from this run, and remove an older
+Safuney entry from the authenticator app.
 `);
       return prisma.$disconnect();
     })
