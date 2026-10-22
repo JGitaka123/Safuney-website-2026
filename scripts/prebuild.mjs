@@ -20,8 +20,11 @@ if (process.env.DATABASE_URL) {
   if (process.env.SKIP_MIGRATE === "1") {
     console.log("prebuild: SKIP_MIGRATE=1, not running migrations");
   } else {
-    console.log("prebuild: prisma migrate deploy");
-    run("pnpm exec prisma migrate deploy");
+    // Migrations take an advisory lock, which a transaction-mode pooler (Neon's default DATABASE_URL)
+    // does not hold across statements. The Neon integration also provides a direct connection; use it.
+    const direct = process.env.DATABASE_URL_UNPOOLED;
+    console.log(`prebuild: prisma migrate deploy${direct ? " (direct connection)" : ""}`);
+    execSync("pnpm exec prisma migrate deploy", { cwd: dbDir, stdio: "inherit", env: direct ? { ...process.env, DATABASE_URL: direct } : process.env });
   }
 } else {
   console.log("prebuild: DATABASE_URL not set — skipping migrations. Database-backed features will be disabled at runtime.");
