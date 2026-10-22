@@ -147,13 +147,13 @@ never paste values into chat or commit them.
 | --- | --- | --- |
 | `DATABASE_URL` | Neon integration | Catalogue, leads, orders. Without it the site still renders from static config and database features switch off. |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (or `KV_REST_API_URL`, `KV_REST_API_TOKEN`) | Upstash integration | Rate limiting, sessions, cache. Without them an in-memory fallback is used (fine for previews, not for production). |
-| `AUTH_SECRET` | All | Signs sign-in sessions. Generate once with `openssl rand -base64 32` (or `npx auth secret`); different value per environment. |
 | `AUTH_SECRET` | All | Signs session tokens. Generate a different one per environment: `openssl rand -base64 32`. Sign-in is refused without it; the site still builds and browses. |
 | `COMPANY_KRA_PIN` | All | Safuney's KRA PIN, printed on tax invoices (question 4). Invoices say "to be confirmed" until it is set. |
 | `COMPANY_VAT_NUMBER` | All | VAT registration number for tax invoices, if separate from the PIN. |
 | `DEMO_STAFF_PASSWORD` | Preview only | Password of the demo staff accounts the demo seed creates (`sales@`, `finance@`, `admin@safuney.test`). Never set in production; the seed refuses to run there. |
-| `RESEND_API_KEY` | Resend integration | Contact-form and order emails. |
-| `EMAIL_FROM` | you | Sender shown on emails, e.g. `Safuney <no-reply@safuney.com>`. The domain must be verified in Resend. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | cPanel → Email Accounts | Sign-in codes and links, contact-form and order emails, through Safuney's own mail server: `mail.safuney.com`, port `465`, user `no_reply@safuney.com`. Used in preference to Resend when both are set. |
+| `RESEND_API_KEY` | Resend integration | The alternative to SMTP for the same emails. |
+| `EMAIL_FROM` | you | Sender shown on emails, e.g. `Safuney <no_reply@safuney.com>`. Defaults to the SMTP mailbox when SMTP is used; with Resend the domain must be verified there. |
 | `LEADS_INBOX` | you | Where contact-form leads are delivered. Defaults to `info@safuney.com`. |
 | `NEXT_PUBLIC_SITE_URL` | you (production only) | `https://safuney-website-2026.vercel.app` now; `https://safuney.com` after cut-over. Also the base for payment callbacks. |
 | `PAYMENTS_MODE` | you (Preview only) | `mock` lets previews and CI run checkout without provider accounts. Never set on Production (the site refuses). |

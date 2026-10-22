@@ -58,7 +58,9 @@ export async function requestOtp(identifier: string): Promise<OtpRequestResult> 
     if (r === "failed") return { ok: false, reason: "not_configured" };
     return { ok: true, channel: "sms" };
   }
-  await sendEmail({ to: target, subject: `${code} is your Safuney sign-in code`, text: `${message}\n\n${config.siteUrl}/sign-in` });
+  const sent = await sendEmail({ to: target, subject: `${code} is your Safuney sign-in code`, text: `${message}\n\n${config.siteUrl}/sign-in` });
+  // Telling someone a code is on its way when the mail server refused it leaves them waiting for nothing.
+  if (!sent.sent) return { ok: false, reason: "not_configured" };
   return { ok: true, channel: "email" };
 }
 

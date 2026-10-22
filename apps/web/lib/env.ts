@@ -19,24 +19,42 @@ function has(...keys: string[]): boolean {
   return keys.every((k) => read(k) !== undefined);
 }
 
+function smtpConfigured(): boolean {
+  return has("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD");
+}
+
 export const services = {
   database: () => has("DATABASE_URL"),
-  email: () => has("RESEND_API_KEY"),
+  /** Email goes through the site's own mail server (SMTP, e.g. the cPanel mailbox) or Resend. */
+  email: () => smtpConfigured() || has("RESEND_API_KEY"),
   redis: () => has("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN") || has("KV_REST_API_URL", "KV_REST_API_TOKEN"),
   /**
    * Somewhere for an enquiry to go: stored in the database, emailed to the leads inbox, or both
    * (lib/leads.ts). Without either, forms hand the enquiry to WhatsApp instead of failing.
    */
-  leads: () => has("DATABASE_URL") || has("RESEND_API_KEY"),
+  leads: () => has("DATABASE_URL") || smtpConfigured() || has("RESEND_API_KEY"),
 } as const;
 
 export const config = {
-  /** Sender used by Resend. Must be on a verified domain in Resend. */
-  emailFrom: read("EMAIL_FROM") ?? "Safuney website <no-reply@safuney.com>",
+  /**
+   * Sender address. With SMTP it defaults to the mailbox being signed in to, since the mail server may
+   * refuse to send as anyone else; with Resend it must be on the verified domain.
+   */
+  emailFrom: read("EMAIL_FROM") ?? (read("SMTP_USER") ? `Safuney <${read("SMTP_USER")}>` : "Safuney website <no-reply@safuney.com>"),
   /** Where contact-form leads are emailed. */
   leadsInbox: read("LEADS_INBOX") ?? "info@safuney.com",
   siteUrl: read("NEXT_PUBLIC_SITE_URL") ?? (read("VERCEL_URL") ? `https://${read("VERCEL_URL")}` : "http://localhost:3000"),
   isProduction: read("VERCEL_ENV") === "production",
+  /**
+   * Outgoing mail server. Port 465 is implicit TLS; 587 upgrades with STARTTLS. Preferred over Resend
+   * when both are set, because it is the server the domain's SPF and DKIM already vouch for.
+   */
+  smtp: {
+    host: read("SMTP_HOST"),
+    port: Number(read("SMTP_PORT") ?? 465),
+    user: read("SMTP_USER"),
+    password: read("SMTP_PASSWORD"),
+  },
   redis: {
     url: read("UPSTASH_REDIS_REST_URL") ?? read("KV_REST_API_URL"),
     token: read("UPSTASH_REDIS_REST_TOKEN") ?? read("KV_REST_API_TOKEN"),
