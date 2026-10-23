@@ -82,7 +82,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: { email: {}, password: {}, totp: {} },
       async authorize(raw) {
         const email = String(raw.email ?? "").trim().toLowerCase();
-        const password = String(raw.password ?? "");
+        // Spaces at either end are dropped here and when the password is set: copying from a terminal or
+        // a password manager picks them up, and the result is a lockout with nothing to say why.
+        const password = String(raw.password ?? "").trim();
         const totp = String(raw.totp ?? "");
         if (!email || !password) return null;
         const user = await db().user.findUnique({ where: { email } });
