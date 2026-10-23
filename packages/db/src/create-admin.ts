@@ -8,7 +8,8 @@
  * who can run this already holds DATABASE_URL, so it grants nothing they could not do by hand.
  *
  * A new password and authenticator secret are generated and printed once. If the address already has
- * an account it is made an active ADMIN and both are replaced, so the old ones stop working.
+ * an account it is made an active ADMIN and both are replaced, so the old ones stop working and every
+ * session already signed in to it ends.
  */
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
@@ -44,7 +45,10 @@ export async function createAdmin(prisma: PrismaClient, email: string, name: str
   // in part fails sign-in with nothing to say why.
   const password = randomBytes(16).toString("hex");
   const totpSecret = base32(randomBytes(20));
-  const data = { role: UserRole.ADMIN, passwordHash: hashPassword(password), totpSecret, isActive: true, emailVerified: new Date() };
+  // credentialsChangedAt ends every session already open on the account: a reset is how a lost or
+  // leaked login is taken back.
+  const now = new Date();
+  const data = { role: UserRole.ADMIN, passwordHash: hashPassword(password), totpSecret, isActive: true, emailVerified: now, credentialsChangedAt: now };
   const existing = await prisma.user.findUnique({ where: { email: address }, select: { id: true } });
   if (existing) await prisma.user.update({ where: { id: existing.id }, data });
   else await prisma.user.create({ data: { email: address, name, ...data } });

@@ -12,7 +12,8 @@ import { verifyPassword, verifyTotp } from "@/lib/auth/password";
 
 declare module "next-auth" {
   interface Session {
-    user: { id: string; role: UserRole } & DefaultSession["user"];
+    /** signedInAt: ms since epoch, set once at sign-in (not the JWT's iat, which is renewed with the cookie). */
+    user: { id: string; role: UserRole; signedInAt: number } & DefaultSession["user"];
   }
   interface User {
     role?: UserRole;
@@ -101,6 +102,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token["uid"] = user.id;
         token["role"] = user.role ?? "CUSTOMER";
+        token["signedInAt"] = Date.now();
       } else if (trigger === "update" && token["uid"]) {
         const fresh = await db().user.findUnique({ where: { id: String(token["uid"]) }, select: { role: true, isActive: true } });
         token["role"] = fresh?.role ?? "CUSTOMER";
@@ -111,6 +113,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       session.user.id = String(token["uid"] ?? "");
       session.user.role = (token["role"] as UserRole | undefined) ?? "CUSTOMER";
+      // Sessions from before this field existed count as signed in at 0: older than any credential change.
+      session.user.signedInAt = Number(token["signedInAt"] ?? 0);
       return session;
     },
   },

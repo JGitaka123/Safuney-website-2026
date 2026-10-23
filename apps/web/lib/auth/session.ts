@@ -2,6 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { db, type UserRole } from "@safuney/db";
 import { auth } from "@/auth";
+import { sessionPredatesCredentials } from "./session-age";
 
 export interface Viewer {
   id: string;
@@ -20,9 +21,10 @@ export const viewer = cache(async (): Promise<Viewer | null> => {
   if (!id) return null;
   const user = await db().user.findUnique({
     where: { id },
-    select: { id: true, role: true, name: true, email: true, phone: true, isActive: true, memberships: { select: { customerId: true, role: true, customer: { select: { id: true, displayName: true, type: true, status: true } } } } },
+    select: { id: true, role: true, name: true, email: true, phone: true, isActive: true, credentialsChangedAt: true, memberships: { select: { customerId: true, role: true, customer: { select: { id: true, displayName: true, type: true, status: true } } } } },
   });
   if (!user || !user.isActive) return null;
+  if (sessionPredatesCredentials(session.user.signedInAt, user.credentialsChangedAt)) return null;
   return { id: user.id, role: user.role, name: user.name, email: user.email, phone: user.phone, memberships: user.memberships };
 });
 

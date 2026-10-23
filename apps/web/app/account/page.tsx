@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db, money } from "@safuney/db";
 import { Button, ButtonLink, EmptyState } from "@safuney/ui";
-import { requireViewer } from "@/lib/auth/session";
+import { isStaff, requireViewer } from "@/lib/auth/session";
 import { signOutAction } from "@/lib/auth/actions";
 import { statusMessage } from "@/lib/orders/service";
 import { AccountNav } from "@/components/account/account-nav";
@@ -40,7 +40,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </form>
       </div>
 
-      <AccountNav current="/account" organisation={organisations.length > 0} />
+      <AccountNav current="/account" organisation={organisations.length > 0} staff={isStaff(who.role)} />
 
       {denied ? (
         <p role="alert" className="mt-6 border border-line bg-surface p-4 text-body text-ink">

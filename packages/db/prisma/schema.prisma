@@ -28,21 +28,24 @@ enum UserRole {
 }
 
 model User {
-  id               String    @id @default(cuid())
-  name             String?
-  email            String?   @unique
-  emailVerified    DateTime?
-  phone            String?   @unique // E.164, e.g. +2547XXXXXXXX
-  phoneVerified    DateTime?
-  image            String?
-  role             UserRole  @default(CUSTOMER)
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String?   @unique
+  emailVerified        DateTime?
+  phone                String?   @unique // E.164, e.g. +2547XXXXXXXX
+  phoneVerified        DateTime?
+  image                String?
+  role                 UserRole  @default(CUSTOMER)
   // Staff only: password + TOTP 2FA. Customers use magic link / OTP and never have these.
-  passwordHash     String?
-  totpSecret       String?
-  isActive         Boolean   @default(true)
-  marketingOptInAt DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  passwordHash         String?
+  totpSecret           String?
+  /// When the password or authenticator last changed. Sessions signed in before this are refused
+  /// (apps/web/lib/auth/session.ts), so a changed password also ends every other session.
+  credentialsChangedAt DateTime?
+  isActive             Boolean   @default(true)
+  marketingOptInAt     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   accounts          Account[]
   sessions          Session[]
