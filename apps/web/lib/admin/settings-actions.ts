@@ -58,6 +58,7 @@ export const createStaffAccount = adminAction(
     const address = email.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) throw new AdminError("That is not an email address.");
     if (!["SALES", "WAREHOUSE", "FINANCE", "ADMIN"].includes(role)) throw new AdminError("Pick one of sales, warehouse, finance or admin.");
+    password = password.trim(); // as staff sign-in does (auth.ts)
     if (password.length < 12) throw new AdminError("Use at least 12 characters. Staff sign-in also needs a code from an authenticator app, but the password still has to be a real one.");
     if (await db().user.findUnique({ where: { email: address }, select: { id: true } })) throw new AdminError(`${address} already has an account. Change its role instead of creating a second one.`);
 

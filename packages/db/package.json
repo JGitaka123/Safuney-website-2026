@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./money": "./src/money.ts",
-    "./password": "./src/password.ts"
+    "./password": "./src/password.ts",
+    "./create-admin": "./src/create-admin.ts"
   },
   "scripts": {
     "generate": "prisma generate",
@@ -15,6 +16,7 @@
     "migrate:status": "prisma migrate status",
     "seed": "tsx src/seed.ts",
     "create-admin": "tsx src/create-admin.ts",
+    "check-admin": "tsx src/check-admin.ts",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
