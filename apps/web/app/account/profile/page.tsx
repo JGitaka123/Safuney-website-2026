@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@safuney/db";
 import { Input, PhoneInput } from "@safuney/ui";
-import { requireViewer } from "@/lib/auth/session";
+import { isStaff, requireViewer } from "@/lib/auth/session";
 import { deleteAccountAction, updateProfileAction } from "@/lib/account/profile-actions";
 import { AccountNav } from "@/components/account/account-nav";
 import { ActionForm } from "@/components/account/action-form";
@@ -16,7 +16,7 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-12">
       <h1 className="text-h1">Profile and privacy</h1>
-      <AccountNav current="/account/profile" organisation={organisation} />
+      <AccountNav current="/account/profile" organisation={organisation} staff={isStaff(who.role)} />
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
         <section className="min-w-0 lg:col-span-7">
           <h2 className="text-h3">Your details</h2>
