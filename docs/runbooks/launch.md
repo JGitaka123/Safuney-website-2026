@@ -52,8 +52,15 @@ Give the PO the records exactly as printed. Then:
    every sitemap URL and every payment callback URL derives from it.
 
 ### Old URLs
-Map every URL from the Phase 0 inventory to its new address with a 301, so no inbound link and no
-search ranking is lost. A 404 on an old URL is a ranking thrown away.
+Already built: every address of the previous site redirects permanently to its new page
+(`apps/web/lib/seo/legacy-urls.ts`, `app/products.php/route.ts`). The old site was crawled on
+2026-10-26: `index.php`, `about.php`, `services.php`, `contact.php` and nine `products.php?a=<category>`
+pages, nothing else. After the DNS change, spot-check a few on the real domain:
+
+```
+curl -sI "https://safuney.com/products.php?a=Personal+Hygiene"   # 308 → /products/personal-hygiene
+curl -sI "https://safuney.com/about.php"                          # 308 → /about
+```
 
 ---
 
@@ -63,8 +70,11 @@ search ranking is lost. A 404 on an old URL is a ranking thrown away.
 SITE_INDEXABLE=1     # Vercel → Production only
 ```
 
-Until this is set, `robots.txt` blocks every crawler and the sitemap is deliberately empty (ADR 0002,
-updated in Phase 7). Three conditions must all hold before anything is indexed: production, this flag,
+Until this is set, `robots.txt` blocks every crawler, every page carries `noindex` in its metadata and
+an `X-Robots-Tag: noindex` header, and the sitemap is deliberately empty (ADR 0002, updated in Phase 7).
+All of them follow the one gate (`lib/seo/indexing.ts`). The header is decided at build time, so
+**redeploy after setting the flag** (Vercel only applies environment changes to new deployments anyway),
+then confirm `curl -sI https://safuney.com/ | grep -i x-robots` prints nothing. Three conditions must all hold before anything is indexed: production, this flag,
 and a site URL that is not a `*.vercel.app` host. A preview can never be indexed whatever the flag says.
 
 **Do not set this before the catalogue is corrected.** Google will index a provisional price, and
