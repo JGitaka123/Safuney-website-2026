@@ -276,6 +276,11 @@ export async function seed(prisma: PrismaClient, csvPath = resolve(REPO_ROOT, "d
  */
 export async function seedDemo(prisma: PrismaClient): Promise<number> {
   if (process.env["VERCEL_ENV"] === "production") throw new Error("SEED_DEMO must never run against production");
+  // VERCEL_ENV is unset on a laptop, where the preview database is seeded by hand with a pasted
+  // connection string. A real staff account means this is not a demo database, whatever the
+  // environment says: demo prices and a demo admin with a known password must never land beside it.
+  const real = await prisma.user.findFirst({ where: { role: { in: [UserRole.SALES, UserRole.WAREHOUSE, UserRole.FINANCE, UserRole.ADMIN] }, NOT: { email: { endsWith: ".test" } } }, select: { id: true } });
+  if (real) throw new Error("SEED_DEMO refused: this database has real staff accounts, so it is not a demo database. Check DATABASE_URL.");
 
   /**
    * Invented prices, stock and weights for a subset of the real catalogue, so the shop can be driven
