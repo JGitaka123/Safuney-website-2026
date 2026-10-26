@@ -7,7 +7,9 @@
  * cut-over, and it is deliberately a decision someone makes rather than something that happens on its
  * own the moment a domain is attached.
  */
-import { config } from "@/lib/env";
+// Relative, not "@/": next.config.ts imports this file to set the X-Robots-Tag header, and the alias
+// does not exist there.
+import { config } from "../env";
 
 export function isIndexable(): boolean {
   if (!config.isProduction) return false;
