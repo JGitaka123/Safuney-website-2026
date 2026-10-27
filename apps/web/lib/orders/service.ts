@@ -16,7 +16,7 @@ import { PaymentProviderError } from "@safuney/payments";
 import { randomBytes } from "node:crypto";
 import { quoteFee, zoneForCounty, type ZoneLike } from "@/lib/delivery";
 import { nextOrderNumber } from "./numbers";
-import { APPROVAL_HOLD_DAYS, RESERVATION_MINUTES, releaseExpiredReservations, releaseItems } from "./reservations";
+import { APPROVAL_HOLD_DAYS, HoldLapsedError, RESERVATION_MINUTES, releaseExpiredReservations, releaseItems, renewHold, type UnavailableLine } from "./reservations";
 import { resolvePrices } from "@/lib/b2b/pricing";
 import { assertCreditFor, CreditError } from "@/lib/b2b/credit";
 import { issueTaxInvoice } from "@/lib/b2b/invoices";
@@ -52,6 +52,12 @@ export interface PlaceOrderInput {
 }
 
 
+
+/** What the customer is told when an unpaid order's stock went to someone else before they paid. */
+function unavailableMessage(lines: UnavailableLine[]): string {
+  const names = lines.map((l) => (l.available > 0 ? `${l.name} ${l.packLabel} (only ${l.available} left)` : `${l.name} ${l.packLabel}`)).join(", ");
+  return `Some of this order sold out after it was placed: ${names}. Nothing has been charged. Place a new order for what is in stock, or call us and we will tell you when it is back.`;
+}
 
 export class OrderError extends Error {
   constructor(
@@ -294,7 +300,9 @@ export class OrderService {
     if (method === "INVOICE" && !order.customerId) throw new OrderError("METHOD_UNAVAILABLE", "Invoice payment is for approved credit accounts. Apply for an account or choose another method.");
     if (method !== order.paymentMethod) {
       const nextStatus: OrderStatus = method === "COD" || method === "INVOICE" ? "CONFIRMED" : "PENDING_PAYMENT";
-      await this.prisma.$transaction(async (tx) => {
+      // Cash on delivery and invoice confirm the order on the spot and it then holds stock until
+      // dispatch, so a lapsed hold must be renewed here; for M-Pesa and card initiatePayment does it.
+      await this.withRenewedHold(order, async (tx) => {
         if (method === "INVOICE") {
           try {
             await assertCreditFor(tx, order.customerId!, order.totalMinorUnits, this.now());
@@ -311,12 +319,39 @@ export class OrderService {
     return this.initiatePayment(order.id, baseUrl);
   }
 
+  /**
+   * Runs `work` in one transaction with the order's stock hold renewed first (renewHold). When the
+   * stock has gone to someone else, nothing is changed: the reason is recorded on the order and the
+   * customer is refused with a message, rather than charged for packs we cannot ship.
+   */
+  private async withRenewedHold(order: { id: string; number: string; status: OrderStatus }, work: (tx: Prisma.TransactionClient) => Promise<void>): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await renewHold(tx, order.id, order.number);
+        await work(tx);
+      });
+    } catch (e) {
+      if (!(e instanceof HoldLapsedError)) throw e;
+      await this.prisma.orderEvent.create({ data: { orderId: order.id, status: order.status, type: "stock_unavailable", payload: { lines: e.lines.map((l) => ({ sku: l.sku, wanted: l.wanted, available: l.available })) } } });
+      throw new OrderError("STOCK", unavailableMessage(e.lines));
+    }
+  }
+
   /** Start (or restart) collection for an order. Bounded attempts; each attempt is its own Payment row. */
   async initiatePayment(orderId: string, baseUrl: string): Promise<InitiateResult> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new OrderError("NOT_FOUND", "Order not found.");
     if (order.status === "PAID" || order.status === "CANCELLED" || order.status === "REFUNDED") throw new OrderError("STATE", `This order is ${order.status.toLowerCase()} and cannot be paid again.`);
     if (order.paymentAttempts >= MAX_PAYMENT_ATTEMPTS) throw new OrderError("ATTEMPTS", "Too many payment attempts. Call us and we will take the payment by phone.");
+    // Before asking for money: an unpaid order must still hold its stock, with a fresh window to pay
+    // in. Its hold may have lapsed (a retry, an abandoned prompt picked up later) and the packs been
+    // sold since; the payment callback would be too late to do anything but record that. Confirmed
+    // orders (cash on delivery, invoice) keep their hold until dispatch.
+    if (order.status === "PENDING_PAYMENT" || order.status === "PAYMENT_FAILED") {
+      await this.withRenewedHold(order, async (tx) => {
+        await tx.order.update({ where: { id: order.id }, data: { reservationExpiresAt: new Date(this.now().getTime() + RESERVATION_MINUTES * 60_000) } });
+      });
+    }
     const adapter = this.adapters[order.paymentMethod];
     const attemptId = randomBytes(6).toString("hex");
     const billing = (order.billingAddress ?? {}) as { name?: string; email?: string; phone?: string };
