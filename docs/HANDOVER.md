@@ -134,13 +134,13 @@ These are enforced, not aspirational. Each has a test that fails if it is broken
 
 ## Known limitations, stated plainly
 
-- **An order whose 30-minute stock hold expired can still be paid** without re-checking stock, if
-  somebody else bought the packs in between. Stock never goes negative — that guarantee holds — but the
-  customer has paid for more than we can ship. The order is now flagged with a `stock_shortfall` event
-  carrying the SKU and the numbers, so the warehouse is told rather than finding out at the pick face,
-  and somebody decides whether to part-ship, back-order or refund. Preventing it outright means
-  re-validating stock inside the payment callback, which is a change to the money path I would rather
-  make with you watching than slip in at the end.
+- **A payment that completes after its stock hold lapsed can still find the packs gone.** Before any
+  payment is started (first attempt, retry, or switching to cash on delivery or invoice), the order now
+  takes back any stock its lapsed hold let go and gets a fresh 30 minutes; if the packs were sold in
+  the meantime, the customer is told and nothing is charged (`stock_unavailable` event). What remains
+  is a customer who starts paying and only finishes more than 30 minutes later, for example a card page
+  left open. Stock still never goes negative, and such an order is flagged with a `stock_shortfall`
+  event carrying the SKU and the numbers, so somebody decides whether to part-ship, back-order or refund.
 - **The planner's consumption figures are estimates** derived from coverage at stated dilutions and
   standard frequencies, not from Safuney's own data. The page says so. Check them against a site you
   know before switching that feature on.

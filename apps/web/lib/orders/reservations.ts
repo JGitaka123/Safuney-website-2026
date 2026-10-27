@@ -1,4 +1,4 @@
-import type { OrderStatus, Prisma, PrismaClient } from "@safuney/db";
+import { Prisma, type OrderStatus, type PrismaClient } from "@safuney/db";
 
 /** How long an unpaid order holds its stock. */
 export const RESERVATION_MINUTES = 30;
@@ -35,6 +35,75 @@ export async function releaseItems(
       await tx.inventoryMovement.create({ data: { variantId: item.variantId, type: "RELEASE", qty: -release, reason, reference } });
     }
   }
+}
+
+/** A line an unpaid order can no longer hold, because the stock went to someone else after its hold lapsed. */
+export interface UnavailableLine {
+  sku: string;
+  name: string;
+  packLabel: string;
+  wanted: number;
+  available: number;
+}
+
+/** Thrown by renewHold when any stocked line cannot be held again; nothing has been changed. */
+export class HoldLapsedError extends Error {
+  constructor(readonly lines: UnavailableLine[]) {
+    super(`Stock no longer available for ${lines.map((l) => l.sku).join(", ")}`);
+  }
+}
+
+/**
+ * Makes an unpaid order hold its stock again before the customer is asked to pay.
+ *
+ * An order whose 30-minute hold lapsed can still be paid (releaseExpiredReservations keeps it open),
+ * and by the time a payment callback arrives the money has already moved: all the callback can do
+ * then is record a shortfall. So the check belongs here, before collection starts: every line takes
+ * back what it no longer holds, or, if any stocked line cannot, nothing changes and the caller tells
+ * the customer instead of charging them.
+ *
+ * Locks the order row first and then the variants in id order: the sweep and the paid callback take
+ * the same locks in the same order, so none of them can deadlock with this, and a sweep cannot release
+ * a hold this has just renewed (its claim re-reads the order after this commits). Made-to-order lines
+ * hold what exists, as at checkout, and never block. Returns the units newly reserved.
+ */
+export async function renewHold(tx: Prisma.TransactionClient, orderId: string, reference: string): Promise<number> {
+  await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`;
+  const items = await tx.orderItem.findMany({ where: { orderId }, select: { id: true, variantId: true, sku: true, name: true, packLabel: true, qty: true, reservedQty: true } });
+  const missing = items.filter((i): i is typeof i & { variantId: string } => Boolean(i.variantId) && i.qty > i.reservedQty).sort((a, b) => a.variantId.localeCompare(b.variantId));
+  if (missing.length === 0) return 0;
+
+  const ids = [...new Set(missing.map((i) => i.variantId))];
+  await tx.$queryRaw`SELECT id FROM "ProductVariant" WHERE id IN (${Prisma.join(ids)}) FOR UPDATE`;
+  const variants = new Map((await tx.productVariant.findMany({ where: { id: { in: ids } }, select: { id: true, stockOnHand: true, stockReserved: true, isMadeToOrder: true } })).map((v) => [v.id, v]));
+
+  // Decide every line before writing any, so a refusal leaves the order exactly as it was.
+  const plan: Array<{ itemId: string; variantId: string; take: number }> = [];
+  const unavailable: UnavailableLine[] = [];
+  const free = new Map(ids.map((id) => [id, Math.max(0, (variants.get(id)?.stockOnHand ?? 0) - (variants.get(id)?.stockReserved ?? 0))]));
+  for (const item of missing) {
+    const v = variants.get(item.variantId);
+    if (!v) continue; // a deleted variant: nothing to hold, as releaseItems treats it
+    const want = item.qty - item.reservedQty;
+    const available = free.get(v.id) ?? 0;
+    if (!v.isMadeToOrder && available < want) {
+      unavailable.push({ sku: item.sku, name: item.name, packLabel: item.packLabel, wanted: item.qty, available: item.reservedQty + available });
+      continue;
+    }
+    const take = Math.min(want, available);
+    free.set(v.id, available - take);
+    if (take > 0) plan.push({ itemId: item.id, variantId: v.id, take });
+  }
+  if (unavailable.length > 0) throw new HoldLapsedError(unavailable);
+
+  let renewed = 0;
+  for (const p of plan) {
+    await tx.productVariant.update({ where: { id: p.variantId }, data: { stockReserved: { increment: p.take } } });
+    await tx.inventoryMovement.create({ data: { variantId: p.variantId, type: "RESERVATION", qty: p.take, reason: "hold_renewed", reference } });
+    await tx.orderItem.update({ where: { id: p.itemId }, data: { reservedQty: { increment: p.take } } });
+    renewed += p.take;
+  }
+  return renewed;
 }
 
 /**

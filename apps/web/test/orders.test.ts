@@ -227,6 +227,80 @@ run("order service", () => {
     expect(await prisma.orderEvent.count({ where: { orderId: r.orderId, type: "reservation_released" } })).toBe(0);
   });
 
+  describe("a lapsed hold, before asking for money", () => {
+    /** Its own pack, so other tests' holds cannot skew the numbers. */
+    async function pack(code: string, stockOnHand: number) {
+      const product = await prisma.product.findFirstOrThrow({ where: { slug: `ord-p-${stamp}` } });
+      return (await prisma.productVariant.create({ data: { productId: product.id, sku: `${code}-${stamp}`, packSizeValue: "1", unit: "L", packLabel: "1 L", priceMinorUnits: 20000n, vatRateBps: 1600, stockOnHand, weightGrams: 1200 } })).id;
+    }
+    async function lapse(orderId: string) {
+      await prisma.order.update({ where: { id: orderId }, data: { reservationExpiresAt: new Date(Date.now() - 60_000) } });
+    }
+
+    it("takes the stock back and gives a fresh window when it is still there", async () => {
+      const v = await pack("RH", 2);
+      const r = await orders.placeOrder({ cartToken: await cartWith([[v, 2]]), contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+      await lapse(r.orderId);
+      await releaseExpiredReservations(prisma, { variantIds: [v] });
+      expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: v } })).stockReserved).toBe(0);
+
+      expect((await orders.initiatePayment(r.orderId, base)).kind).toBe("prompt");
+      expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: v } })).stockReserved).toBe(2);
+      const order = await prisma.order.findUniqueOrThrow({ where: { id: r.orderId }, include: { items: true } });
+      expect(order.items[0]?.reservedQty).toBe(2);
+      expect(order.reservationExpiresAt!.getTime()).toBeGreaterThan(Date.now());
+      expect(await prisma.inventoryMovement.count({ where: { variantId: v, reason: "hold_renewed" } })).toBe(1);
+
+      // Renewed, it is an ordinary hold: paying spends it once and leaves nothing reserved.
+      const payment = await prisma.payment.findFirstOrThrow({ where: { orderId: r.orderId }, orderBy: { createdAt: "desc" } });
+      const body = JSON.stringify({ providerRequestId: payment.providerRequestId, status: "SUCCEEDED", amountMinorUnits: r.totalMinorUnits.toString() });
+      await orders.handleCallback("MPESA", { body, headers: { "x-mock-signature": MockAdapter.sign(body) } });
+      const after = await prisma.productVariant.findUniqueOrThrow({ where: { id: v } });
+      expect(after).toMatchObject({ stockOnHand: 0, stockReserved: 0 });
+      expect(await prisma.orderEvent.count({ where: { orderId: r.orderId, type: "stock_shortfall" } })).toBe(0);
+    });
+
+    it("refuses to ask for money when the packs were sold to someone else, and changes nothing", async () => {
+      const v = await pack("RS", 3);
+      const first = await orders.placeOrder({ cartToken: await cartWith([[v, 2]]), contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+      await lapse(first.orderId);
+      // A second customer's checkout sweeps the lapsed hold and takes 2 of the 3.
+      await orders.placeOrder({ cartToken: await cartWith([[v, 2]]), contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+      const paymentsBefore = await prisma.payment.count({ where: { orderId: first.orderId } });
+      const attemptsBefore = (await prisma.order.findUniqueOrThrow({ where: { id: first.orderId } })).paymentAttempts;
+
+      const refused = orders.initiatePayment(first.orderId, base);
+      await expect(refused).rejects.toMatchObject({ code: "STOCK" });
+      await expect(refused).rejects.toThrow(/only 1 left.*Nothing has been charged/);
+
+      expect(await prisma.payment.count({ where: { orderId: first.orderId } })).toBe(paymentsBefore);
+      const order = await prisma.order.findUniqueOrThrow({ where: { id: first.orderId }, include: { items: true, events: true } });
+      expect(order.paymentAttempts).toBe(attemptsBefore);
+      expect(order.items[0]?.reservedQty).toBe(0);
+      const event = order.events.find((e) => e.type === "stock_unavailable");
+      expect(event?.payload).toMatchObject({ lines: [{ sku: `RS-${stamp}`, wanted: 2, available: 1 }] });
+      // The other customer's hold is untouched.
+      expect((await prisma.productVariant.findUniqueOrThrow({ where: { id: v } })).stockReserved).toBe(2);
+    });
+
+    it("will not confirm a lapsed order for cash on delivery once its packs are gone", async () => {
+      const v = await pack("RC", 1);
+      const first = await orders.placeOrder({ cartToken: await cartWith([[v, 1]]), contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+      await lapse(first.orderId);
+      await orders.placeOrder({ cartToken: await cartWith([[v, 1]]), contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+
+      await expect(orders.switchPaymentMethod(first.orderId, "COD", base)).rejects.toMatchObject({ code: "STOCK" });
+      const order = await prisma.order.findUniqueOrThrow({ where: { id: first.orderId } });
+      expect(order).toMatchObject({ status: "PENDING_PAYMENT", paymentMethod: "MPESA" });
+    });
+
+    it("never blocks a made-to-order line", async () => {
+      const r = await orders.placeOrder({ cartToken: await cartWith([[vB, 1]]), contact, delivery: { method: "PICKUP" }, paymentMethod: "MPESA", baseUrl: base });
+      await lapse(r.orderId);
+      expect((await orders.initiatePayment(r.orderId, base)).kind).toBe("prompt");
+    });
+  });
+
   it("releases expired reservations", async () => {
     const before = (await prisma.productVariant.findUniqueOrThrow({ where: { id: vA } })).stockReserved;
     await prisma.order.updateMany({ where: { guestEmail: contact.email, status: "PENDING_PAYMENT" }, data: { reservationExpiresAt: new Date(Date.now() - 1000) } });
