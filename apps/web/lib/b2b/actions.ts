@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { alertStaffIfReady } from "@/lib/orders/staff-alert";
 import { redirect } from "next/navigation";
 import { db, type MemberRole } from "@safuney/db";
 import * as money from "@safuney/db/money";
@@ -98,6 +100,7 @@ export async function approveOrderAction(orderId: string): Promise<ActionResult>
   const who = await requireViewer("/account/approvals");
   try {
     const r = await orderService().approveOrder(orderId, who.id, publicBaseUrl());
+    if (r.status === "CONFIRMED") after(() => alertStaffIfReady({ id: orderId }));
     // No revalidation here: the card stays on screen with the outcome; the list refreshes on the next visit.
     return { ok: true, message: r.status === "CONFIRMED" ? "Approved and confirmed." : r.next.kind === "prompt" ? "Approved. The M-Pesa request has been sent to the buyer's phone." : "Approved. The buyer can now pay from the order page." };
   } catch (e) {

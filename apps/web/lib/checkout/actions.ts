@@ -12,6 +12,8 @@ import { viewer } from "@/lib/auth/session";
 import { creditPosition } from "@/lib/b2b/credit";
 import { AddressService } from "@/lib/account/addresses";
 import { OrderError } from "@/lib/orders/service";
+import { alertStaffIfReady } from "@/lib/orders/staff-alert";
+import { after } from "next/server";
 import { notifyOrderPlaced } from "@/lib/notify";
 import { db } from "@safuney/db";
 import { getSetting } from "@/lib/settings";
@@ -170,6 +172,8 @@ export async function placeOrderAction(input: PlaceOrderInput): Promise<PlaceOrd
     // Notify in the background of the request; failures never block the order.
     const order = await db().order.findUnique({ where: { id: result.orderId }, include: { items: true } });
     if (order) {
+      // Cash on delivery and invoice orders are ready to pick the moment they are placed.
+      if (order.status === "CONFIRMED") after(() => alertStaffIfReady({ id: order.id }));
       void notifyOrderPlaced({ number: order.number, accessToken: order.accessToken, email: order.guestEmail, phone: order.guestPhone, totalMinorUnits: order.totalMinorUnits, paymentMethod: order.paymentMethod, status: order.status, baseUrl: publicBaseUrl(), items: order.items.map((i) => ({ name: i.name, packLabel: i.packLabel, qty: i.qty })) }).catch((e) => console.error("notify failed", e));
     }
     const next = result.next;
@@ -209,6 +213,8 @@ export async function switchPaymentAction(orderNumber: string, accessToken: stri
   if (!order) return { ok: false, message: "Order not found." };
   try {
     const next = await orderService().switchPaymentMethod(order.id, method, publicBaseUrl());
+    // Switching to cash on delivery confirms the order; the alert checks the status itself.
+    after(() => alertStaffIfReady({ id: order.id }));
     return { ok: true, next: next.kind === "prompt" ? { kind: "prompt", message: next.message } : next.kind === "redirect" ? { kind: "redirect", url: next.url } : { kind: "offline", instructions: next.instructions } };
   } catch (e) {
     return { ok: false, message: e instanceof OrderError ? e.message : "The payment provider did not respond. Try again in a minute." };
