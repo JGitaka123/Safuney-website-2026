@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { StaffDesks } from "@/components/account/staff-desks";
 import { redirect } from "next/navigation";
 import { viewer } from "@/lib/auth/session";
 import { can, type Permission } from "@/lib/admin/permissions";
@@ -38,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               {who.name ?? who.email} · {who.role.toLowerCase()}
             </span>
           </div>
+          <StaffDesks role={who.role} current="/admin" className="mt-1" />
           <nav aria-label="Admin sections" className="-mx-5 mt-3 overflow-x-auto px-5 md:mx-0 md:px-0">
             <ul className="flex gap-4 whitespace-nowrap">
               {links.map((n) => (

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { viewer } from "@/lib/auth/session";
+import { homeDesk } from "@/lib/auth/desks";
 import { safeNextPath } from "@/lib/auth/after-sign-in";
 import { StaffSignInForm } from "@/components/account/staff-sign-in-form";
 
@@ -9,8 +10,11 @@ export const dynamic = "force-dynamic";
 
 export default async function StaffSignInPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
-  const target = safeNextPath(next, "/sales");
-  if (await viewer()) redirect(target);
+  // No fallback desk here: where someone lands depends on their role, which is only known once they
+  // have signed in (staffSignInAction). An empty target means "your own desk".
+  const target = next ? safeNextPath(next, "") : "";
+  const who = await viewer();
+  if (who) redirect(target || homeDesk(who.role));
   return (
     <div className="mx-auto max-w-page px-5 py-10 md:px-6 md:py-16">
       <div className="mx-auto max-w-lg">
