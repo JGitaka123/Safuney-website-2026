@@ -21,11 +21,18 @@ that is not a fault; ask an administrator.
 | Finance | `/sales/credit`, `/admin/orders` | Credit decisions, settling invoices, credit notes |
 | Administrator | all of it, plus `/admin/catalogue`, `/admin/staff`, `/admin/flags` | Products, prices, staff, features |
 
+After you sign in you land on your own desk. The **Staff desks** links at the top of every desk (and on
+your Account page) take you to the others your role can open.
+
 ---
 
 ## Every day
 
 ### The warehouse board — `/warehouse`
+Every order that is ready to pick is also emailed to the orders inbox (`ORDERS_INBOX`, otherwise the
+enquiries inbox) with the items, delivery details, customer and a link straight to it, so nobody has to
+keep the board open to notice one. One email per order.
+
 Four columns, left to right, in the order work happens.
 
 1. **To pick** — the order is paid, or it is cash or invoice and confirmed. Open it, print the pick

@@ -8,6 +8,7 @@ import { services } from "@/lib/env";
 import { getLeadRateLimiter } from "@/lib/rate-limit";
 import { afterSignIn, afterSignOut, safeNextPath } from "./after-sign-in";
 import { authMockMode } from "./mode";
+import { homeDesk } from "./desks";
 import { otpIdentifierForEmail, otpIdentifierForPhone, requestOtp } from "./otp";
 
 export type SignInActionResult = { ok: true; mockCode?: string; mockLink?: string } | { ok: false; message: string };
@@ -82,7 +83,8 @@ export async function staffSignInAction(email: string, password: string, totp: s
   const user = await db().user.findUnique({ where: { email: email.trim().toLowerCase() } });
   if (!user) return { ok: false, message: "Email, password or code not recognised." };
   await afterSignIn(user.id);
-  redirect(safeNextPath(next, "/sales"));
+  // Each role lands on its own desk: the sales desk turns warehouse and finance staff away.
+  redirect(next ? safeNextPath(next, homeDesk(user.role)) : homeDesk(user.role));
 }
 
 export async function signOutAction(): Promise<void> {

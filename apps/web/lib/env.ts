@@ -43,6 +43,8 @@ export const config = {
   emailFrom: read("EMAIL_FROM") ?? (read("SMTP_USER") ? `Safuney <${read("SMTP_USER")}>` : "Safuney website <no-reply@safuney.com>"),
   /** Where contact-form leads are emailed. */
   leadsInbox: read("LEADS_INBOX") ?? "info@safuney.com",
+  /** Where staff are told about an order that is ready to pick. Falls back to the leads inbox. */
+  ordersInbox: read("ORDERS_INBOX") ?? read("LEADS_INBOX") ?? "info@safuney.com",
   siteUrl: read("NEXT_PUBLIC_SITE_URL") ?? (read("VERCEL_URL") ? `https://${read("VERCEL_URL")}` : "http://localhost:3000"),
   isProduction: read("VERCEL_ENV") === "production",
   /**

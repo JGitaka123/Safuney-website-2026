@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db, money } from "@safuney/db";
 import { Button, ButtonLink, EmptyState } from "@safuney/ui";
-import { requireViewer } from "@/lib/auth/session";
+import { isStaff, requireViewer } from "@/lib/auth/session";
+import { StaffDesks } from "@/components/account/staff-desks";
 import { signOutAction } from "@/lib/auth/actions";
 import { statusMessage } from "@/lib/orders/service";
 import { AccountNav } from "@/components/account/account-nav";
@@ -31,6 +32,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       <div className="flex flex-col justify-between gap-4 border-b border-line pb-6 md:flex-row md:items-end">
         <div>
           <p className="text-small text-ink-muted">Signed in as {who.email ?? who.phone}</p>
+          {isStaff(who.role) ? <StaffDesks role={who.role} className="mt-2" /> : null}
           <h1 className="mt-1 text-h1">{who.name ?? "Your account"}</h1>
         </div>
         <form action={signOutAction}>

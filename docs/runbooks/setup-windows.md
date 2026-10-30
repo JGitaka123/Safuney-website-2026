@@ -155,6 +155,7 @@ never paste values into chat or commit them.
 | `RESEND_API_KEY` | Resend integration | The alternative to SMTP for the same emails. |
 | `EMAIL_FROM` | you | Sender shown on emails, e.g. `Safuney <no_reply@safuney.com>`. Defaults to the SMTP mailbox when SMTP is used; with Resend the domain must be verified there. |
 | `LEADS_INBOX` | you | Where contact-form leads are delivered. Defaults to `info@safuney.com`. |
+| `ORDERS_INBOX` | you | Where staff are told about each order that is ready to pick. Defaults to `LEADS_INBOX`. |
 | `NEXT_PUBLIC_SITE_URL` | you (production only) | `https://safuney-website-2026.vercel.app` now; `https://safuney.com` after cut-over. Also the base for payment callbacks. |
 | `PAYMENTS_MODE` | you (Preview only) | `mock` lets previews and CI run checkout without provider accounts. Never set on Production (the site refuses). |
 | `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY` | Safaricom Daraja app (sandbox first) | M-Pesa STK push and status query. |

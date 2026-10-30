@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { money } from "@safuney/db";
 import { requireRole } from "@/lib/auth/session";
+import { StaffDesks } from "@/components/account/staff-desks";
 import { orderService } from "@/lib/orders/context";
 
 export const metadata: Metadata = { title: "Warehouse", robots: { index: false } };
@@ -24,6 +25,7 @@ export default async function WarehousePage() {
   const queue = await orderService().warehouseQueue(who.id);
   return (
     <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-12">
+      <StaffDesks role={who.role} current="/warehouse" className="mb-4" />
       <h1 className="text-h1">Warehouse</h1>
       <p className="mt-2 text-body text-ink-muted">Mombasa Road. Oldest first in every lane.</p>
       <div className="mt-8 grid gap-6 lg:grid-cols-4">

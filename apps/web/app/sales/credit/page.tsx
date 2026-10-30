@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { db, money } from "@safuney/db";
 import { Input, Select, Textarea } from "@safuney/ui";
 import { requireRole } from "@/lib/auth/session";
+import { StaffDesks } from "@/components/account/staff-desks";
 import { decideCreditAction } from "@/lib/b2b/credit-actions";
 import { ActionForm } from "@/components/account/action-form";
 
@@ -10,16 +10,13 @@ export const metadata: Metadata = { title: "Credit applications", robots: { inde
 export const dynamic = "force-dynamic";
 
 export default async function SalesCreditPage() {
-  await requireRole(["FINANCE", "ADMIN"], "/sales/credit");
+  const who = await requireRole(["FINANCE", "ADMIN"], "/sales/credit");
   const pending = await db().creditApplication.findMany({ where: { status: "PENDING" }, orderBy: { createdAt: "asc" }, include: { customer: { include: { members: { where: { role: "OWNER" }, include: { user: { select: { name: true, email: true, phone: true } } } } } } } });
   return (
     <div className="mx-auto max-w-page px-5 py-8 md:px-6 md:py-12">
-      <p className="text-small text-ink-muted">
-        <Link href="/sales" className="hover:underline underline-offset-[3px]">
-          Sales desk
-        </Link>
-      </p>
-      <h1 className="mt-1 text-h1">Credit applications</h1>
+      {/* Not a "Sales desk" back-link: finance cannot open the sales desk. */}
+      <StaffDesks role={who.role} current="/sales/credit" className="mb-4" />
+      <h1 className="text-h1">Credit applications</h1>
       {pending.length === 0 ? (
         <p className="mt-6 text-body text-ink-muted">Nothing waiting. New applications from organisation owners appear here.</p>
       ) : (

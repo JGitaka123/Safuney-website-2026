@@ -1,6 +1,7 @@
 import { db } from "@safuney/db";
 import { notifyOrderPaid } from "@/lib/notify";
 import { publicBaseUrl } from "./context";
+import { alertStaffIfReady } from "./staff-alert";
 
 /** After a verified callback marks an order paid, tell the customer. Never throws into the provider response. */
 export async function notifyIfPaid(result: { outcome: string; orderNumber?: string }): Promise<void> {
@@ -13,6 +14,7 @@ export async function notifyIfPaid(result: { outcome: string; orderNumber?: stri
       order.payments[0]?.providerRef ?? null,
     );
     console.info("order paid notification", order.number, r.email, r.sms);
+    await alertStaffIfReady({ id: order.id });
   } catch (e) {
     console.error("notifyIfPaid failed", e);
   }
