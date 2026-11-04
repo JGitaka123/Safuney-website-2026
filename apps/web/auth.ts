@@ -7,7 +7,7 @@ import { db } from "@safuney/db";
 import { config, services } from "@/lib/env";
 import { sendEmail } from "@/lib/email";
 import { authMockMode } from "@/lib/auth/mode";
-import { otpIdentifierForEmail, otpIdentifierForPhone, verifyOtp } from "@/lib/auth/otp";
+import { customerFromCode, isStaffContact, isStaffRole } from "@/lib/auth/customer-sign-in";
 import { verifyPassword, verifyTotp } from "@/lib/auth/password";
 
 declare module "next-auth" {
@@ -60,20 +60,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "One-time code",
       credentials: { identifier: {}, code: {} },
       async authorize(raw) {
-        const target = String(raw.identifier ?? "");
-        const code = String(raw.code ?? "");
-        const identifier = target.includes("@") ? otpIdentifierForEmail(target) : otpIdentifierForPhone(target);
-        if (!identifier || !/^\d{6}$/.test(code)) return null;
-        const v = await verifyOtp(identifier, code);
-        if (!v.ok) return null;
-        const [kind, value] = identifier.split(":", 2) as ["phone" | "email", string];
-        const now = new Date();
-        const user =
-          kind === "phone"
-            ? await db().user.upsert({ where: { phone: value }, create: { phone: value, phoneVerified: now }, update: { phoneVerified: now } })
-            : await db().user.upsert({ where: { email: value }, create: { email: value, emailVerified: now }, update: { emailVerified: now } });
-        if (!user.isActive) return null;
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        // Never opens a staff account: those need the password and authenticator (staff provider below).
+        const user = await customerFromCode(db(), String(raw.identifier ?? ""), String(raw.code ?? ""));
+        return user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null;
       },
     }),
     Credentials({
@@ -97,6 +86,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    /**
+     * The emailed link proves only access to the mailbox, so it must not open a staff account: checked
+     * when the link is requested (nothing is sent) and again when it is used.
+     */
+    async signIn({ user, account }) {
+      if (account?.provider !== "resend") return true;
+      if (isStaffRole(user.role)) return false;
+      return !(user.email && (await isStaffContact(db(), `email:${user.email.trim().toLowerCase()}`)));
+    },
     async jwt({ token, user, trigger }) {
       if (user) {
         token["uid"] = user.id;

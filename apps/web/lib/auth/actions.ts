@@ -9,6 +9,7 @@ import { getLeadRateLimiter } from "@/lib/rate-limit";
 import { afterSignIn, afterSignOut, safeNextPath } from "./after-sign-in";
 import { authMockMode } from "./mode";
 import { otpIdentifierForEmail, otpIdentifierForPhone, requestOtp } from "./otp";
+import { isStaffContact } from "./customer-sign-in";
 
 export type SignInActionResult = { ok: true; mockCode?: string; mockLink?: string } | { ok: false; message: string };
 
@@ -30,6 +31,8 @@ export async function requestLinkAction(email: string, next: string): Promise<Si
   try {
     await signIn("resend", { email: identifier.slice("email:".length), redirect: false, redirectTo: `${AFTER_SIGN_IN_PATH}?next=${encodeURIComponent(safeNextPath(next))}` });
   } catch (e) {
+    // A staff address is refused without saying so: the answer is the same as for any address, and staff sign in at /sign-in/staff.
+    if (e instanceof AuthError && e.type === "AccessDenied") return { ok: true };
     if (e instanceof AuthError) return { ok: false, message: "We could not send the link. Try again, or use a code sent by SMS." };
     throw e;
   }
@@ -43,6 +46,8 @@ export async function requestCodeAction(target: string): Promise<SignInActionRes
   if (!identifier) return { ok: false, message: target.includes("@") ? "Enter a valid email address." : "That does not look like a Kenyan mobile number. Use 07xx xxx xxx or 01xx xxx xxx." };
   const wait = await limited(identifier);
   if (wait) return { ok: false, message: wait };
+  // No code is sent to a staff contact, and the answer does not say so; the code could not be used anyway.
+  if (await isStaffContact(db(), identifier)) return { ok: true };
   const r = await requestOtp(identifier);
   if (!r.ok) {
     if (r.reason !== "not_configured") return { ok: false, message: "Check the number or address and try again." };
