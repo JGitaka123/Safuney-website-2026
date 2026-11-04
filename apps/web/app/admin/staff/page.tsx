@@ -4,7 +4,7 @@ import { db } from "@safuney/db";
 import { viewer } from "@/lib/auth/session";
 import { can } from "@/lib/admin/permissions";
 import { StaffManager } from "@/components/admin/staff-manager";
-import { createStaffAccount, setStaffRole } from "@/lib/admin/settings-actions";
+import { createStaffAccount, resetStaffSignIn, setStaffRole } from "@/lib/admin/settings-actions";
 
 export const metadata: Metadata = { title: "Staff" };
 
@@ -21,12 +21,14 @@ export default async function StaffPage() {
       <h1 className="text-h1">Staff</h1>
       <p className="mt-2 max-w-reading text-body text-ink-muted">
         Staff sign in with an email, a password and a six-digit code from an authenticator app. A new account&rsquo;s
-        code is shown once, when you create it, and cannot be shown again — have the person scan it there and then.
+        code is shown once, when you create it, and cannot be shown again — have the person scan it there and then. If someone loses their phone or
+        forgets their password, use Reset sign-in to give them new details.
       </p>
       <StaffManager
         staff={staff.map((s) => ({ id: s.id, name: s.name, email: s.email ?? "", role: s.role, isActive: s.isActive, hasTotp: s.totpSecret !== null, isSelf: s.id === who.id }))}
         create={createStaffAccount}
         setRole={setStaffRole}
+        reset={resetStaffSignIn}
       />
     </div>
   );
