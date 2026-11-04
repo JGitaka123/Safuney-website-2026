@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db } from "@safuney/db";
 import { hashPassword, newTotpSecret, totpUri } from "@/lib/auth/password";
@@ -71,6 +72,35 @@ export const createStaffAccount = adminAction(
     // should be able to sign in as this person.
     ctx.audit({ entity: "User", entityId: user.id, after: { email: address, role } });
     return { ok: true, message: totpUri(secret, address), id: user.id };
+  },
+);
+
+/**
+ * For a staff member who lost their phone or forgot their password: a new password and a new
+ * authenticator key, both shown once to the administrator and handed over in person. The old ones stop
+ * working at once, and credentialsChangedAt signs the person out on every device (lib/auth/session.ts).
+ *
+ * Not for yourself: an administrator who can still sign in changes their own on the Security page,
+ * which asks for the current password and code first.
+ */
+export const resetStaffSignIn = adminAction(
+  "staff.reset",
+  "staff.write",
+  "User",
+  async (ctx, userId: string): Promise<AdminResult> => {
+    if (userId === ctx.who.id) throw new AdminError("Change your own password and authenticator on the Security page under My account.");
+    const user = await db().user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
+    if (!user || !user.email) throw new AdminError("That account no longer exists.");
+    if (!["SALES", "WAREHOUSE", "FINANCE", "ADMIN"].includes(user.role)) throw new AdminError("Only staff accounts have a password and an authenticator to reset.");
+
+    // Letters and digits only, so it survives being read out, typed or pasted.
+    const password = randomBytes(16).toString("hex");
+    const secret = newTotpSecret();
+    await db().user.update({ where: { id: userId }, data: { passwordHash: hashPassword(password), totpSecret: secret, credentialsChangedAt: new Date() } });
+    // Neither the password nor the key goes in the audit row.
+    ctx.audit({ entity: "User", entityId: userId, after: { email: user.email, reset: "password and authenticator" } });
+    revalidatePath("/admin/staff");
+    return { ok: true, id: userId, message: `${user.email} has a new password and authenticator key, and has been signed out everywhere.`, reveal: { email: user.email, password, key: secret, uri: totpUri(secret, user.email) } };
   },
 );
 

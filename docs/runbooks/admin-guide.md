@@ -4,8 +4,8 @@
 sentence here needs explaining, that is a fault in the sentence.
 
 You sign in at **safuney.com/sign-in/staff** with your work email, your password, and a six-digit code
-from an authenticator app on your phone. The code changes every thirty seconds. If you lose the phone,
-an administrator has to create your account again — the code cannot be recovered.
+from an authenticator app on your phone. The code changes every thirty seconds. If you lose the phone
+or forget the password, ask an administrator to reset your sign-in (below). The old code cannot be recovered.
 
 Everyone sees only the parts of the site their job needs. If a page says you do not have permission,
 that is not a fault; ask an administrator.
@@ -115,6 +115,13 @@ Adding someone: enter their email, pick their role, set a first password, press 
 authenticator code appears once.** Have them scan it into their phone there and then — you cannot get it
 back, and without it they cannot sign in.
 
+**Lost phone or forgotten password:** press *Reset sign-in* on their row and confirm. The page shows a new
+password and a new authenticator setup key, **once**. Give both to the person directly, not by email or
+chat. They delete the old Safuney entry in their authenticator app, add the new key (*Enter a setup key*,
+their email as the name, *Time based*), sign in, and change the password on *My account → Security*.
+Their old password and code stop working at once, and they are signed out on every device. You cannot
+reset yourself this way; use *My account → Security* for your own.
+
 When someone leaves, untick *Can sign in*. Do not delete them: their name is on the orders they handled.
 
 You cannot change your own role or switch off your own account, and the last administrator cannot be
@@ -140,7 +147,8 @@ it off makes it disappear completely, not just hide the link.
   paid and what was expected.
 - **Stock looks wrong.** Look at the product's stock column: *reserved* is stock held for orders that
   have not gone out. A count that seems too low usually has orders behind it.
-- **Someone cannot sign in.** Their phone's clock. Authenticator codes are time-based, and a phone a
-  minute out generates codes the site rejects.
+- **Someone cannot sign in.** First their phone's clock. Authenticator codes are time-based, and a phone a
+  minute out generates codes the site rejects. If the clock is right, reset their sign-in on
+  `/admin/staff`.
 - **Anything else.** `/admin/audit` shows every change anyone made through the console, with who and
   when, most recent first.

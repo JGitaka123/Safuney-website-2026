@@ -21,7 +21,15 @@ const ROLES = [
   { value: "ADMIN", label: "Administrator" },
 ];
 
-export function StaffManager({ staff, create, setRole }: { staff: Staff[]; create: (email: string, name: string, role: string, password: string) => Promise<AdminResult>; setRole: (id: string, role: string, active: boolean) => Promise<AdminResult> }) {
+type Reset = (id: string) => Promise<AdminResult>;
+interface Revealed {
+  email: string;
+  password: string;
+  key: string;
+  uri: string;
+}
+
+export function StaffManager({ staff, create, setRole, reset }: { staff: Staff[]; create: (email: string, name: string, role: string, password: string) => Promise<AdminResult>; setRole: (id: string, role: string, active: boolean) => Promise<AdminResult>; reset: Reset }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setNewRole] = useState("SALES");
@@ -31,6 +39,8 @@ export function StaffManager({ staff, create, setRole }: { staff: Staff[]; creat
   const [error, setError] = useState<string | null>(null);
   const [rowResult, setRowResult] = useState<Record<string, string>>({});
   const [rowPending, startRow] = useTransition();
+  // New sign-in details from a reset. Held in this page only: gone on reload, never stored.
+  const [revealed, setRevealed] = useState<Revealed | null>(null);
 
   return (
     <div>
@@ -83,6 +93,8 @@ export function StaffManager({ staff, create, setRole }: { staff: Staff[]; creat
         ) : null}
       </section>
 
+      {revealed ? <ResetDetails details={revealed} onDone={() => setRevealed(null)} /> : null}
+
       <div className="mt-8">
         <Table caption="Staff accounts and their roles">
           <THead>
@@ -109,7 +121,7 @@ export function StaffManager({ staff, create, setRole }: { staff: Staff[]; creat
                   {s.isSelf ? (
                     <span className="text-caption text-ink-muted">This is you</span>
                   ) : (
-                    <StaffRow staff={s} setRole={setRole} pending={rowPending} start={startRow} result={rowResult[s.id]} onResult={(m) => setRowResult((r) => ({ ...r, [s.id]: m }))} />
+                    <StaffRow staff={s} setRole={setRole} reset={reset} onRevealed={setRevealed} pending={rowPending} start={startRow} result={rowResult[s.id]} onResult={(m) => setRowResult((r) => ({ ...r, [s.id]: m }))} />
                   )}
                 </Td>
               </Tr>
@@ -121,9 +133,42 @@ export function StaffManager({ staff, create, setRole }: { staff: Staff[]; creat
   );
 }
 
-function StaffRow({ staff, setRole, pending, start, result, onResult }: { staff: Staff; setRole: (id: string, role: string, active: boolean) => Promise<AdminResult>; pending: boolean; start: (fn: () => void) => void; result?: string; onResult: (message: string) => void }) {
+function ResetDetails({ details, onDone }: { details: Revealed; onDone: () => void }) {
+  return (
+    <section className="mt-6 max-w-reading" aria-live="polite">
+      <Alert variant="success">
+        <p className="font-medium">New sign-in details for {details.email}. They are shown once: write them down or save them in the password manager now.</p>
+        <dl className="mt-3 space-y-2">
+          <div>
+            <dt className="text-caption text-ink-muted">Password</dt>
+            <dd className="break-all font-mono">{details.password}</dd>
+          </div>
+          <div>
+            <dt className="text-caption text-ink-muted">Authenticator setup key (time based)</dt>
+            <dd className="break-all font-mono">{details.key}</dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-caption">
+          Give them to the person directly, not by email or chat. In their authenticator app they delete the old Safuney entry,
+          choose <em>Enter a setup key</em>, type their email as the name and the key above, with <em>Time based</em> selected.
+          They then sign in at /sign-in/staff and should change the password on the Security page.
+        </p>
+        <details className="mt-2 text-caption">
+          <summary className="cursor-pointer">Setup link, for apps that take one</summary>
+          <p className="mt-1 break-all font-mono">{details.uri}</p>
+        </details>
+        <Button className="mt-3" variant="secondary" size="sm" onClick={onDone}>
+          Done, hide these
+        </Button>
+      </Alert>
+    </section>
+  );
+}
+
+function StaffRow({ staff, setRole, reset, onRevealed, pending, start, result, onResult }: { staff: Staff; setRole: (id: string, role: string, active: boolean) => Promise<AdminResult>; reset: Reset; onRevealed: (d: Revealed) => void; pending: boolean; start: (fn: () => void) => void; result?: string; onResult: (message: string) => void }) {
   const [role, setNext] = useState(staff.role);
   const [active, setActive] = useState(staff.isActive);
+  const [confirming, setConfirming] = useState(false);
   return (
     <div className="space-y-2">
       <Select label="Role" fieldClassName="gap-1" id={`role-${staff.id}`} value={role} onChange={(e) => setNext(e.target.value)}>
@@ -141,6 +186,38 @@ function StaffRow({ staff, setRole, pending, start, result, onResult }: { staff:
       <Button variant="secondary" size="sm" busy={pending} busyLabel="Saving…" onClick={() => start(async () => onResult((await setRole(staff.id, role, active)).message ?? ""))}>
         Save
       </Button>
+      {confirming ? (
+        <div className="space-y-2 border border-line p-2">
+          <p className="text-caption text-ink">
+            Give {staff.email} a new password and authenticator key? Their current ones stop working and they are signed out on every device.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              busy={pending}
+              busyLabel="Resetting…"
+              onClick={() =>
+                start(async () => {
+                  const r = await reset(staff.id);
+                  setConfirming(false);
+                  onResult(r.message ?? "");
+                  if (r.ok && r.reveal) onRevealed({ email: r.reveal["email"] ?? staff.email, password: r.reveal["password"] ?? "", key: r.reveal["key"] ?? "", uri: r.reveal["uri"] ?? "" });
+                })
+              }
+            >
+              Yes, reset
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" size="sm" onClick={() => setConfirming(true)}>
+          Reset sign-in
+        </Button>
+      )}
       {result ? (
         <p role="status" className="text-caption text-ink-muted">
           {result}

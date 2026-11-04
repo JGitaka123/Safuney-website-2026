@@ -11,7 +11,8 @@ import { db, type UserRole } from "@safuney/db";
 import { viewer, type Viewer } from "@/lib/auth/session";
 import { can, type Permission } from "./permissions";
 
-export type AdminResult = { ok: true; message?: string; id?: string } | { ok: false; message: string };
+/** `reveal` carries a value shown to the operator once and never stored or logged, such as a new password. */
+export type AdminResult = { ok: true; message?: string; id?: string; reveal?: Record<string, string> } | { ok: false; message: string };
 
 /** Thrown by handlers for a problem the operator can fix; the message is shown to them verbatim. */
 export class AdminError extends Error {
