@@ -37,7 +37,7 @@ export function otpIdentifierForEmail(email: string): string | null {
  * The code itself is never stored: only a keyed hash, with an attempt counter folded into the token
  * row so a brute force burns the code, not the account.
  */
-export async function requestOtp(identifier: string): Promise<OtpRequestResult> {
+export async function requestOtp(identifier: string, purpose: OtpPurpose = { kind: "sign-in" }): Promise<OtpRequestResult> {
   const [kind, target] = identifier.split(":", 2) as ["phone" | "email", string];
   const mock = authMockMode();
   if (kind === "phone" && !smsConfigured() && !mock) return { ok: false, reason: "not_configured" };
@@ -45,12 +45,14 @@ export async function requestOtp(identifier: string): Promise<OtpRequestResult> 
 
   const code = randomInt(0, 10 ** OTP_LENGTH).toString().padStart(OTP_LENGTH, "0");
   const expires = new Date(Date.now() + OTP_TTL_MINUTES * 60_000);
-  await db().verificationToken.deleteMany({ where: { identifier } });
-  await db().verificationToken.create({ data: { identifier, token: `${hashCode(identifier, code)}:0`, expires } });
+  const key = otpKey(identifier, purpose);
+  await db().verificationToken.deleteMany({ where: { identifier: key } });
+  await db().verificationToken.create({ data: { identifier: key, token: `${hashCode(key, code)}:0`, expires } });
 
-  const message = `${code} is your Safuney sign-in code. It expires in ${OTP_TTL_MINUTES} minutes. Never share it.`;
+  const what = purpose.kind === "sign-in" ? "sign-in code" : `code to add this ${kind === "phone" ? "number" : "address"} to your account`;
+  const message = `${code} is your Safuney ${what}. It expires in ${OTP_TTL_MINUTES} minutes. Never share it.`;
   if (mock) {
-    console.info(`[auth mock] code for ${identifier}: ${code}`);
+    console.info(`[auth mock] code for ${key}: ${code}`);
     return { ok: true, channel: kind === "phone" ? "sms" : "email", mockCode: code };
   }
   if (kind === "phone") {
@@ -58,7 +60,9 @@ export async function requestOtp(identifier: string): Promise<OtpRequestResult> 
     if (r === "failed") return { ok: false, reason: "not_configured" };
     return { ok: true, channel: "sms" };
   }
-  const sent = await sendEmail({ to: target, subject: `${code} is your Safuney sign-in code`, text: `${message}\n\n${config.siteUrl}/sign-in` });
+  const subject = purpose.kind === "sign-in" ? `${code} is your Safuney sign-in code` : `${code} is your Safuney code to add this address`;
+  const footer = purpose.kind === "sign-in" ? `${config.siteUrl}/sign-in` : "If you did not ask to add this address to a Safuney account, ignore this email.";
+  const sent = await sendEmail({ to: target, subject, text: `${message}\n\n${footer}` });
   // Telling someone a code is on its way when the mail server refused it leaves them waiting for nothing.
   if (!sent.sent) return { ok: false, reason: "not_configured" };
   return { ok: true, channel: "email" };
@@ -66,8 +70,19 @@ export async function requestOtp(identifier: string): Promise<OtpRequestResult> 
 
 export type OtpVerifyResult = { ok: true } | { ok: false; reason: "expired" | "wrong" | "too_many" };
 
+/**
+ * What a code is for. A code to add a contact is stored under the account it was asked from, so it
+ * cannot be used to sign in, and a sign-in code cannot be used to add the contact to another account.
+ */
+export type OtpPurpose = { kind: "sign-in" } | { kind: "add-contact"; userId: string };
+
+function otpKey(identifier: string, purpose: OtpPurpose): string {
+  return purpose.kind === "sign-in" ? identifier : `add:${purpose.userId}:${identifier}`;
+}
+
 /** Checks and consumes a code. Wrong codes count; after OTP_MAX_ATTEMPTS the code is deleted. */
-export async function verifyOtp(identifier: string, code: string): Promise<OtpVerifyResult> {
+export async function verifyOtp(contact: string, code: string, purpose: OtpPurpose = { kind: "sign-in" }): Promise<OtpVerifyResult> {
+  const identifier = otpKey(contact, purpose);
   const row = await db().verificationToken.findFirst({ where: { identifier } });
   if (!row) return { ok: false, reason: "expired" };
   if (row.expires.getTime() < Date.now()) {

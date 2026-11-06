@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { db } from "@safuney/db";
-import { Input, PhoneInput } from "@safuney/ui";
-import { requireViewer } from "@/lib/auth/session";
+import { Input } from "@safuney/ui";
+import { isStaff, requireViewer } from "@/lib/auth/session";
+import { ContactField } from "@/components/account/contact-field";
 import { deleteAccountAction, updateProfileAction } from "@/lib/account/profile-actions";
 import { AccountNav } from "@/components/account/account-nav";
 import { ActionForm } from "@/components/account/action-form";
@@ -20,10 +21,19 @@ export default async function ProfilePage() {
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
         <section className="min-w-0 lg:col-span-7">
           <h2 className="text-h3">Your details</h2>
-          <ActionForm action={updateProfileAction} submitLabel="Save" className="mt-3 border border-line bg-surface p-5">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="border border-line bg-surface p-5">
+              <ContactField kind="email" current={user.email} canRemove={Boolean(user.phone)} locked={isStaff(who.role)} />
+              <p className="mt-3 text-small text-ink-muted">Order confirmations, invoices and sign-in links go here.</p>
+            </div>
+            <div className="border border-line bg-surface p-5">
+              <ContactField kind="phone" current={user.phone?.replace(/^\+254/, "0") ?? null} canRemove={Boolean(user.email)} />
+              <p className="mt-3 text-small text-ink-muted">Sign-in codes and delivery updates by SMS.</p>
+            </div>
+          </div>
+          <p className="mt-3 text-small text-ink-muted">Sign in with either. If you already have an account under the other one, adding it here brings the two accounts together.</p>
+          <ActionForm action={updateProfileAction} submitLabel="Save" className="mt-6 border border-line bg-surface p-5">
             <Input name="name" label="Name" defaultValue={user.name ?? ""} optional autoComplete="name" />
-            <Input name="email" label="Email address" type="email" defaultValue={user.email ?? ""} optional autoComplete="email" helper="Order confirmations, invoices and sign-in links go here." />
-            <PhoneInput name="phone" label="Mobile number" defaultValue={user.phone?.replace(/^\+254/, "0") ?? ""} optional helper="Sign-in codes and delivery updates by SMS." />
             <label className="flex items-start gap-3 text-body text-ink">
               <input type="checkbox" name="marketingOptIn" defaultChecked={Boolean(user.marketingOptInAt)} className="mt-1 size-4 accent-accent" />
               <span>

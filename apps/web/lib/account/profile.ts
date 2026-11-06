@@ -17,31 +17,45 @@ export class ProfileError extends Error {
 export class ProfileService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async update(userId: string, input: { name: string; email: string; phone: string; marketingOptIn: boolean }) {
+  /**
+   * Name and marketing choice. Email and phone are not changed here: a new one is added only once a
+   * code sent to it is entered (see confirmContact), so nobody can put someone else's number on their
+   * account and have that person's sign-ins land in it.
+   */
+  async update(userId: string, input: { name: string; marketingOptIn: boolean }) {
     const name = input.name.trim();
-    const email = input.email.trim().toLowerCase() || null;
-    const phone = input.phone.trim() ? normaliseKenyanMobile(input.phone) : null;
-    if (input.phone.trim() && !phone) throw new ProfileError("INVALID", "That does not look like a Kenyan mobile number.");
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ProfileError("INVALID", "Enter a valid email address.");
-    if (!email && !phone) throw new ProfileError("INVALID", "Keep at least an email address or a phone number so you can sign in.");
     const current = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (email && email !== current.email && (await this.prisma.user.findUnique({ where: { email } }))) throw new ProfileError("TAKEN", "That email address belongs to another account. Sign in with it instead, or call us to merge the two.");
-    if (phone && phone !== current.phone && (await this.prisma.user.findUnique({ where: { phone } }))) throw new ProfileError("TAKEN", "That phone number belongs to another account. Sign in with it instead, or call us to merge the two.");
     return this.prisma.$transaction(async (tx) => {
       const u = await tx.user.update({
         where: { id: userId },
-        data: {
-          name: name || null,
-          email,
-          phone,
-          // A changed contact is unverified until used to sign in.
-          ...(email !== current.email ? { emailVerified: null } : {}),
-          ...(phone !== current.phone ? { phoneVerified: null } : {}),
-          marketingOptInAt: input.marketingOptIn ? (current.marketingOptInAt ?? new Date()) : null,
-        },
+        data: { name: name || null, marketingOptInAt: input.marketingOptIn ? (current.marketingOptInAt ?? new Date()) : null },
       });
-      await tx.auditLog.create({ data: { actorId: userId, action: "profile.update", entity: "User", entityId: userId, before: { name: current.name, email: current.email, phone: current.phone, marketingOptInAt: current.marketingOptInAt?.toISOString() ?? null }, after: { name: u.name, email: u.email, phone: u.phone, marketingOptInAt: u.marketingOptInAt?.toISOString() ?? null } } });
+      await tx.auditLog.create({ data: { actorId: userId, action: "profile.update", entity: "User", entityId: userId, before: { name: current.name, marketingOptInAt: current.marketingOptInAt?.toISOString() ?? null }, after: { name: u.name, marketingOptInAt: u.marketingOptInAt?.toISOString() ?? null } } });
       return u;
+    });
+  }
+
+  /** Checks a contact typed into the profile; returns the sign-in identifier ("email:…" / "phone:…"). */
+  static parseContact(kind: "email" | "phone", raw: string): string {
+    if (kind === "email") {
+      const email = raw.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ProfileError("INVALID", "Enter a valid email address.");
+      return `email:${email}`;
+    }
+    const phone = raw.trim() ? normaliseKenyanMobile(raw) : null;
+    if (!phone) throw new ProfileError("INVALID", "That does not look like a Kenyan mobile number. Use 07xx xxx xxx or 01xx xxx xxx.");
+    return `phone:${phone.startsWith("+") ? phone : `+254${phone.replace(/^0/, "")}`}`;
+  }
+
+  /** Takes an email or phone off the account. One must remain so the customer can still sign in. */
+  async removeContact(userId: string, kind: "email" | "phone") {
+    const current = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const other = kind === "email" ? current.phone : current.email;
+    if (!other) throw new ProfileError("INVALID", "Keep at least an email address or a phone number so you can sign in.");
+    if (kind === "email" && current.passwordHash) throw new ProfileError("INVALID", "Staff sign in with this email address, so it cannot be removed here.");
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: kind === "email" ? { email: null, emailVerified: null } : { phone: null, phoneVerified: null } });
+      await tx.auditLog.create({ data: { actorId: userId, action: "profile.contact.remove", entity: "User", entityId: userId, before: { [kind]: current[kind] }, after: { [kind]: null } } });
     });
   }
 
