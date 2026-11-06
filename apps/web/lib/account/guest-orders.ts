@@ -6,9 +6,9 @@ const STAFF = new Set(["SALES", "WAREHOUSE", "FINANCE", "ADMIN"]);
  * Attaches orders placed as a guest to the account that has since signed in with the same email or
  * phone, so a customer finds their history under Account rather than only in tracking links.
  *
- * Only a verified contact counts: emailVerified/phoneVerified are set by a sign-in link or code, and
- * cleared when the contact is changed in the profile (ProfileService.update), so typing someone
- * else's address into a profile cannot collect their orders. Staff accounts are left out: they sign
+ * Only a verified contact counts: emailVerified/phoneVerified are set by a sign-in link or code, or a
+ * code sent when the contact is added in the profile (confirmContact), so typing someone else's
+ * address into a profile cannot collect their orders. Staff accounts are left out: they sign
  * in with a password, which proves nothing about the mailbox. Returns how many orders were attached.
  */
 export async function claimGuestOrders(prisma: PrismaClient, userId: string): Promise<number> {
