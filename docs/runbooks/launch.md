@@ -21,13 +21,26 @@ Do not begin until **all** of these are true. Each has cost someone a launch som
 | 5 | Payment credentials are live, not sandbox | Section 3 below. |
 | 6 | Email and SMS are configured | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` (the cPanel `no_reply@safuney.com` mailbox) or `RESEND_API_KEY`; Africa's Talking key and sender ID. Without them the site still works and simply sends nothing — which customers experience as silence after paying. |
 | 7 | A test order has gone all the way through on the preview | Place it, pay it, pick it, dispatch it, deliver it. Confirm the emails and SMS arrived. |
+| 8 | New-order alerts reach a real person | `ORDERS_INBOX` in Vercel Production (defaults to `info@safuney.com`). Place a test order and confirm the alert arrives. |
+| 9 | Sign-in attempts are limited across all servers | `KV_REST_API_URL` and `KV_REST_API_TOKEN` (or the `UPSTASH_REDIS_REST_*` pair) in Vercel Production, from an Upstash Redis store (Vercel → Storage). Without them each server keeps its own count, so the limit on guessing sign-in codes is much weaker than it looks. |
+| 10 | Mail from safuney.com passes DMARC | [`email-dns.md`](./email-dns.md). Sign-in codes that land in spam stop customers from signing in. |
+| 11 | No contacts were saved without a code | Once #26 is merged: `pnpm --filter @safuney/db clear-unverified-contacts` against production. It only reports; add `--apply` if it lists anything. |
+| 12 | The Vercel plan is settled | The team is on a Pro **trial**. The Hobby plan is for non-commercial use only, so a shop needs Pro. Decide before the trial ends, or the project is downgraded on its own. |
 
 ---
 
 ## 1. Domain cut-over
 
-**Only on the PO's instruction.** Ask which registrar holds `safuney.com` before you begin; you will
-need access to its DNS panel.
+**Only on the PO's instruction.**
+
+**Where the DNS lives:** `safuney.com` uses the hosting company's nameservers, so its DNS records are
+edited in **cPanel → Domains → Zone Editor** on `eac3.host-ww.net`, not at the registrar. The same
+cPanel also hosts the company mailboxes (`info@`, `no_reply@`, staff addresses).
+
+> **Do not change the nameservers, and do not touch the MX, SPF (TXT), DKIM (`default._domainkey`) or
+> `_dmarc` records.** Only the website records below change. Moving the nameservers to Vercel, or
+> deleting the mail records, stops every safuney.com mailbox, and the website's own sign-in codes and
+> receipts with it. Before you edit, take a screenshot of the whole zone so it can be put back.
 
 ```bash
 vercel domains add safuney.com          # on the safuney-website-2026 project
@@ -40,7 +53,9 @@ Vercel prints the exact records. At the time of writing they are usually an `A` 
 `vercel domains inspect` rather than trusting this sentence** — they change, and a wrong record is a
 site that is down rather than a site that is slow.
 
-Give the PO the records exactly as printed. Then:
+In the Zone Editor, **edit** the existing `A` record for `safuney.com` (it points at the old cPanel
+site today) and the `www` record, rather than adding second copies. Two `A` records for the same name
+send visitors to the old and new sites at random. Then:
 
 1. Wait for Vercel to show both domains as **Valid Configuration**. This can take minutes or hours
    depending on the registrar's TTL.
@@ -52,8 +67,11 @@ Give the PO the records exactly as printed. Then:
    every sitemap URL and every payment callback URL derives from it.
 
 ### Old URLs
-Map every URL from the Phase 0 inventory to its new address with a 301, so no inbound link and no
-search ranking is lost. A 404 on an old URL is a ranking thrown away.
+Every address of the old site (`index.php`, `about.php`, `services.php`, `contact.php` and the nine
+`products.php?a=…` range pages, crawled 2026-10-26) redirects permanently to its new page, so inbound
+links and search rankings carry over. That is PR #18; check it is merged before cut-over. Afterwards,
+open two or three old addresses (for example `https://safuney.com/about.php`) and confirm they land on
+the new pages.
 
 ---
 
@@ -93,7 +111,9 @@ Then submit `https://safuney.com/sitemap.xml` in Google Search Console.
 
 ### Card (Paystack)
 1. Live public and secret keys from the Paystack dashboard.
-2. Register the webhook: `https://safuney.com/api/payments/paystack/callback`
+2. Register the webhook: `https://safuney.com/api/payments/paystack/webhook` (the route is
+   `apps/web/app/api/payments/paystack/webhook`; an earlier version of this file said `/callback`,
+   which does not exist)
 3. Set `PAYSTACK_SECRET_KEY` and `PAYSTACK_PUBLIC_KEY` in Vercel Production.
 4. One real card payment, then refund.
 
