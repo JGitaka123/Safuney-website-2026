@@ -41,7 +41,7 @@ Merge order: #25 → #17 → #24 → #21 → #26 → #22 → #23 → #18, #19, #
 
 Do these in order. Each one says who it's waiting on.
 
-### 1. Merge the open pull requests (boss)
+### 1. Merge the open pull requests (repository owner)
 In the order above. Then, against the production database:
 `pnpm --filter @safuney/db clear-unverified-contacts`. It removes any email or phone the old profile
 form saved without a code, and only reports unless run with `--apply`.
@@ -108,7 +108,7 @@ method, then refund it.
 Place it, pay it, pick it, dispatch it, deliver it. Check every email and SMS arrives, including the
 staff alert and the customer receipt.
 
-### 10. The Vercel plan (boss)
+### 10. The Vercel plan (Vercel team owner)
 The team is on a **Pro trial**. The Hobby plan is for non-commercial use only, so a shop needs Pro.
 Decide before the trial ends, or the project is downgraded on its own.
 
