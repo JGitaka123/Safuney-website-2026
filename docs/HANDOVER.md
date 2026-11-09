@@ -83,8 +83,8 @@ Send those and the marks, storage warnings and compliance library fill in.
   password is reset there too (#24).
 
 ### 6. Email and SMS (developer + whoever holds cPanel)
-- **Add the DMARC record**: [`runbooks/email-dns.md`](./runbooks/email-dns.md). Ten minutes in cPanel.
-  Without it, sign-in codes and receipts are more likely to land in spam.
+- **DMARC record: added 2026-11-09** with `p=none` (reports only). Around 2026-11-23, read the reports
+  and move to `p=quarantine`, as described in [`runbooks/email-dns.md`](./runbooks/email-dns.md).
 - **SMS** (sign-in codes by text, delivery updates, failed-payment alerts): an Africa's Talking
   account with `AT_USERNAME`, `AT_API_KEY` and an approved `AT_SENDER_ID`. The sender ID needs
   approval from the networks, which can take a while, so apply early.

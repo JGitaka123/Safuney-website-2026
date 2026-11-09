@@ -55,7 +55,13 @@ site that is down rather than a site that is slow.
 
 In the Zone Editor, **edit** the existing `A` record for `safuney.com` (it points at the old cPanel
 site today) and the `www` record, rather than adding second copies. Two `A` records for the same name
-send visitors to the old and new sites at random. Then:
+send visitors to the old and new sites at random.
+
+**Leave `mail.safuney.com` exactly as it is.** It has its own `A` record pointing at the cPanel server
+(`102.130.125.203` on 2026-11-09, the same address the website uses today). The MX record and the
+site's `SMTP_HOST` both rely on it, so it must keep pointing at cPanel after the website moves.
+
+Then:
 
 1. Wait for Vercel to show both domains as **Valid Configuration**. This can take minutes or hours
    depending on the registrar's TTL.
